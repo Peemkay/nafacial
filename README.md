@@ -215,6 +215,6 @@ Unauthorized copying, distribution, modification, public display, or public perf
 
 ## Contact
 
-Nigerian Army IT Department - [Contact Information]
+Nigerian Army IT Department - MB Abubakar (offrmbabubakar@gmail.com)
 
 Project Link: [https://github.com/Peemkay/nafacial](https://github.com/Peemkay/nafacial)
