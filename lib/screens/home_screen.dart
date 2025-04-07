@@ -1,0 +1,283 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../config/design_system.dart';
+import '../providers/auth_provider.dart';
+import '../widgets/platform_aware_widgets.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.currentUser;
+    
+    return PlatformScaffold(
+      appBar: AppBar(
+        title: const Text('NAFacial Dashboard'),
+        backgroundColor: DesignSystem.primaryColor,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await authProvider.logout();
+              if (context.mounted) {
+                Navigator.of(context).pushReplacementNamed('/login');
+              }
+            },
+            tooltip: 'Logout',
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome card
+                PlatformCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: DesignSystem.primaryColor,
+                            radius: 30,
+                            child: Icon(
+                              Icons.person,
+                              color: DesignSystem.accentColor,
+                              size: 30,
+                            ),
+                          ),
+                          SizedBox(width: DesignSystem.adjustedSpacingMedium),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                PlatformText(
+                                  'Welcome, ${user?.fullName ?? 'User'}',
+                                  isTitle: true,
+                                ),
+                                PlatformText(
+                                  '${user?.rank ?? 'Rank'} - ${user?.department ?? 'Department'}',
+                                  style: TextStyle(
+                                    color: DesignSystem.textSecondaryColor,
+                                    fontSize: DesignSystem.adjustedFontSizeSmall,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: DesignSystem.adjustedSpacingMedium),
+                      const Divider(),
+                      SizedBox(height: DesignSystem.adjustedSpacingSmall),
+                      PlatformText(
+                        'System Status: ACTIVE',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: DesignSystem.fontWeightBold,
+                        ),
+                      ),
+                      SizedBox(height: DesignSystem.adjustedSpacingSmall),
+                      PlatformText(
+                        'Last Login: ${DateTime.now().toString().substring(0, 16)}',
+                        style: TextStyle(
+                          fontSize: DesignSystem.adjustedFontSizeSmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                SizedBox(height: DesignSystem.adjustedSpacingLarge),
+                
+                // Biometric settings
+                PlatformCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.fingerprint,
+                            color: DesignSystem.primaryColor,
+                            size: 24,
+                          ),
+                          SizedBox(width: DesignSystem.adjustedSpacingSmall),
+                          PlatformText(
+                            'Biometric Authentication',
+                            isTitle: true,
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: DesignSystem.adjustedSpacingMedium),
+                      
+                      if (!authProvider.isBiometricAvailable) ...[
+                        PlatformText(
+                          'Biometric authentication is not available on this device.',
+                          style: TextStyle(
+                            color: Colors.red,
+                          ),
+                        ),
+                      ] else ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            PlatformText(
+                              'Enable Biometric Login',
+                              style: TextStyle(
+                                fontSize: DesignSystem.adjustedFontSizeMedium,
+                              ),
+                            ),
+                            Switch(
+                              value: user?.isBiometricEnabled ?? false,
+                              onChanged: (value) async {
+                                if (value) {
+                                  await authProvider.enableBiometric();
+                                } else {
+                                  await authProvider.disableBiometric();
+                                }
+                              },
+                              activeColor: DesignSystem.primaryColor,
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: DesignSystem.adjustedSpacingSmall),
+                        PlatformText(
+                          'Use your fingerprint or face recognition for faster login.',
+                          style: TextStyle(
+                            fontSize: DesignSystem.adjustedFontSizeSmall,
+                            color: DesignSystem.textSecondaryColor,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                
+                SizedBox(height: DesignSystem.adjustedSpacingLarge),
+                
+                // Quick actions
+                PlatformText(
+                  'Quick Actions',
+                  isTitle: true,
+                ),
+                SizedBox(height: DesignSystem.adjustedSpacingMedium),
+                
+                GridView.count(
+                  crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: DesignSystem.adjustedSpacingMedium,
+                  crossAxisSpacing: DesignSystem.adjustedSpacingMedium,
+                  children: [
+                    _buildActionCard(
+                      context,
+                      icon: Icons.face,
+                      title: 'Facial Verification',
+                      color: DesignSystem.primaryColor,
+                      onTap: () {
+                        // Navigate to facial verification screen
+                      },
+                    ),
+                    _buildActionCard(
+                      context,
+                      icon: Icons.people,
+                      title: 'Personnel Database',
+                      color: DesignSystem.secondaryColor,
+                      onTap: () {
+                        // Navigate to personnel database screen
+                      },
+                    ),
+                    _buildActionCard(
+                      context,
+                      icon: Icons.history,
+                      title: 'Access Logs',
+                      color: Colors.orange,
+                      onTap: () {
+                        // Navigate to access logs screen
+                      },
+                    ),
+                    _buildActionCard(
+                      context,
+                      icon: Icons.settings,
+                      title: 'System Settings',
+                      color: Colors.grey.shade700,
+                      onTap: () {
+                        // Navigate to settings screen
+                      },
+                    ),
+                  ],
+                ),
+                
+                SizedBox(height: DesignSystem.adjustedSpacingLarge),
+                
+                // Security notice
+                PlatformContainer(
+                  padding: EdgeInsets.symmetric(
+                    vertical: DesignSystem.adjustedSpacingSmall,
+                    horizontal: DesignSystem.adjustedSpacingMedium,
+                  ),
+                  backgroundColor: const Color(0xCC001F3F), // primaryColor with 0.8 opacity
+                  borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall),
+                  child: const PlatformText(
+                    'RESTRICTED ACCESS - AUTHORIZED PERSONNEL ONLY',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFFFFD700), // accentColor
+                      fontSize: 12,
+                      letterSpacing: 1.0, // letterSpacingExtraWide
+                      fontWeight: FontWeight.w700, // fontWeightBold
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildActionCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return PlatformCard(
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 32,
+            ),
+          ),
+          SizedBox(height: DesignSystem.adjustedSpacingSmall),
+          PlatformText(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: DesignSystem.fontWeightMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

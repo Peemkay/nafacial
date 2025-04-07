@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'config/theme.dart';
+import 'providers/auth_provider.dart';
 import 'screens/splash_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/home_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,21 +24,31 @@ class NAFacialApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'NAFacial',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.theme,
-      home: const SplashScreen(),
-      builder: (context, child) {
-        // Apply a responsive layout wrapper to the entire app
-        return MediaQuery(
-          // Set text scaling to ensure consistent text sizes
-          data: MediaQuery.of(context).copyWith(
-            textScaler: const TextScaler.linear(1.0),
-          ),
-          child: child!,
-        );
-      },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
+      child: MaterialApp(
+        title: 'NAFacial',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.theme,
+        initialRoute: '/splash',
+        routes: {
+          '/splash': (context) => const SplashScreen(),
+          '/login': (context) => const LoginScreen(),
+          '/home': (context) => const HomeScreen(),
+        },
+        builder: (context, child) {
+          // Apply a responsive layout wrapper to the entire app
+          return MediaQuery(
+            // Set text scaling to ensure consistent text sizes
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(1.0),
+            ),
+            child: child!,
+          );
+        },
+      ),
     );
   }
 }

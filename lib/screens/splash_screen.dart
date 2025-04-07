@@ -43,12 +43,11 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    // Navigate to verification screen after animations
+    // Navigate to login screen after animations
     Future.delayed(const Duration(seconds: 5), () {
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(builder: (context) => const VerificationScreen()),
-      // );
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
     });
   }
 

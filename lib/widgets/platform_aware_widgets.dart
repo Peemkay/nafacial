@@ -4,7 +4,7 @@ import '../config/design_system.dart';
 /// A button that adapts to the current platform
 class PlatformButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final IconData? icon;
   final bool isPrimary;
   final bool isFullWidth;
@@ -101,8 +101,8 @@ class PlatformCard extends StatelessWidget {
     final effectiveBorderRadius = borderRadius ?? DesignSystem.cardBorderRadius;
     final effectiveBackgroundColor =
         backgroundColor ?? DesignSystem.surfaceColor;
-    final effectivePadding = padding ??
-        EdgeInsets.all(DesignSystem.adjustedSpacingMedium);
+    final effectivePadding =
+        padding ?? EdgeInsets.all(DesignSystem.adjustedSpacingMedium);
     final effectiveMargin =
         margin ?? EdgeInsets.all(DesignSystem.adjustedSpacingSmall);
 
@@ -170,7 +170,7 @@ class PlatformTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     // Platform-specific adjustments
     final borderRadius = BorderRadius.circular(DesignSystem.borderRadiusMedium);
-    
+
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
@@ -255,10 +255,9 @@ class PlatformContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Platform-specific adjustments
-    final effectivePadding = padding ??
-        EdgeInsets.all(DesignSystem.adjustedSpacingMedium);
-    final effectiveMargin =
-        margin ?? EdgeInsets.zero;
+    final effectivePadding =
+        padding ?? EdgeInsets.all(DesignSystem.adjustedSpacingMedium);
+    final effectiveMargin = margin ?? EdgeInsets.zero;
     final effectiveBorderRadius =
         borderRadius ?? BorderRadius.circular(DesignSystem.borderRadiusMedium);
 
@@ -312,7 +311,7 @@ class PlatformText extends StatelessWidget {
   Widget build(BuildContext context) {
     // Determine text style based on properties
     TextStyle effectiveStyle;
-    
+
     if (isHeadline) {
       effectiveStyle = Theme.of(context).textTheme.headlineMedium!;
     } else if (isTitle) {
@@ -322,7 +321,7 @@ class PlatformText extends StatelessWidget {
     } else {
       effectiveStyle = Theme.of(context).textTheme.bodyMedium!;
     }
-    
+
     // Apply custom properties
     if (fontSize != null || fontWeight != null || color != null) {
       effectiveStyle = effectiveStyle.copyWith(
@@ -331,12 +330,12 @@ class PlatformText extends StatelessWidget {
         color: color,
       );
     }
-    
+
     // Apply custom style if provided
     if (style != null) {
       effectiveStyle = effectiveStyle.merge(style);
     }
-    
+
     return Text(
       text,
       style: effectiveStyle,
@@ -375,14 +374,15 @@ class PlatformScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Create platform-specific app bar if title is provided
-    final effectiveAppBar = appBar ?? (title != null
-        ? AppBar(
-            title: Text(title!),
-            actions: actions,
-            backgroundColor: DesignSystem.primaryColor,
-            elevation: DesignSystem.elevationSmall,
-          )
-        : null);
+    final effectiveAppBar = appBar ??
+        (title != null
+            ? AppBar(
+                title: Text(title!),
+                actions: actions,
+                backgroundColor: DesignSystem.primaryColor,
+                elevation: DesignSystem.elevationSmall,
+              )
+            : null);
 
     // Create scaffold with platform-specific adjustments
     return Scaffold(
