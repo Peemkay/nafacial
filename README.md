@@ -14,9 +14,11 @@ A Flutter application for facial verification, designed to be responsive and con
 - For Android: Android SDK
 - For Web: Chrome browser
 
-### Clone the Repository
+### Access the Repository
+This repository is private and only accessible to authorized personnel of the Nigerian Army. If you have been granted access, you can clone the repository using your authorized credentials:
+
 ```bash
-git clone https://github.com/yourusername/nafacial.git
+git clone https://github.com/Peemkay/nafacial.git
 cd nafacial
 ```
 
@@ -201,23 +203,18 @@ samples, guidance on mobile development, and a full API reference.
 
 ## Contributing
 
-Contributions are welcome! Here's how you can contribute to this project:
+This is a proprietary project of the Nigerian Army. Contributions are limited to authorized personnel only. If you are authorized to contribute to this project, please follow the internal contribution guidelines provided by the Nigerian Army.
 
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Commit your changes (`git commit -m 'Add some amazing feature'`)
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
+Unauthorized contributions will not be accepted.
 
-Please make sure to update tests as appropriate.
+## Copyright Notice
 
-## License
+This software is proprietary and confidential. Copyright © 2024 Nigerian Army. All Rights Reserved.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Unauthorized copying, distribution, modification, public display, or public performance of this software is strictly prohibited. See the [COPYRIGHT](COPYRIGHT) file for details.
 
 ## Contact
 
-Your Name - [@yourusername](https://twitter.com/yourusername) - email@example.com
+Nigerian Army IT Department - [Contact Information]
 
-Project Link: [https://github.com/yourusername/nafacial](https://github.com/yourusername/nafacial)
+Project Link: [https://github.com/Peemkay/nafacial](https://github.com/Peemkay/nafacial)
