@@ -28,6 +28,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
   final ImagePicker _imagePicker = ImagePicker();
 
   late Rank _selectedRank;
+  late Corps _selectedCorps;
   late ServiceStatus _selectedServiceStatus;
   DateTime? _selectedDateOfBirth;
   DateTime? _selectedEnlistmentDate;
@@ -43,6 +44,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
 
     // Initialize selected values
     _selectedRank = widget.personnel.rank;
+    _selectedCorps = widget.personnel.corps;
     _selectedServiceStatus = widget.personnel.serviceStatus;
     _selectedDateOfBirth = widget.personnel.dateOfBirth;
     _selectedEnlistmentDate = widget.personnel.enlistmentDate;
@@ -128,6 +130,163 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
         }
       });
     }
+  }
+
+  // Get corps items for dropdown
+  List<DropdownMenuItem<Corps>> _getCorpsItems() {
+    // Create separate lists for different corps categories
+    final combatArms = [
+      Corps.infantry,
+      Corps.armoured,
+      Corps.artillery,
+    ];
+
+    final combatSupportArms = [
+      Corps.engineers,
+      Corps.signals,
+      Corps.intelligence,
+    ];
+
+    final combatServiceSupportArms = [
+      Corps.supplyAndTransport,
+      Corps.medical,
+      Corps.ordnance,
+      Corps.electricalAndMechanical,
+      Corps.militaryPolice,
+    ];
+
+    final administrativeAndSpecializedCorps = [
+      Corps.education,
+      Corps.finance,
+      Corps.physicalTraining,
+      Corps.band,
+      Corps.chaplainServices,
+      Corps.islamicAffairs,
+      Corps.publicRelations,
+      Corps.legalServices,
+      Corps.womensCorps,
+    ];
+
+    // Create dropdown items with headers
+    List<DropdownMenuItem<Corps>> items = [];
+
+    // Add Combat Arms header
+    items.add(
+      DropdownMenuItem<Corps>(
+        enabled: false,
+        child: Text(
+          'COMBAT ARMS',
+          style: TextStyle(
+            color: DesignSystem.primaryColor,
+            fontWeight: DesignSystem.fontWeightBold,
+            fontSize: DesignSystem.adjustedFontSizeSmall,
+          ),
+        ),
+      ),
+    );
+
+    // Add Combat Arms
+    items.addAll(
+      combatArms.map((corps) => DropdownMenuItem<Corps>(
+            value: corps,
+            child: Text(corps.displayName),
+          )),
+    );
+
+    // Add divider
+    items.add(
+      DropdownMenuItem<Corps>(
+        enabled: false,
+        child: Divider(),
+      ),
+    );
+
+    // Add Combat Support Arms header
+    items.add(
+      DropdownMenuItem<Corps>(
+        enabled: false,
+        child: Text(
+          'COMBAT SUPPORT ARMS',
+          style: TextStyle(
+            color: DesignSystem.primaryColor,
+            fontWeight: DesignSystem.fontWeightBold,
+            fontSize: DesignSystem.adjustedFontSizeSmall,
+          ),
+        ),
+      ),
+    );
+
+    // Add Combat Support Arms
+    items.addAll(
+      combatSupportArms.map((corps) => DropdownMenuItem<Corps>(
+            value: corps,
+            child: Text(corps.displayName),
+          )),
+    );
+
+    // Add divider
+    items.add(
+      DropdownMenuItem<Corps>(
+        enabled: false,
+        child: Divider(),
+      ),
+    );
+
+    // Add Combat Service Support Arms header
+    items.add(
+      DropdownMenuItem<Corps>(
+        enabled: false,
+        child: Text(
+          'COMBAT SERVICE SUPPORT ARMS',
+          style: TextStyle(
+            color: DesignSystem.primaryColor,
+            fontWeight: DesignSystem.fontWeightBold,
+            fontSize: DesignSystem.adjustedFontSizeSmall,
+          ),
+        ),
+      ),
+    );
+
+    // Add Combat Service Support Arms
+    items.addAll(
+      combatServiceSupportArms.map((corps) => DropdownMenuItem<Corps>(
+            value: corps,
+            child: Text(corps.displayName),
+          )),
+    );
+
+    // Add divider
+    items.add(
+      DropdownMenuItem<Corps>(
+        enabled: false,
+        child: Divider(),
+      ),
+    );
+
+    // Add Administrative and Specialized Corps header
+    items.add(
+      DropdownMenuItem<Corps>(
+        enabled: false,
+        child: Text(
+          'ADMINISTRATIVE AND SPECIALIZED CORPS',
+          style: TextStyle(
+            color: DesignSystem.primaryColor,
+            fontWeight: DesignSystem.fontWeightBold,
+            fontSize: DesignSystem.adjustedFontSizeSmall,
+          ),
+        ),
+      ),
+    );
+
+    // Add Administrative and Specialized Corps
+    items.addAll(
+      administrativeAndSpecializedCorps.map((corps) => DropdownMenuItem<Corps>(
+            value: corps,
+            child: Text(corps.displayName),
+          )),
+    );
+
+    return items;
   }
 
   // Get rank items for dropdown
@@ -246,6 +405,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
           fullName: _fullNameController.text.trim(),
           rank: _selectedRank,
           unit: _unitController.text.trim(),
+          corps: _selectedCorps,
           notes: _notesController.text.trim(),
           serviceStatus: _selectedServiceStatus,
           dateOfBirth: _selectedDateOfBirth,
@@ -494,6 +654,54 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
                       }
                       return null;
                     },
+                  ),
+                  SizedBox(height: DesignSystem.adjustedSpacingMedium),
+
+                  // Corps
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Corps',
+                        style: TextStyle(
+                          color: DesignSystem.textSecondaryColor,
+                          fontSize: DesignSystem.adjustedFontSizeSmall,
+                        ),
+                      ),
+                      SizedBox(height: DesignSystem.adjustedSpacingSmall),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: DesignSystem.adjustedSpacingMedium,
+                          vertical: DesignSystem.adjustedSpacingSmall,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(
+                              DesignSystem.borderRadiusSmall),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<Corps>(
+                            isExpanded: true,
+                            value: _selectedCorps,
+                            icon: const Icon(Icons.arrow_drop_down),
+                            iconSize: 24,
+                            elevation: 16,
+                            style: TextStyle(
+                              color: DesignSystem.textPrimaryColor,
+                              fontSize: DesignSystem.adjustedFontSizeMedium,
+                            ),
+                            onChanged: (Corps? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  _selectedCorps = newValue;
+                                });
+                              }
+                            },
+                            items: _getCorpsItems(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   SizedBox(height: DesignSystem.adjustedSpacingMedium),
 

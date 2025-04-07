@@ -25,6 +25,143 @@ enum RankType {
   soldier,
 }
 
+enum Corps {
+  // Combat Arms
+  infantry,
+  armoured,
+  artillery,
+
+  // Combat Support Arms
+  engineers,
+  signals,
+  intelligence,
+
+  // Combat Service Support Arms
+  supplyAndTransport,
+  medical,
+  ordnance,
+  electricalAndMechanical,
+  militaryPolice,
+
+  // Administrative and Specialized Corps
+  education,
+  finance,
+  physicalTraining,
+  band,
+  chaplainServices,
+  islamicAffairs,
+  publicRelations,
+  legalServices,
+  womensCorps,
+}
+
+// Extension to get corps display name
+extension CorpsExtension on Corps {
+  String get displayName {
+    switch (this) {
+      // Combat Arms
+      case Corps.infantry:
+        return 'Infantry Corps';
+      case Corps.armoured:
+        return 'Armoured Corps';
+      case Corps.artillery:
+        return 'Artillery Corps';
+
+      // Combat Support Arms
+      case Corps.engineers:
+        return 'Engineers Corps (NAE)';
+      case Corps.signals:
+        return 'Signals Corps (NAS)';
+      case Corps.intelligence:
+        return 'Intelligence Corps (NAIC)';
+
+      // Combat Service Support Arms
+      case Corps.supplyAndTransport:
+        return 'Corps of Supply and Transport (NACST)';
+      case Corps.medical:
+        return 'Medical Corps (NAMC)';
+      case Corps.ordnance:
+        return 'Ordnance Corps (NAOC)';
+      case Corps.electricalAndMechanical:
+        return 'Electrical and Mechanical Engineers Corps (NAEME)';
+      case Corps.militaryPolice:
+        return 'Corps of Military Police (NACMP)';
+
+      // Administrative and Specialized Corps
+      case Corps.education:
+        return 'Education Corps (NAEC)';
+      case Corps.finance:
+        return 'Finance Corps (NAFC)';
+      case Corps.physicalTraining:
+        return 'Directorate of Army Physical Training (DAPT)';
+      case Corps.band:
+        return 'Band Corps (NABC)';
+      case Corps.chaplainServices:
+        return 'Chaplain Services';
+      case Corps.islamicAffairs:
+        return 'Directorate of Islamic Affairs (DOIA)';
+      case Corps.publicRelations:
+        return 'Directorate of Army Public Relations (DAPR)';
+      case Corps.legalServices:
+        return 'Directorate of Legal Services';
+      case Corps.womensCorps:
+        return 'Women\'s Corps';
+    }
+  }
+
+  String get shortName {
+    switch (this) {
+      // Combat Arms
+      case Corps.infantry:
+        return 'Infantry';
+      case Corps.armoured:
+        return 'Armoured';
+      case Corps.artillery:
+        return 'Artillery';
+
+      // Combat Support Arms
+      case Corps.engineers:
+        return 'NAE';
+      case Corps.signals:
+        return 'NAS';
+      case Corps.intelligence:
+        return 'NAIC';
+
+      // Combat Service Support Arms
+      case Corps.supplyAndTransport:
+        return 'NACST';
+      case Corps.medical:
+        return 'NAMC';
+      case Corps.ordnance:
+        return 'NAOC';
+      case Corps.electricalAndMechanical:
+        return 'NAEME';
+      case Corps.militaryPolice:
+        return 'NACMP';
+
+      // Administrative and Specialized Corps
+      case Corps.education:
+        return 'NAEC';
+      case Corps.finance:
+        return 'NAFC';
+      case Corps.physicalTraining:
+        return 'DAPT';
+      case Corps.band:
+        return 'NABC';
+      case Corps.chaplainServices:
+        return 'Chaplain';
+      case Corps.islamicAffairs:
+        return 'DOIA';
+      case Corps.publicRelations:
+        return 'DAPR';
+      case Corps.legalServices:
+        return 'Legal';
+      case Corps.womensCorps:
+        return 'Women\'s Corps';
+    }
+  }
+}
+
 enum Rank {
   // Officer Ranks
   general,
@@ -161,6 +298,7 @@ class Personnel {
   final String fullName;
   final Rank rank;
   final String unit;
+  final Corps corps;
   final PersonnelCategory category;
   final String? photoUrl;
   final VerificationStatus status;
@@ -193,6 +331,7 @@ class Personnel {
     required this.fullName,
     required this.rank,
     required this.unit,
+    required this.corps,
     required this.category,
     this.photoUrl,
     this.status = VerificationStatus.pending,
@@ -247,6 +386,7 @@ class Personnel {
       'fullName': fullName,
       'rank': rank.toString().split('.').last,
       'unit': unit,
+      'corps': corps.toString().split('.').last,
       'category': category.toString().split('.').last,
       'photoUrl': photoUrl,
       'status': status.toString().split('.').last,
@@ -270,6 +410,10 @@ class Personnel {
         orElse: () => Rank.private,
       ),
       unit: map['unit'],
+      corps: Corps.values.firstWhere(
+        (e) => e.toString().split('.').last == map['corps'],
+        orElse: () => Corps.infantry,
+      ),
       category: PersonnelCategory.values.firstWhere(
         (e) => e.toString().split('.').last == map['category'],
       ),
@@ -303,6 +447,7 @@ class Personnel {
     String? fullName,
     Rank? rank,
     String? unit,
+    Corps? corps,
     PersonnelCategory? category,
     String? photoUrl,
     VerificationStatus? status,
@@ -319,6 +464,7 @@ class Personnel {
       fullName: fullName ?? this.fullName,
       rank: rank ?? this.rank,
       unit: unit ?? this.unit,
+      corps: corps ?? this.corps,
       category: category ?? this.category,
       photoUrl: photoUrl ?? this.photoUrl,
       status: status ?? this.status,

@@ -230,6 +230,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
               _buildDetailRow('Army Number', personnel.armyNumber),
               _buildDetailRow('Rank', personnel.rank.displayName),
               _buildDetailRow('Unit', personnel.unit),
+              _buildDetailRow('Corps', personnel.corps.displayName),
               _buildDetailRow('Category', _getCategoryText(personnel.category)),
               _buildDetailRow('Service Status',
                   _getServiceStatusText(personnel.serviceStatus)),
@@ -837,7 +838,14 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                   ),
                   SizedBox(height: DesignSystem.adjustedSpacingSmall / 2),
                   Text(
-                    '${personnel.rank.displayName} - ${personnel.unit}',
+                    '${personnel.rank.displayName} - ${personnel.corps.shortName}',
+                    style: TextStyle(
+                      color: DesignSystem.textSecondaryColor,
+                      fontSize: DesignSystem.adjustedFontSizeSmall,
+                    ),
+                  ),
+                  Text(
+                    'Unit: ${personnel.unit}',
                     style: TextStyle(
                       color: DesignSystem.textSecondaryColor,
                       fontSize: DesignSystem.adjustedFontSizeSmall,
