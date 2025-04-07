@@ -6,6 +6,7 @@ import '../config/design_system.dart';
 import '../models/personnel_model.dart';
 import '../providers/personnel_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
+import '../widgets/custom_drawer.dart';
 
 class PersonnelRegistrationScreen extends StatefulWidget {
   const PersonnelRegistrationScreen({Key? key}) : super(key: key);
@@ -450,6 +451,7 @@ class _PersonnelRegistrationScreenState
         title: const Text('Register New Personnel'),
         backgroundColor: DesignSystem.primaryColor,
       ),
+      drawer: const CustomDrawer(),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(

@@ -5,6 +5,7 @@ import '../models/personnel_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/personnel_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
+import '../widgets/custom_drawer.dart';
 import 'facial_verification_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -38,17 +39,21 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: DesignSystem.primaryColor,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await authProvider.logout();
-              if (context.mounted) {
-                Navigator.of(context).pushReplacementNamed('/login');
-              }
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () {
+              // Show notifications
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('No new notifications'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
             },
-            tooltip: 'Logout',
+            tooltip: 'Notifications',
           ),
         ],
       ),
+      drawer: const CustomDrawer(),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(

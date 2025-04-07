@@ -6,6 +6,7 @@ import '../config/design_system.dart';
 import '../models/personnel_model.dart';
 import '../providers/personnel_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
+import '../widgets/custom_drawer.dart';
 import 'personnel_registration_screen.dart';
 import 'personnel_edit_screen.dart';
 
@@ -945,6 +946,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
         title: const Text('Facial Verification'),
         backgroundColor: DesignSystem.primaryColor,
       ),
+      drawer: const CustomDrawer(),
       body: SafeArea(
         child: IndexedStack(
           index: _currentIndex,

@@ -7,6 +7,7 @@ import '../config/design_system.dart';
 import '../models/personnel_model.dart';
 import '../providers/personnel_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
+import '../widgets/custom_drawer.dart';
 
 class PersonnelEditScreen extends StatefulWidget {
   final Personnel personnel;
@@ -456,6 +457,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
         title: const Text('Edit Personnel'),
         backgroundColor: DesignSystem.primaryColor,
       ),
+      drawer: const CustomDrawer(),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
