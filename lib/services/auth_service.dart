@@ -57,21 +57,20 @@ class AuthService {
 
   // Initialize the auth service
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    final hasUsers = prefs.containsKey(_usersKey);
+    _prefs = await SharedPreferences.getInstance();
+    final hasUsers = _prefs.containsKey(_usersKey);
 
     if (!hasUsers) {
       // Store predefined users if no users exist
       final usersJson =
           jsonEncode(_predefinedUsers.map((u) => u.toMap()).toList());
-      await prefs.setString(_usersKey, usersJson);
+      await _prefs.setString(_usersKey, usersJson);
     }
   }
 
   // Get all users
   Future<List<User>> getUsers() async {
-    final prefs = await SharedPreferences.getInstance();
-    final usersJson = prefs.getString(_usersKey);
+    final usersJson = _prefs.getString(_usersKey);
 
     if (usersJson == null) {
       return [];
@@ -83,9 +82,35 @@ class AuthService {
 
   // Save users
   Future<void> saveUsers(List<User> users) async {
-    final prefs = await SharedPreferences.getInstance();
     final usersJson = jsonEncode(users.map((u) => u.toMap()).toList());
-    await prefs.setString(_usersKey, usersJson);
+    await _prefs.setString(_usersKey, usersJson);
+  }
+
+  // Helper method to read from secure storage or shared preferences
+  Future<String?> _secureRead(String key) async {
+    if (kIsWeb) {
+      return _prefs.getString(key);
+    } else {
+      return await _secureStorage.read(key: key);
+    }
+  }
+
+  // Helper method to write to secure storage or shared preferences
+  Future<void> _secureWrite(String key, String value) async {
+    if (kIsWeb) {
+      await _prefs.setString(key, value);
+    } else {
+      await _secureStorage.write(key: key, value: value);
+    }
+  }
+
+  // Helper method to delete from secure storage or shared preferences
+  Future<void> _secureDelete(String key) async {
+    if (kIsWeb) {
+      await _prefs.remove(key);
+    } else {
+      await _secureStorage.delete(key: key);
+    }
   }
 
   // Login with username and password
@@ -97,8 +122,7 @@ class AuthService {
       if (user.username.toLowerCase() == username.toLowerCase() &&
           user.passwordHash == hashedPassword) {
         // Store current user
-        await _secureStorage.write(
-            key: _currentUserKey, value: jsonEncode(user.toMap()));
+        await _secureWrite(_currentUserKey, jsonEncode(user.toMap()));
         return user;
       }
     }
@@ -135,12 +159,12 @@ class AuthService {
 
   // Logout current user
   Future<void> logout() async {
-    await _secureStorage.delete(key: _currentUserKey);
+    await _secureDelete(_currentUserKey);
   }
 
   // Get current logged in user
   Future<User?> getCurrentUser() async {
-    final userJson = await _secureStorage.read(key: _currentUserKey);
+    final userJson = await _secureRead(_currentUserKey);
     if (userJson == null) {
       return null;
     }
@@ -211,12 +235,10 @@ class AuthService {
 
           // Update current user in secure storage
           final updatedUser = currentUser.copyWith(isBiometricEnabled: true);
-          await _secureStorage.write(
-              key: _currentUserKey, value: jsonEncode(updatedUser.toMap()));
+          await _secureWrite(_currentUserKey, jsonEncode(updatedUser.toMap()));
 
           // Store username for biometric login
-          await _secureStorage.write(
-              key: _biometricEnabledKey, value: currentUser.username);
+          await _secureWrite(_biometricEnabledKey, currentUser.username);
 
           return true;
         }
@@ -241,8 +263,7 @@ class AuthService {
       return null;
     }
 
-    final biometricUsername =
-        await _secureStorage.read(key: _biometricEnabledKey);
+    final biometricUsername = await _secureRead(_biometricEnabledKey);
 
     if (biometricUsername == null) {
       return null;
@@ -266,8 +287,7 @@ class AuthService {
         );
 
         // Store current user
-        await _secureStorage.write(
-            key: _currentUserKey, value: jsonEncode(user.toMap()));
+        await _secureWrite(_currentUserKey, jsonEncode(user.toMap()));
         return user;
       }
 
@@ -296,11 +316,10 @@ class AuthService {
 
       // Update current user in secure storage
       final updatedUser = currentUser.copyWith(isBiometricEnabled: false);
-      await _secureStorage.write(
-          key: _currentUserKey, value: jsonEncode(updatedUser.toMap()));
+      await _secureWrite(_currentUserKey, jsonEncode(updatedUser.toMap()));
 
       // Remove username for biometric login
-      await _secureStorage.delete(key: _biometricEnabledKey);
+      await _secureDelete(_biometricEnabledKey);
 
       return true;
     }
@@ -310,8 +329,7 @@ class AuthService {
 
   // Check if biometric login is enabled for any user
   Future<bool> isBiometricLoginEnabled() async {
-    final biometricUsername =
-        await _secureStorage.read(key: _biometricEnabledKey);
+    final biometricUsername = await _secureRead(_biometricEnabledKey);
     return biometricUsername != null;
   }
 }
