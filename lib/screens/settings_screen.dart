@@ -1,15 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/design_system.dart';
 import '../providers/theme_provider.dart';
 import '../providers/quick_actions_provider.dart';
 import '../providers/version_provider.dart';
+import '../services/button_service.dart';
 import '../widgets/platform_aware_widgets.dart';
 import 'profile_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _isHardwareButtonEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHardwareButtonPreference();
+  }
+
+  Future<void> _loadHardwareButtonPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isHardwareButtonEnabled =
+          prefs.getBool('hardware_button_enabled') ?? false;
+    });
+  }
+
+  Future<void> _setHardwareButtonPreference(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hardware_button_enabled', value);
+
+    if (value) {
+      await ButtonService.startButtonService();
+    } else {
+      await ButtonService.stopButtonService();
+    }
+
+    setState(() {
+      _isHardwareButtonEnabled = value;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,6 +165,25 @@ class SettingsScreen extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 16.0),
               child: Column(
                 children: [
+                  // Hardware button quick launch
+                  ListTile(
+                    leading: Icon(
+                      Icons.touch_app,
+                      color: isDarkMode
+                          ? DesignSystem.darkIconColor
+                          : DesignSystem.lightIconColor,
+                    ),
+                    title: const Text('Hardware Button Camera Launch'),
+                    subtitle: const Text(
+                        'Double-press volume down button to launch camera'),
+                    trailing: Switch(
+                      value: _isHardwareButtonEnabled,
+                      onChanged: (value) {
+                        _setHardwareButtonPreference(value);
+                      },
+                    ),
+                  ),
+                  const Divider(),
                   ListTile(
                     leading: Icon(
                       Icons.dashboard_customize,

@@ -10,6 +10,7 @@ import 'providers/access_log_provider.dart';
 import 'providers/version_provider.dart';
 import 'services/notification_service.dart';
 import 'services/app_shortcuts_service.dart';
+import 'services/button_service.dart';
 import 'widgets/banner_notification.dart';
 import 'widgets/light_theme_wrapper.dart';
 import 'screens/splash_screen.dart';
@@ -79,6 +80,18 @@ class _NAFacialAppState extends State<NAFacialApp> {
       }
     } catch (e) {
       debugPrint('Error getting initial route: $e');
+    }
+
+    // Initialize button service for hardware button camera launch
+    await _initializeButtonService();
+  }
+
+  Future<void> _initializeButtonService() async {
+    try {
+      final result = await ButtonService.startButtonService();
+      debugPrint('Button service initialized: $result');
+    } catch (e) {
+      debugPrint('Error initializing button service: $e');
     }
   }
 
