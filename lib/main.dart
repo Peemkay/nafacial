@@ -12,7 +12,7 @@ import 'services/notification_service.dart';
 import 'widgets/banner_notification.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/home_screen_new.dart' as home;
 import 'screens/facial_verification_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/live_facial_recognition_screen.dart';
@@ -61,7 +61,7 @@ class NAFacialApp extends StatelessWidget {
           routes: {
             '/splash': (context) => const SplashScreen(),
             '/login': (context) => const LoginScreen(),
-            '/home': (context) => const HomeScreen(),
+            '/home': (context) => const home.HomeScreen(),
             '/facial_verification': (context) =>
                 const FacialVerificationScreen(),
             '/settings': (context) => const SettingsScreen(),

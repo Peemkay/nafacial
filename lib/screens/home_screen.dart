@@ -92,11 +92,11 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                // Admin cards section - responsive layout
-                ResponsiveUtils.isDesktop(context)
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                  // Admin cards section - responsive layout
+                  ResponsiveUtils.isDesktop(context)
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                           // Welcome card
                           Expanded(
                             flex: 3,
