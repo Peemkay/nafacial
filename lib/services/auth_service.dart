@@ -360,4 +360,38 @@ class AuthService {
     final biometricUsername = await _secureRead(_biometricEnabledKey);
     return biometricUsername != null;
   }
+
+  // Update user profile
+  Future<bool> updateUserProfile(User updatedUser) async {
+    final currentUser = await getCurrentUser();
+    if (currentUser == null) {
+      return false;
+    }
+
+    // Update user in the list
+    final users = await getUsers();
+    final userIndex = users.indexWhere((u) => u.id == updatedUser.id);
+
+    if (userIndex >= 0) {
+      // Preserve password hash and other sensitive fields
+      final existingUser = users[userIndex];
+      final mergedUser = updatedUser.copyWith(
+        passwordHash: existingUser.passwordHash,
+        isAdmin: existingUser.isAdmin,
+        isBiometricEnabled: existingUser.isBiometricEnabled,
+        token: existingUser.token,
+        armyNumber: existingUser.armyNumber,
+      );
+
+      users[userIndex] = mergedUser;
+      await saveUsers(users);
+
+      // Update current user in secure storage
+      await _secureWrite(_currentUserKey, jsonEncode(mergedUser.toMap()));
+
+      return true;
+    }
+
+    return false;
+  }
 }

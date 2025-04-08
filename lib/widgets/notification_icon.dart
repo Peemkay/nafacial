@@ -93,9 +93,7 @@ class _NotificationIconState extends State<NotificationIcon>
     // Use the theme's icon color
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    final iconColor = isDarkMode
-        ? DesignSystem.darkIconColor
-        : theme.iconTheme.color ?? DesignSystem.primaryColor;
+    final iconColor = isDarkMode ? DesignSystem.darkIconColor : Colors.white;
 
     Widget icon = Icon(
       Icons.notifications,

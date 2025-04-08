@@ -227,6 +227,32 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // Update user profile
+  Future<bool> updateUserProfile(User updatedUser) async {
+    _setLoading(true);
+
+    try {
+      final result = await _authService.updateUserProfile(updatedUser);
+
+      if (result) {
+        // Update current user
+        _currentUser = await _authService.getCurrentUser();
+
+        _setError(null);
+        notifyListeners();
+        return true;
+      } else {
+        _setError('Failed to update profile');
+        return false;
+      }
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   // Helper methods
   void _setLoading(bool value) {
     _isLoading = value;

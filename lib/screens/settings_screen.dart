@@ -6,6 +6,7 @@ import '../providers/theme_provider.dart';
 import '../providers/quick_actions_provider.dart';
 import '../providers/version_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
+import 'profile_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -79,27 +80,41 @@ class SettingsScreen extends StatelessWidget {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.person,
-                      color: DesignSystem.primaryColor,
+                      color: isDarkMode
+                          ? DesignSystem.darkIconColor
+                          : DesignSystem.lightIconColor,
                     ),
                     title: const Text('Profile'),
                     subtitle: const Text('Manage your profile information'),
                     onTap: () {
-                      // Navigate to profile screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileScreen(),
+                        ),
+                      );
                     },
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.security,
-                      color: DesignSystem.primaryColor,
+                      color: isDarkMode
+                          ? DesignSystem.darkIconColor
+                          : DesignSystem.lightIconColor,
                     ),
                     title: const Text('Security'),
                     subtitle:
                         const Text('Change password and security settings'),
                     onTap: () {
-                      // Navigate to security screen
+                      // Show not implemented yet message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Security settings coming soon'),
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -113,9 +128,11 @@ class SettingsScreen extends StatelessWidget {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.dashboard_customize,
-                      color: DesignSystem.primaryColor,
+                      color: isDarkMode
+                          ? DesignSystem.darkIconColor
+                          : DesignSystem.lightIconColor,
                     ),
                     title: const Text('Customize Quick Actions'),
                     subtitle: const Text(
@@ -126,9 +143,11 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.restore,
-                      color: DesignSystem.primaryColor,
+                      color: isDarkMode
+                          ? DesignSystem.darkIconColor
+                          : DesignSystem.lightIconColor,
                     ),
                     title: const Text('Reset to Defaults'),
                     subtitle: const Text('Restore default quick actions'),
@@ -148,9 +167,11 @@ class SettingsScreen extends StatelessWidget {
                 children: [
                   Consumer<VersionProvider>(
                     builder: (context, versionProvider, _) => ListTile(
-                      leading: const Icon(
+                      leading: Icon(
                         Icons.system_update,
-                        color: DesignSystem.primaryColor,
+                        color: isDarkMode
+                            ? DesignSystem.darkIconColor
+                            : DesignSystem.lightIconColor,
                       ),
                       title: const Text('Check for Updates'),
                       subtitle: Text(
@@ -198,9 +219,11 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.info_outline,
-                      color: DesignSystem.primaryColor,
+                      color: isDarkMode
+                          ? DesignSystem.darkIconColor
+                          : DesignSystem.lightIconColor,
                     ),
                     title: const Text('About'),
                     subtitle: const Text('App information and version'),
@@ -211,9 +234,11 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.privacy_tip_outlined,
-                      color: DesignSystem.primaryColor,
+                      color: isDarkMode
+                          ? DesignSystem.darkIconColor
+                          : DesignSystem.lightIconColor,
                     ),
                     title: const Text('Privacy Policy'),
                     onTap: () {
@@ -222,9 +247,11 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.description_outlined,
-                      color: DesignSystem.primaryColor,
+                      color: isDarkMode
+                          ? DesignSystem.darkIconColor
+                          : DesignSystem.lightIconColor,
                     ),
                     title: const Text('Terms & Conditions'),
                     onTap: () {

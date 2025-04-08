@@ -20,6 +20,7 @@ import 'screens/live_facial_recognition_screen.dart';
 import 'screens/personnel_registration_screen.dart';
 import 'screens/gallery_screen.dart';
 import 'screens/registration_screen.dart';
+import 'screens/profile_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,6 +79,7 @@ class NAFacialApp extends StatelessWidget {
             // Registration screen also uses light theme
             '/register': (context) =>
                 const LightThemeWrapper(child: RegistrationScreen()),
+            '/profile': (context) => const ProfileScreen(),
           },
           builder: (context, child) {
             // Apply a responsive layout wrapper to the entire app
