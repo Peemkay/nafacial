@@ -4,6 +4,7 @@ import '../config/design_system.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
 import '../widgets/grid_background.dart';
+import '../widgets/version_info.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({Key? key}) : super(key: key);
@@ -302,6 +303,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           ),
                         ),
                       ),
+
+                      // Version info
+                      const SizedBox(height: 24),
+                      const VersionInfo(),
                     ],
                   ),
                 ),

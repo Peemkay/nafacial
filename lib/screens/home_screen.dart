@@ -17,6 +17,7 @@ import '../widgets/platform_aware_widgets.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/notification_icon.dart';
 import '../widgets/grid_background.dart';
+import '../widgets/version_info.dart';
 import '../providers/theme_provider.dart';
 import 'facial_verification_screen.dart';
 import 'live_facial_recognition_screen.dart';
@@ -633,6 +634,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // Bottom padding
                 SizedBox(height: DesignSystem.adjustedSpacingSmall),
+
+                // Version info at the bottom
+                const SizedBox(height: 24),
+                const VersionInfo(),
               ],
             ),
           ),
