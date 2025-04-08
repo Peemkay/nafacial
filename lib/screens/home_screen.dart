@@ -327,7 +327,50 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontSize: DesignSystem.adjustedFontSizeSmall,
                             ),
                           ),
-                          if (versionProvider.updateAvailable)
+                          if (versionProvider.isDownloading)
+                            Padding(
+                              padding: EdgeInsets.only(top: 4.0),
+                              child: Column(
+                                children: [
+                                  PlatformText(
+                                    'Downloading update: ${(versionProvider.downloadProgress * 100).toStringAsFixed(0)}%',
+                                    style: TextStyle(
+                                      color: Colors.blue,
+                                      fontSize:
+                                          DesignSystem.adjustedFontSizeSmall,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  SizedBox(
+                                    width: 100,
+                                    child: LinearProgressIndicator(
+                                      value: versionProvider.downloadProgress,
+                                      backgroundColor: Colors.grey[300],
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          DesignSystem.primaryColor),
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.of(context)
+                                          .pushNamed('/settings');
+                                    },
+                                    child: PlatformText(
+                                      'Tap for details',
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                        fontSize:
+                                            DesignSystem.adjustedFontSizeSmall,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else if (versionProvider.updateAvailable)
                             Padding(
                               padding: EdgeInsets.only(top: 4.0),
                               child: GestureDetector(
@@ -343,6 +386,26 @@ class _HomeScreenState extends State<HomeScreen> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
+                              ),
+                            )
+                          else if (!versionProvider.hasInternetConnection)
+                            Padding(
+                              padding: EdgeInsets.only(top: 4.0),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.signal_wifi_off,
+                                      color: Colors.orange, size: 12),
+                                  SizedBox(width: 4),
+                                  PlatformText(
+                                    'No internet connection',
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontSize:
+                                          DesignSystem.adjustedFontSizeSmall,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                         ],

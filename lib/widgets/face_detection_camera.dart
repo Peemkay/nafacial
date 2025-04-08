@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../config/design_system.dart';
+import '../widgets/camera_selection_dialog.dart';
 
 class FaceDetectionCamera extends StatefulWidget {
   final Function(File? image, List<Face>? faces) onFaceDetected;
@@ -151,6 +153,24 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
       widget.onCamerasAvailable!(_cameras!);
     }
 
+    // For desktop and web, show camera selection dialog if multiple cameras are available
+    if ((kIsWeb || DesignSystem.isWindows) && _cameras!.length > 1 && mounted) {
+      CameraDescription? selectedCamera;
+
+      await showCameraSelectionDialog(
+        context: context,
+        cameras: _cameras!,
+        onCameraSelected: (camera) {
+          selectedCamera = camera;
+        },
+      );
+
+      if (selectedCamera != null) {
+        await _setupCameraController(selectedCamera!);
+        return;
+      }
+    }
+
     // Use the provided camera, front camera, or first available camera
     final selectedCamera = widget.initialCamera ??
         _cameras!.firstWhere(
@@ -158,13 +178,19 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
           orElse: () => _cameras!.first,
         );
 
+    await _setupCameraController(selectedCamera);
+  }
+
+  Future<void> _setupCameraController(CameraDescription camera) async {
     _cameraController = CameraController(
-      selectedCamera,
+      camera,
       ResolutionPreset.medium,
       enableAudio: false,
-      imageFormatGroup: Platform.isAndroid
-          ? ImageFormatGroup.yuv420
-          : ImageFormatGroup.bgra8888,
+      imageFormatGroup: kIsWeb
+          ? ImageFormatGroup.jpeg
+          : Platform.isAndroid
+              ? ImageFormatGroup.yuv420
+              : ImageFormatGroup.bgra8888,
     );
 
     await _cameraController!.initialize();

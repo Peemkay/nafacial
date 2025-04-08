@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:camera/camera.dart';
 import '../config/design_system.dart';
+import '../widgets/camera_selection_dialog.dart';
 
 class WebcamAccess extends StatefulWidget {
   final Function(File) onImageCaptured;
@@ -68,7 +70,22 @@ class _WebcamAccessState extends State<WebcamAccess>
       }
       print('===========================\n\n');
 
-      // Try to find an external camera first
+      // For desktop and web, show camera selection dialog
+      if ((kIsWeb || DesignSystem.isWindows) && _cameras!.length > 1) {
+        await showCameraSelectionDialog(
+          context: context,
+          cameras: _cameras!,
+          onCameraSelected: (camera) {
+            final index = _cameras!.indexOf(camera);
+            if (index >= 0) {
+              _setupCamera(index);
+            }
+          },
+        );
+        return;
+      }
+
+      // Try to find an external camera first for mobile
       int cameraToUse = _selectedCameraIndex;
       for (int i = 0; i < _cameras!.length; i++) {
         if (_cameras![i].lensDirection == CameraLensDirection.external) {
@@ -104,9 +121,11 @@ class _WebcamAccessState extends State<WebcamAccess>
       camera,
       ResolutionPreset.medium, // Use medium instead of high
       enableAudio: false,
-      imageFormatGroup: Platform.isAndroid
-          ? ImageFormatGroup.yuv420
-          : ImageFormatGroup.bgra8888,
+      imageFormatGroup: kIsWeb
+          ? ImageFormatGroup.jpeg
+          : Platform.isAndroid
+              ? ImageFormatGroup.yuv420
+              : ImageFormatGroup.bgra8888,
     );
 
     try {
@@ -148,7 +167,14 @@ class _WebcamAccessState extends State<WebcamAccess>
       final XFile photo = await _cameraController!.takePicture();
 
       if (mounted) {
-        widget.onImageCaptured(File(photo.path));
+        if (kIsWeb) {
+          // For web, we need to handle the XFile differently
+          final bytes = await photo.readAsBytes();
+          final tempFile = File.fromRawPath(bytes);
+          widget.onImageCaptured(tempFile);
+        } else {
+          widget.onImageCaptured(File(photo.path));
+        }
       }
     } catch (e) {
       _showError('Error capturing image: $e');

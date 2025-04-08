@@ -340,89 +340,170 @@ class SettingsScreen extends StatelessWidget {
       BuildContext context, VersionProvider versionProvider) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Update Available'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'A new version (${versionProvider.latestVersion}) is available. You are currently using version ${versionProvider.currentVersion}.',
-            ),
-            const SizedBox(height: 16),
-            if (versionProvider.updateNotes != null) ...[
-              const Text(
-                'What\'s new:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(4),
+      builder: (context) => PopScope(
+        canPop: !versionProvider.isDownloading,
+        child: AlertDialog(
+          title: const Text('Update Available'),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!versionProvider.hasInternetConnection) ...[
+                      const Row(
+                        children: [
+                          Icon(Icons.signal_wifi_off, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text(
+                            'No internet connection',
+                            style: TextStyle(
+                                color: Colors.red, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    Text(
+                      'A new version (${versionProvider.latestVersion}) is available.',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text('Current version: ${versionProvider.currentVersion}'),
+                    if (versionProvider.updateDate != null) ...[
+                      const SizedBox(height: 4),
+                      Text('Release date: ${versionProvider.updateDate}'),
+                    ],
+                    if (versionProvider.updateSize != null) ...[
+                      const SizedBox(height: 4),
+                      Text('Size: ${versionProvider.updateSize}'),
+                    ],
+                    const SizedBox(height: 16),
+                    if (versionProvider.updateNotes != null) ...[
+                      const Text(
+                        'What\'s new:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(versionProvider.updateNotes!),
+                      ),
+                    ],
+                    if (versionProvider.isDownloading) ...[
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Downloading update...',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(
+                        value: versionProvider.downloadProgress,
+                        backgroundColor: Colors.grey[300],
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                            DesignSystem.primaryColor),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                          '${(versionProvider.downloadProgress * 100).toStringAsFixed(0)}%'),
+                    ],
+                  ],
                 ),
-                child: Text(versionProvider.updateNotes!),
+              );
+            },
+          ),
+          actions: [
+            if (!versionProvider.isDownloading) ...[
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('LATER'),
+              ),
+              ElevatedButton(
+                onPressed: versionProvider.hasInternetConnection
+                    ? () async {
+                        // Start download
+                        final success =
+                            await versionProvider.downloadAndInstallUpdate();
+
+                        if (success && context.mounted) {
+                          Navigator.pop(context);
+
+                          // Show success dialog
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Update Downloaded'),
+                              content: const Text(
+                                  'The update has been downloaded successfully. Install now?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('LATER'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    Navigator.pop(context);
+
+                                    // Launch URL if available
+                                    if (versionProvider.updateUrl != null) {
+                                      try {
+                                        final Uri url = Uri.parse(
+                                            versionProvider.updateUrl!);
+                                        await launchUrl(url,
+                                            mode:
+                                                LaunchMode.externalApplication);
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                  'Error launching update URL: $e'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: DesignSystem.primaryColor,
+                                  ),
+                                  child: const Text('INSTALL NOW'),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DesignSystem.primaryColor,
+                  disabledBackgroundColor: Colors.grey,
+                ),
+                child: const Text('UPDATE NOW'),
+              ),
+            ] else ...[
+              TextButton(
+                onPressed: () {
+                  versionProvider.cancelDownload();
+                },
+                child: const Text('CANCEL'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('MINIMIZE'),
               ),
             ],
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('LATER'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-
-              // Show downloading dialog
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) => const AlertDialog(
-                  title: Text('Downloading Update'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 16),
-                      Text(
-                          'Please wait while the update is being downloaded...'),
-                    ],
-                  ),
-                ),
-              );
-
-              // Simulate download delay
-              await Future.delayed(const Duration(seconds: 2));
-
-              // Close downloading dialog
-              if (context.mounted) Navigator.pop(context);
-
-              // Launch URL if available
-              if (versionProvider.updateUrl != null && context.mounted) {
-                try {
-                  final Uri url = Uri.parse(versionProvider.updateUrl!);
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error launching update URL: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: DesignSystem.primaryColor,
-            ),
-            child: const Text('UPDATE NOW'),
-          ),
-        ],
       ),
     );
   }
