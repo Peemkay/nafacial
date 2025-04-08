@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="facial_verification"
+        android:enabled="true"
+        android:icon="@drawable/ic_face"
+        android:shortcutShortLabel="@string/shortcut_facial_verification_short"
+        android:shortcutLongLabel="@string/shortcut_facial_verification_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.example.nafacial"
+            android:targetClass="com.example.nafacial.MainActivity">
+            <extra android:name="route" android:value="facial_verification" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    
+    <shortcut
+        android:shortcutId="live_recognition"
+        android:enabled="true"
+        android:icon="@drawable/ic_camera"
+        android:shortcutShortLabel="@string/shortcut_live_recognition_short"
+        android:shortcutLongLabel="@string/shortcut_live_recognition_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.example.nafacial"
+            android:targetClass="com.example.nafacial.MainActivity">
+            <extra android:name="route" android:value="live_recognition" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    
+    <shortcut
+        android:shortcutId="personnel_database"
+        android:enabled="true"
+        android:icon="@drawable/ic_people"
+        android:shortcutShortLabel="@string/shortcut_personnel_database_short"
+        android:shortcutLongLabel="@string/shortcut_personnel_database_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.example.nafacial"
+            android:targetClass="com.example.nafacial.MainActivity">
+            <extra android:name="route" android:value="personnel_database" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    
+    <shortcut
+        android:shortcutId="settings"
+        android:enabled="true"
+        android:icon="@drawable/ic_settings"
+        android:shortcutShortLabel="@string/shortcut_settings_short"
+        android:shortcutLongLabel="@string/shortcut_settings_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.example.nafacial"
+            android:targetClass="com.example.nafacial.MainActivity">
+            <extra android:name="route" android:value="settings" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+</shortcuts>

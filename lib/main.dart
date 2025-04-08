@@ -9,6 +9,7 @@ import 'providers/quick_actions_provider.dart';
 import 'providers/access_log_provider.dart';
 import 'providers/version_provider.dart';
 import 'services/notification_service.dart';
+import 'services/app_shortcuts_service.dart';
 import 'widgets/banner_notification.dart';
 import 'widgets/light_theme_wrapper.dart';
 import 'screens/splash_screen.dart';
@@ -22,6 +23,9 @@ import 'screens/gallery_screen.dart';
 import 'screens/registration_screen.dart';
 import 'screens/profile_screen.dart';
 
+// Global navigator key for accessing navigator from anywhere
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   // Allow all orientations for responsive design
@@ -34,8 +38,56 @@ void main() {
   runApp(const NAFacialApp());
 }
 
-class NAFacialApp extends StatelessWidget {
+// Method channel for handling app shortcuts
+const MethodChannel _shortcutsChannel =
+    MethodChannel('com.example.nafacial/shortcuts');
+
+class NAFacialApp extends StatefulWidget {
   const NAFacialApp({super.key});
+
+  @override
+  State<NAFacialApp> createState() => _NAFacialAppState();
+}
+
+class _NAFacialAppState extends State<NAFacialApp> {
+  final AppShortcutsService _shortcutsService = AppShortcutsService();
+  String? _initialRoute;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeShortcuts();
+  }
+
+  Future<void> _initializeShortcuts() async {
+    // Set up method channel listener for navigation
+    _shortcutsChannel.setMethodCallHandler((call) async {
+      if (call.method == 'navigateTo') {
+        final route = call.arguments as String;
+        _navigateToRoute(route);
+      }
+    });
+
+    // Check for initial route from shortcuts
+    try {
+      final initialRoute =
+          await _shortcutsChannel.invokeMethod<String>('getInitialRoute');
+      if (initialRoute != null && mounted) {
+        setState(() {
+          _initialRoute = initialRoute;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error getting initial route: $e');
+    }
+  }
+
+  void _navigateToRoute(String route) {
+    // Use a navigator key to access the navigator from anywhere
+    if (navigatorKey.currentState != null) {
+      navigatorKey.currentState!.pushNamed('/$route');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +112,8 @@ class NAFacialApp extends StatelessWidget {
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
           themeMode: themeProvider.themeMode,
-          initialRoute: '/splash',
+          navigatorKey: navigatorKey,
+          initialRoute: _initialRoute ?? '/splash',
           routes: {
             // Always use light theme for splash, login, and registration screens
             '/splash': (context) =>
@@ -89,7 +142,15 @@ class NAFacialApp extends StatelessWidget {
                 data: MediaQuery.of(context).copyWith(
                   textScaler: const TextScaler.linear(1.0),
                 ),
-                child: child!,
+                child: Builder(
+                  builder: (context) {
+                    // Initialize app shortcuts
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _shortcutsService.initialize(context);
+                    });
+                    return child!;
+                  },
+                ),
               ),
             );
           },

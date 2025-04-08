@@ -21,7 +21,7 @@ class QuickAction {
 
 class QuickActionsProvider with ChangeNotifier {
   static const String _visibilityPreferenceKey = 'quick_actions_visibility';
-  
+
   List<QuickAction> _quickActions = [
     QuickAction(
       id: 'facial_verification',
@@ -73,20 +73,20 @@ class QuickActionsProvider with ChangeNotifier {
       route: '/gallery',
     ),
   ];
-  
+
   List<QuickAction> get quickActions => _quickActions;
-  
-  List<QuickAction> get visibleQuickActions => 
+
+  List<QuickAction> get visibleQuickActions =>
       _quickActions.where((action) => action.isVisible).toList();
-  
+
   QuickActionsProvider() {
     _loadVisibilityPreferences();
   }
-  
+
   Future<void> _loadVisibilityPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     final savedVisibility = prefs.getStringList(_visibilityPreferenceKey);
-    
+
     if (savedVisibility != null) {
       // Create a map of visibility settings
       final visibilityMap = Map.fromIterable(
@@ -94,55 +94,73 @@ class QuickActionsProvider with ChangeNotifier {
         key: (item) => item.split(':')[0],
         value: (item) => item.split(':')[1] == 'true',
       );
-      
+
       // Update quick actions visibility
       for (var action in _quickActions) {
         if (visibilityMap.containsKey(action.id)) {
           action.isVisible = visibilityMap[action.id]!;
         }
       }
-      
+
       notifyListeners();
     }
   }
-  
+
   Future<void> toggleActionVisibility(String actionId) async {
-    final actionIndex = _quickActions.indexWhere((action) => action.id == actionId);
-    
+    final actionIndex =
+        _quickActions.indexWhere((action) => action.id == actionId);
+
     if (actionIndex != -1) {
-      _quickActions[actionIndex].isVisible = !_quickActions[actionIndex].isVisible;
+      _quickActions[actionIndex].isVisible =
+          !_quickActions[actionIndex].isVisible;
       await _saveVisibilityPreferences();
       notifyListeners();
+
+      // Notify app shortcuts service to update shortcuts
+      _notifyShortcutsChanged();
     }
   }
-  
+
   Future<void> setActionVisibility(String actionId, bool isVisible) async {
-    final actionIndex = _quickActions.indexWhere((action) => action.id == actionId);
-    
+    final actionIndex =
+        _quickActions.indexWhere((action) => action.id == actionId);
+
     if (actionIndex != -1) {
       _quickActions[actionIndex].isVisible = isVisible;
       await _saveVisibilityPreferences();
       notifyListeners();
+
+      // Notify app shortcuts service to update shortcuts
+      _notifyShortcutsChanged();
     }
   }
-  
+
   Future<void> resetToDefaults() async {
     for (var action in _quickActions) {
       action.isVisible = true;
     }
-    
+
     await _saveVisibilityPreferences();
     notifyListeners();
+
+    // Notify app shortcuts service to update shortcuts
+    _notifyShortcutsChanged();
   }
-  
+
+  // Notify that shortcuts have changed
+  void _notifyShortcutsChanged() {
+    // This will be used by listeners to update app shortcuts
+    // The AppShortcutsService will listen to changes in this provider
+  }
+
   Future<void> _saveVisibilityPreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // Create a list of strings in format "id:visibility"
-    final visibilityList = _quickActions.map(
-      (action) => '${action.id}:${action.isVisible}'
-    ).toList();
-    
+    final visibilityList = _quickActions
+        .map((action) => '${action.id}:${action.isVisible}')
+        .toList();
+
     await prefs.setStringList(_visibilityPreferenceKey, visibilityList);
   }
 }
