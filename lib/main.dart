@@ -10,6 +10,7 @@ import 'providers/access_log_provider.dart';
 import 'providers/version_provider.dart';
 import 'services/notification_service.dart';
 import 'widgets/banner_notification.dart';
+import 'widgets/light_theme_wrapper.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen_new.dart' as home;
@@ -18,6 +19,7 @@ import 'screens/settings_screen.dart';
 import 'screens/live_facial_recognition_screen.dart';
 import 'screens/personnel_registration_screen.dart';
 import 'screens/gallery_screen.dart';
+import 'screens/registration_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,8 +61,11 @@ class NAFacialApp extends StatelessWidget {
           themeMode: themeProvider.themeMode,
           initialRoute: '/splash',
           routes: {
-            '/splash': (context) => const SplashScreen(),
-            '/login': (context) => const LoginScreen(),
+            // Always use light theme for splash, login, and registration screens
+            '/splash': (context) =>
+                const LightThemeWrapper(child: SplashScreen()),
+            '/login': (context) =>
+                const LightThemeWrapper(child: LoginScreen()),
             '/home': (context) => const home.HomeScreen(),
             '/facial_verification': (context) =>
                 const FacialVerificationScreen(),
@@ -68,8 +73,11 @@ class NAFacialApp extends StatelessWidget {
             '/live_recognition': (context) =>
                 const LiveFacialRecognitionScreen(),
             '/register_personnel': (context) =>
-                const PersonnelRegistrationScreen(),
+                const LightThemeWrapper(child: PersonnelRegistrationScreen()),
             '/gallery': (context) => const GalleryScreen(),
+            // Registration screen also uses light theme
+            '/register': (context) =>
+                const LightThemeWrapper(child: RegistrationScreen()),
           },
           builder: (context, child) {
             // Apply a responsive layout wrapper to the entire app
