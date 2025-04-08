@@ -113,6 +113,16 @@ class PersonnelService {
     }
   }
 
+  // Get personnel by ID
+  Future<Personnel?> getPersonnelById(String id) async {
+    final allPersonnel = await getAllPersonnel();
+    try {
+      return allPersonnel.firstWhere((p) => p.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+
   // Search personnel by name, rank, or unit
   Future<List<Personnel>> searchPersonnel(String query) async {
     if (query.isEmpty) {

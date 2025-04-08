@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:local_auth/error_codes.dart' as auth_error;
@@ -78,6 +78,15 @@ class AuthService {
 
     final List<dynamic> usersList = jsonDecode(usersJson);
     return usersList.map((u) => User.fromMap(u)).toList();
+  }
+
+  // Generate a token
+  String _generateToken(String userId) {
+    final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+    final data = '$userId:$timestamp';
+    final bytes = utf8.encode(data);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
   }
 
   // Save users
@@ -169,7 +178,26 @@ class AuthService {
       return null;
     }
 
-    return User.fromMap(jsonDecode(userJson));
+    try {
+      final userMap = jsonDecode(userJson);
+      final user = User.fromMap(userMap);
+
+      // Generate a token if not present
+      if (user.token == null) {
+        final token = _generateToken(user.id);
+        return user.copyWith(
+            token: token,
+            armyNumber: user.rank.startsWith('Admin')
+                ? 'ADMIN-${user.id}'
+                : 'N/${user.id}');
+      }
+
+      return user;
+    } catch (e) {
+      // Log error
+      debugPrint('Error getting current user: $e');
+      return null;
+    }
   }
 
   // Check if biometric authentication is available

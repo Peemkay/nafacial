@@ -1,12 +1,21 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
 import '../config/design_system.dart';
 import '../models/personnel_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/personnel_provider.dart';
+import '../providers/quick_actions_provider.dart';
+import '../providers/access_log_provider.dart';
+import '../models/access_log_model.dart';
+import '../providers/version_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
 import '../widgets/custom_drawer.dart';
 import 'facial_verification_screen.dart';
+import 'live_facial_recognition_screen.dart';
+import 'personnel_registration_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -20,11 +29,21 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
-    // Initialize personnel provider
+    // Initialize providers
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final personnelProvider =
           Provider.of<PersonnelProvider>(context, listen: false);
       personnelProvider.initialize();
+
+      // Initialize access log provider
+      final accessLogProvider =
+          Provider.of<AccessLogProvider>(context, listen: false);
+      accessLogProvider.initialize();
+
+      // Initialize version provider
+      final versionProvider =
+          Provider.of<VersionProvider>(context, listen: false);
+      versionProvider.initialize();
     });
   }
 
@@ -199,58 +218,75 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 SizedBox(height: DesignSystem.adjustedSpacingMedium),
 
-                GridView.count(
-                  crossAxisCount:
-                      MediaQuery.of(context).size.width > 600 ? 3 : 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: DesignSystem.adjustedSpacingMedium,
-                  crossAxisSpacing: DesignSystem.adjustedSpacingMedium,
-                  children: [
-                    _buildActionCard(
-                      context,
-                      icon: Icons.face,
-                      title: 'Facial Verification',
-                      color: DesignSystem.primaryColor,
-                      onTap: () {
-                        Navigator.of(context).pushNamed('/facial_verification');
-                      },
-                    ),
-                    _buildActionCard(
-                      context,
-                      icon: Icons.people,
-                      title: 'Personnel Database',
-                      color: DesignSystem.secondaryColor,
-                      onTap: () {
-                        // Navigate to facial verification screen with personnel database tab
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const FacialVerificationScreen(
-                                    initialTabIndex: 4),
-                          ),
+                Consumer<QuickActionsProvider>(
+                  builder: (context, quickActionsProvider, _) {
+                    final visibleActions =
+                        quickActionsProvider.visibleQuickActions;
+
+                    return GridView.count(
+                      crossAxisCount:
+                          MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: DesignSystem.adjustedSpacingMedium,
+                      crossAxisSpacing: DesignSystem.adjustedSpacingMedium,
+                      children: visibleActions.map((action) {
+                        // Map the action to the appropriate function
+                        VoidCallback onTap;
+                        switch (action.id) {
+                          case 'facial_verification':
+                            onTap = () => Navigator.of(context)
+                                .pushNamed('/facial_verification');
+                            break;
+                          case 'personnel_database':
+                            onTap = () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const FacialVerificationScreen(
+                                            initialTabIndex: 4),
+                                  ),
+                                );
+                            break;
+                          case 'access_logs':
+                            onTap = () => _showAccessLogsDialog(context);
+                            break;
+                          case 'settings':
+                            onTap = () =>
+                                Navigator.of(context).pushNamed('/settings');
+                            break;
+                          case 'live_recognition':
+                            onTap = () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const LiveFacialRecognitionScreen(),
+                                  ),
+                                );
+                            break;
+                          case 'register_personnel':
+                            onTap = () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const PersonnelRegistrationScreen(),
+                                  ),
+                                );
+                            break;
+                          case 'gallery':
+                            onTap = () => _openGallery(context);
+                            break;
+                          default:
+                            onTap = () {};
+                        }
+
+                        return _buildActionCard(
+                          context,
+                          icon: action.icon,
+                          title: action.title,
+                          color: action.color,
+                          onTap: onTap,
                         );
-                      },
-                    ),
-                    _buildActionCard(
-                      context,
-                      icon: Icons.history,
-                      title: 'Access Logs',
-                      color: Colors.orange,
-                      onTap: () {
-                        // Navigate to access logs screen
-                      },
-                    ),
-                    _buildActionCard(
-                      context,
-                      icon: Icons.settings,
-                      title: 'System Settings',
-                      color: Colors.grey.shade700,
-                      onTap: () {
-                        // Navigate to settings screen
-                      },
-                    ),
-                  ],
+                      }).toList(),
+                    );
+                  },
                 ),
 
                 SizedBox(height: DesignSystem.adjustedSpacingLarge),
@@ -276,6 +312,47 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+
+                // Version display
+                SizedBox(height: DesignSystem.adjustedSpacingMedium),
+                Consumer<VersionProvider>(
+                  builder: (context, versionProvider, _) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          PlatformText(
+                            'Version ${versionProvider.currentVersion}',
+                            style: TextStyle(
+                              color: DesignSystem.textSecondaryColor,
+                              fontSize: DesignSystem.adjustedFontSizeSmall,
+                            ),
+                          ),
+                          if (versionProvider.updateAvailable)
+                            Padding(
+                              padding: EdgeInsets.only(top: 4.0),
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).pushNamed('/settings');
+                                },
+                                child: PlatformText(
+                                  'Update available! Tap to update.',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontSize:
+                                        DesignSystem.adjustedFontSizeSmall,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+
+                // Bottom padding
+                SizedBox(height: DesignSystem.adjustedSpacingSmall),
               ],
             ),
           ),
@@ -484,6 +561,350 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // Open gallery for image selection
+  void _openGallery(BuildContext context) {
+    final imagePicker = ImagePicker();
+
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(DesignSystem.borderRadiusMedium),
+        ),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.photo_library,
+                  color: DesignSystem.primaryColor,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Select Image Source',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const Divider(),
+            ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: DesignSystem.primaryColor,
+                child: Icon(Icons.camera_alt, color: Colors.white),
+              ),
+              title: const Text('Camera'),
+              subtitle: const Text('Take a new photo'),
+              onTap: () async {
+                Navigator.pop(context);
+                final XFile? photo = await imagePicker.pickImage(
+                  source: ImageSource.camera,
+                  preferredCameraDevice: CameraDevice.front,
+                );
+
+                if (photo != null && context.mounted) {
+                  // Navigate to facial verification with the selected image
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FacialVerificationScreen(
+                        initialImage: File(photo.path),
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: DesignSystem.secondaryColor,
+                child: Icon(Icons.photo_library, color: Colors.white),
+              ),
+              title: const Text('Gallery'),
+              subtitle: const Text('Choose from your photos'),
+              onTap: () async {
+                Navigator.pop(context);
+                final XFile? image = await imagePicker.pickImage(
+                  source: ImageSource.gallery,
+                );
+
+                if (image != null && context.mounted) {
+                  // Navigate to facial verification with the selected image
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FacialVerificationScreen(
+                        initialImage: File(image.path),
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Show access logs dialog
+  void _showAccessLogsDialog(BuildContext context) {
+    // Get access logs from provider
+    final accessLogProvider =
+        Provider.of<AccessLogProvider>(context, listen: false);
+
+    try {
+      final accessLogs = accessLogProvider.getRecentAccessLogs(limit: 10);
+
+      // If no logs exist, create some sample logs for demonstration
+      if (accessLogs.isEmpty) {
+        // Create sample access logs
+        final sampleLogs = [
+          AccessLog(
+            id: '1',
+            personnelName: 'Maj. John Smith',
+            personnelArmyNumber: 'N/123456',
+            timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
+            status: AccessLogStatus.verified,
+            confidence: 0.92,
+            adminName: 'Admin User',
+            adminArmyNumber: 'ADMIN-1',
+          ),
+          AccessLog(
+            id: '2',
+            personnelName: 'Capt. Sarah Johnson',
+            personnelArmyNumber: 'N/789012',
+            timestamp: DateTime.now().subtract(const Duration(hours: 1)),
+            status: AccessLogStatus.verified,
+            confidence: 0.85,
+            adminName: 'Admin User',
+            adminArmyNumber: 'ADMIN-1',
+          ),
+          AccessLog(
+            id: '3',
+            personnelName: 'Lt. Michael Brown',
+            personnelArmyNumber: 'N/345678',
+            timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+            status: AccessLogStatus.unverified,
+            confidence: 0.62,
+            adminName: 'Admin User',
+            adminArmyNumber: 'ADMIN-1',
+          ),
+          AccessLog(
+            id: '4',
+            personnelName: 'Unknown Person',
+            personnelArmyNumber: null,
+            timestamp: DateTime.now().subtract(const Duration(hours: 3)),
+            status: AccessLogStatus.notFound,
+            confidence: 0.0,
+            adminName: 'Admin User',
+            adminArmyNumber: 'ADMIN-1',
+          ),
+        ];
+
+        // Add sample logs to provider
+        for (final log in sampleLogs) {
+          accessLogProvider.addAccessLog(
+            personnelId: log.id,
+            personnelName: log.personnelName,
+            personnelArmyNumber: log.personnelArmyNumber,
+            status: log.status,
+            confidence: log.confidence,
+          );
+        }
+
+        // Get updated logs
+        accessLogs.addAll(sampleLogs);
+      }
+
+      _displayAccessLogsDialog(context, accessLogs);
+    } catch (e) {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading access logs: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Display access logs dialog
+  void _displayAccessLogsDialog(
+      BuildContext context, List<AccessLog> accessLogs) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(DesignSystem.borderRadiusMedium),
+        ),
+        child: Container(
+          width: double.maxFinite,
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.history,
+                    color: DesignSystem.primaryColor,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Recent Access Logs',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const Divider(),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 400),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: accessLogs.length,
+                  itemBuilder: (context, index) {
+                    final log = accessLogs[index];
+                    final dateFormat = DateFormat('MMM d, yyyy HH:mm');
+                    final formattedDate = dateFormat.format(log.timestamp);
+
+                    // Determine status color
+                    Color statusColor;
+                    if (log.status == AccessLogStatus.verified) {
+                      statusColor = Colors.green;
+                    } else if (log.status == AccessLogStatus.unverified) {
+                      statusColor = Colors.orange;
+                    } else {
+                      statusColor = Colors.red;
+                    }
+
+                    // Get status text
+                    String statusText;
+                    switch (log.status) {
+                      case AccessLogStatus.verified:
+                        statusText = 'Verified';
+                        break;
+                      case AccessLogStatus.unverified:
+                        statusText = 'Unverified';
+                        break;
+                      case AccessLogStatus.notFound:
+                        statusText = 'Not Found';
+                        break;
+                      default:
+                        statusText = 'Unknown';
+                    }
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor:
+                              DesignSystem.primaryColor.withOpacity(0.1),
+                          child: Icon(
+                            log.status == AccessLogStatus.verified
+                                ? Icons.check_circle
+                                : log.status == AccessLogStatus.unverified
+                                    ? Icons.warning
+                                    : Icons.error,
+                            color: statusColor,
+                          ),
+                        ),
+                        title: Text(log.personnelName ?? 'Unknown Person'),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(log.personnelArmyNumber ?? 'N/A'),
+                            Text(
+                              formattedDate,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            if (log.adminName != null)
+                              Text(
+                                'By: ${log.adminName} (${log.adminArmyNumber ?? 'N/A'})',
+                                style: const TextStyle(
+                                    fontSize: 10, fontStyle: FontStyle.italic),
+                              ),
+                          ],
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              statusText,
+                              style: TextStyle(
+                                color: statusColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (log.confidence > 0)
+                              Text(
+                                '${(log.confidence * 100).toStringAsFixed(0)}%',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: log.confidence > 0.8
+                                      ? Colors.green
+                                      : log.confidence > 0.7
+                                          ? Colors.orange
+                                          : Colors.red,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('CLOSE'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      // View all logs
+                      Navigator.pop(context);
+                      // TODO: Navigate to full logs screen
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: DesignSystem.primaryColor,
+                    ),
+                    child: const Text('VIEW ALL'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -2,19 +2,30 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:camera/camera.dart';
 import '../config/design_system.dart';
 import '../models/personnel_model.dart';
 import '../providers/personnel_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
 import '../widgets/custom_drawer.dart';
+import '../widgets/fancy_bottom_nav_bar.dart';
+import '../widgets/camera_selection_dialog.dart';
+import '../services/facial_recognition_service.dart';
 import 'personnel_registration_screen.dart';
 import 'personnel_edit_screen.dart';
+import 'live_facial_recognition_screen.dart';
+import 'personnel_identification_result_screen.dart';
+import 'webcam_capture_screen.dart';
 
 class FacialVerificationScreen extends StatefulWidget {
   final int initialTabIndex;
+  final File? initialImage;
 
-  const FacialVerificationScreen({Key? key, this.initialTabIndex = 0})
-      : super(key: key);
+  const FacialVerificationScreen({
+    Key? key,
+    this.initialTabIndex = 0,
+    this.initialImage,
+  }) : super(key: key);
 
   @override
   State<FacialVerificationScreen> createState() =>
@@ -35,6 +46,16 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
     // Set initial tab index
     _currentIndex = widget.initialTabIndex;
 
+    // Set initial image if provided
+    if (widget.initialImage != null) {
+      _selectedImage = widget.initialImage;
+      // Process the image for facial verification
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _identifyPersonnelFromImage(widget.initialImage!);
+        _processImageForVerification();
+      });
+    }
+
     // Initialize personnel provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final personnelProvider =
@@ -52,19 +73,59 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
 
   // Take a photo using the camera
   Future<void> _takePhoto() async {
-    final XFile? photo = await _imagePicker.pickImage(
-      source: ImageSource.camera,
-      preferredCameraDevice: CameraDevice.front,
-      imageQuality: 80,
-    );
+    try {
+      // Get available cameras
+      final cameras = await availableCameras();
 
-    if (photo != null) {
-      setState(() {
-        _selectedImage = File(photo.path);
-      });
+      if (cameras.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No cameras available'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
-      // Process the image for facial verification
-      _processImageForVerification();
+      // Show camera selection dialog
+      if (mounted) {
+        await showCameraSelectionDialog(
+          context: context,
+          cameras: cameras,
+          onCameraSelected: (camera) async {
+            // Use the selected camera
+            final XFile? photo = await _imagePicker.pickImage(
+              source: ImageSource.camera,
+              preferredCameraDevice:
+                  camera.lensDirection == CameraLensDirection.front
+                      ? CameraDevice.front
+                      : CameraDevice.rear,
+              imageQuality: 80,
+            );
+
+            if (photo != null && mounted) {
+              setState(() {
+                _selectedImage = File(photo.path);
+              });
+
+              // Process the image for facial verification
+              _identifyPersonnelFromImage(File(photo.path));
+              _processImageForVerification();
+            }
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error accessing camera: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -81,7 +142,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
       });
 
       // Process the image for facial verification
-      _processImageForVerification();
+      _identifyPersonnelFromImage(File(image.path));
     }
   }
 
@@ -99,26 +160,73 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
 
   // Process image for facial verification
   void _processImageForVerification() {
-    // In a real app, this would use a facial recognition API
-    // For now, we'll just show a success message
+    // This is kept for backward compatibility
+    // The actual processing is now done in _identifyPersonnelFromImage
+  }
 
-    if (_selectedImage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Facial verification in progress...'),
-          backgroundColor: Colors.blue,
-        ),
+  // Identify personnel from image using facial recognition
+  Future<void> _identifyPersonnelFromImage(File imageFile) async {
+    final personnelProvider =
+        Provider.of<PersonnelProvider>(context, listen: false);
+    final facialRecognitionService = FacialRecognitionService();
+
+    // Show loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Processing facial recognition...'),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    try {
+      // Identify personnel from image
+      final result = await facialRecognitionService.identifyPersonnel(
+        imageFile,
+        personnelProvider.allPersonnel,
       );
 
-      // Simulate processing delay
-      Future.delayed(const Duration(seconds: 2), () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Facial verification successful!'),
-            backgroundColor: Colors.green,
+      // Extract personnel and confidence from result
+      final Personnel? identifiedPersonnel =
+          result != null ? result['personnel'] as Personnel : null;
+      final double confidence =
+          result != null ? result['confidence'] as double : 0.0;
+
+      // Save image with metadata
+      final savedImagePath =
+          await facialRecognitionService.saveImageWithMetadata(
+        imageFile,
+        identifiedPersonnel,
+        {
+          'captureMethod': 'camera',
+          'captureTime': DateTime.now().toIso8601String(),
+          'deviceInfo': 'NAFacial App',
+          'confidence': confidence.toString(),
+        },
+      );
+
+      if (mounted) {
+        // Navigate to identification result screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PersonnelIdentificationResultScreen(
+              capturedImage: imageFile,
+              identifiedPersonnel: identifiedPersonnel,
+              savedImagePath: savedImagePath,
+            ),
           ),
         );
-      });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -466,6 +574,21 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
             isFullWidth: false,
           ),
           SizedBox(height: DesignSystem.adjustedSpacingMedium),
+          PlatformButton(
+            text: 'USE EXTERNAL CAMERA',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const WebcamCaptureScreen(),
+                ),
+              );
+            },
+            icon: Icons.videocam,
+            buttonType: PlatformButtonType.secondary,
+            isFullWidth: false,
+          ),
+          SizedBox(height: DesignSystem.adjustedSpacingMedium),
           PlatformText(
             'Position the face in the center of the frame',
             style: TextStyle(
@@ -621,6 +744,61 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // Build live recognition tab
+  Widget _buildLiveRecognitionTab() {
+    return GestureDetector(
+      onTap: () {
+        // Navigate to the live facial recognition screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const LiveFacialRecognitionScreen(),
+          ),
+        );
+      },
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                borderRadius:
+                    BorderRadius.circular(DesignSystem.borderRadiusMedium),
+                color: DesignSystem.primaryColor.withOpacity(0.1),
+              ),
+              child: Icon(
+                Icons.face_retouching_natural,
+                size: 80,
+                color: DesignSystem.primaryColor,
+              ),
+            ),
+            SizedBox(height: DesignSystem.adjustedSpacingLarge),
+            PlatformButton(
+              text: 'START LIVE RECOGNITION',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LiveFacialRecognitionScreen(),
+                  ),
+                );
+              },
+              icon: Icons.face_retouching_natural,
+              isFullWidth: false,
+            ),
+            SizedBox(height: DesignSystem.adjustedSpacingMedium),
+            PlatformText(
+              'Real-time facial recognition with advanced sensitivity controls',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -955,40 +1133,49 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
             _buildPhotoVerificationTab(),
             _buildVideoVerificationTab(),
             _buildArmyNumberVerificationTab(),
+            _buildLiveRecognitionTab(),
             _buildPersonnelDatabaseTab(),
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: FancyBottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
-        type: BottomNavigationBarType.fixed,
         backgroundColor: DesignSystem.primaryColor,
-        selectedItemColor: DesignSystem.accentColor,
-        unselectedItemColor: Colors.white.withOpacity(0.7),
+        activeColor: DesignSystem.accentColor,
+        inactiveColor: Colors.white.withAlpha(180),
+        height: 75.0,
+        iconSize: 22.0,
+        activeIconSize: 28.0,
+        fontSize: 11.0,
+        activeFontSize: 13.0,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt),
+          FancyBottomNavItem(
+            icon: Icons.camera_alt,
             label: 'Camera',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.photo),
+          FancyBottomNavItem(
+            icon: Icons.photo,
             label: 'Photo',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.videocam),
+          FancyBottomNavItem(
+            icon: Icons.videocam,
             label: 'Video',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.numbers),
+          FancyBottomNavItem(
+            icon: Icons.numbers,
             label: 'Army No.',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
+          FancyBottomNavItem(
+            icon: Icons.face_retouching_natural,
+            label: 'Live Scan',
+          ),
+          FancyBottomNavItem(
+            icon: Icons.people,
             label: 'Database',
           ),
         ],

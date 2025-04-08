@@ -20,6 +20,25 @@ enum ServiceStatus {
   dismissed,
 }
 
+extension ServiceStatusExtension on ServiceStatus {
+  String get displayName {
+    switch (this) {
+      case ServiceStatus.active:
+        return 'Active';
+      case ServiceStatus.retired:
+        return 'Retired';
+      case ServiceStatus.resigned:
+        return 'Resigned';
+      case ServiceStatus.awol:
+        return 'AWOL';
+      case ServiceStatus.deserted:
+        return 'Deserted';
+      case ServiceStatus.dismissed:
+        return 'Dismissed';
+    }
+  }
+}
+
 enum RankType {
   officer,
   soldier,
@@ -474,6 +493,95 @@ class Personnel {
       notes: notes ?? this.notes,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       enlistmentDate: enlistmentDate ?? this.enlistmentDate,
+    );
+  }
+
+  // Convert Personnel to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'armyNumber': armyNumber,
+      'fullName': fullName,
+      'rank': rank.toString().split('.').last,
+      'unit': unit,
+      'corps': corps.toString().split('.').last,
+      'category': category.toString().split('.').last,
+      'photoUrl': photoUrl,
+      'status': status.toString().split('.').last,
+      'serviceStatus': serviceStatus.toString().split('.').last,
+      'dateRegistered': dateRegistered.toIso8601String(),
+      'lastVerified': lastVerified?.toIso8601String(),
+      'notes': notes,
+      'dateOfBirth': dateOfBirth?.toIso8601String(),
+      'enlistmentDate': enlistmentDate?.toIso8601String(),
+      'yearsOfService': yearsOfService,
+    };
+  }
+
+  // Create Personnel from JSON
+  factory Personnel.fromJson(Map<String, dynamic> json) {
+    return Personnel(
+      id: json['id'],
+      armyNumber: json['armyNumber'],
+      fullName: json['fullName'],
+      rank: _parseRank(json['rank']),
+      unit: json['unit'],
+      corps: _parseCorps(json['corps']),
+      category: _parseCategory(json['category']),
+      photoUrl: json['photoUrl'],
+      status: _parseVerificationStatus(json['status']),
+      serviceStatus: _parseServiceStatus(json['serviceStatus']),
+      dateRegistered: DateTime.parse(json['dateRegistered']),
+      lastVerified: json['lastVerified'] != null
+          ? DateTime.parse(json['lastVerified'])
+          : null,
+      notes: json['notes'],
+      dateOfBirth: json['dateOfBirth'] != null
+          ? DateTime.parse(json['dateOfBirth'])
+          : null,
+      enlistmentDate: json['enlistmentDate'] != null
+          ? DateTime.parse(json['enlistmentDate'])
+          : null,
+    );
+  }
+
+  // Parse rank from string
+  static Rank _parseRank(String rankStr) {
+    return Rank.values.firstWhere(
+      (r) => r.toString().split('.').last == rankStr,
+      orElse: () => Rank.private,
+    );
+  }
+
+  // Parse corps from string
+  static Corps _parseCorps(String corpsStr) {
+    return Corps.values.firstWhere(
+      (c) => c.toString().split('.').last == corpsStr,
+      orElse: () => Corps.infantry,
+    );
+  }
+
+  // Parse category from string
+  static PersonnelCategory _parseCategory(String categoryStr) {
+    return PersonnelCategory.values.firstWhere(
+      (c) => c.toString().split('.').last == categoryStr,
+      orElse: () => PersonnelCategory.soldierMale,
+    );
+  }
+
+  // Parse verification status from string
+  static VerificationStatus _parseVerificationStatus(String statusStr) {
+    return VerificationStatus.values.firstWhere(
+      (s) => s.toString().split('.').last == statusStr,
+      orElse: () => VerificationStatus.pending,
+    );
+  }
+
+  // Parse service status from string
+  static ServiceStatus _parseServiceStatus(String statusStr) {
+    return ServiceStatus.values.firstWhere(
+      (s) => s.toString().split('.').last == statusStr,
+      orElse: () => ServiceStatus.active,
     );
   }
 }

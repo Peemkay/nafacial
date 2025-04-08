@@ -7,6 +7,8 @@ class User {
   final String passwordHash;
   final bool isAdmin;
   final bool isBiometricEnabled;
+  final String? token;
+  final String? armyNumber;
 
   User({
     required this.id,
@@ -17,7 +19,12 @@ class User {
     required this.passwordHash,
     this.isAdmin = false,
     this.isBiometricEnabled = false,
+    this.token,
+    this.armyNumber,
   });
+
+  // Get name (alias for fullName)
+  String get name => fullName;
 
   // Convert User object to a Map
   Map<String, dynamic> toMap() {
@@ -30,6 +37,8 @@ class User {
       'passwordHash': passwordHash,
       'isAdmin': isAdmin,
       'isBiometricEnabled': isBiometricEnabled,
+      'token': token,
+      'armyNumber': armyNumber,
     };
   }
 
@@ -44,6 +53,8 @@ class User {
       passwordHash: map['passwordHash'],
       isAdmin: map['isAdmin'] ?? false,
       isBiometricEnabled: map['isBiometricEnabled'] ?? false,
+      token: map['token'],
+      armyNumber: map['armyNumber'],
     );
   }
 
@@ -57,6 +68,8 @@ class User {
     String? passwordHash,
     bool? isAdmin,
     bool? isBiometricEnabled,
+    String? token,
+    String? armyNumber,
   }) {
     return User(
       id: id ?? this.id,
@@ -67,6 +80,8 @@ class User {
       passwordHash: passwordHash ?? this.passwordHash,
       isAdmin: isAdmin ?? this.isAdmin,
       isBiometricEnabled: isBiometricEnabled ?? this.isBiometricEnabled,
+      token: token ?? this.token,
+      armyNumber: armyNumber ?? this.armyNumber,
     );
   }
 }

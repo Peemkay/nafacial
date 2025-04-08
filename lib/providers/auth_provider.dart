@@ -22,6 +22,32 @@ class AuthProvider with ChangeNotifier {
   List<BiometricType> get availableBiometrics => _availableBiometrics;
   bool get isBiometricEnabled => _isBiometricEnabled;
 
+  // Get current user
+  Future<User?> getCurrentUser() async {
+    if (_currentUser != null) {
+      return _currentUser;
+    }
+
+    // Try to get user from local storage
+    try {
+      final user = await _authService.getCurrentUser();
+      if (user != null) {
+        _currentUser = user;
+        notifyListeners();
+      }
+      return user;
+    } catch (e) {
+      _setError(e.toString());
+      return null;
+    }
+  }
+
+  // Get authentication token
+  Future<String?> getToken() async {
+    final user = await getCurrentUser();
+    return user?.token;
+  }
+
   // Initialize the provider
   Future<void> initialize() async {
     _setLoading(true);

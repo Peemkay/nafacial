@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 import '../config/design_system.dart';
 
+/// Button types for platform buttons
+enum PlatformButtonType {
+  primary,
+  secondary,
+  danger,
+  success,
+  warning,
+}
+
 /// A button that adapts to the current platform
 class PlatformButton extends StatelessWidget {
   final String text;
@@ -9,6 +18,7 @@ class PlatformButton extends StatelessWidget {
   final bool isPrimary;
   final bool isFullWidth;
   final bool isSmall;
+  final PlatformButtonType? buttonType;
 
   const PlatformButton({
     Key? key,
@@ -18,21 +28,61 @@ class PlatformButton extends StatelessWidget {
     this.isPrimary = true,
     this.isFullWidth = false,
     this.isSmall = false,
+    this.buttonType,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Determine button style based on platform and properties
-    final buttonStyle = isPrimary
-        ? ElevatedButton.styleFrom(
+    // Determine button style based on button type or primary flag
+    ButtonStyle buttonStyle;
+
+    if (buttonType != null) {
+      switch (buttonType!) {
+        case PlatformButtonType.primary:
+          buttonStyle = ElevatedButton.styleFrom(
             backgroundColor: DesignSystem.primaryColor,
             foregroundColor: Colors.white,
-          )
-        : ElevatedButton.styleFrom(
+          );
+          break;
+        case PlatformButtonType.secondary:
+          buttonStyle = ElevatedButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: DesignSystem.primaryColor,
-            side: BorderSide(color: DesignSystem.primaryColor),
+            side: const BorderSide(color: DesignSystem.primaryColor),
           );
+          break;
+        case PlatformButtonType.danger:
+          buttonStyle = ElevatedButton.styleFrom(
+            backgroundColor: DesignSystem.errorColor,
+            foregroundColor: Colors.white,
+          );
+          break;
+        case PlatformButtonType.success:
+          buttonStyle = ElevatedButton.styleFrom(
+            backgroundColor: DesignSystem.successColor,
+            foregroundColor: Colors.white,
+          );
+          break;
+        case PlatformButtonType.warning:
+          buttonStyle = ElevatedButton.styleFrom(
+            backgroundColor: DesignSystem.warningColor,
+            foregroundColor: Colors.white,
+          );
+          break;
+      }
+    } else {
+      // Use the legacy isPrimary flag for backward compatibility
+      buttonStyle = isPrimary
+          ? ElevatedButton.styleFrom(
+              backgroundColor: DesignSystem.primaryColor,
+              foregroundColor: Colors.white,
+            )
+          : ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: DesignSystem.primaryColor,
+              side: const BorderSide(color: DesignSystem.primaryColor),
+            );
+    }
 
     // Determine button size
     final buttonSize = isSmall

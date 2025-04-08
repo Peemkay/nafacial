@@ -2,9 +2,13 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/personnel_model.dart';
 import '../services/personnel_service.dart';
+import '../services/database_sync_service.dart';
+import '../providers/auth_provider.dart';
 
 class PersonnelProvider with ChangeNotifier {
   final PersonnelService _personnelService = PersonnelService();
+  final DatabaseSyncService _syncService = DatabaseSyncService();
+  final AuthProvider _authProvider = AuthProvider();
 
   List<Personnel> _allPersonnel = [];
   List<Personnel> _filteredPersonnel = [];
@@ -149,8 +153,25 @@ class PersonnelProvider with ChangeNotifier {
         enlistmentDate: enlistmentDate,
       );
 
+      // Log the change with admin information
+      final currentAdmin = await _authProvider.getCurrentUser();
+      if (currentAdmin != null) {
+        await _syncService.addChange(
+          entityType: 'personnel',
+          entityId: newPersonnel.id,
+          changeType: ChangeType.create,
+          data: newPersonnel.toJson(),
+          adminId: currentAdmin.id,
+          adminName: currentAdmin.name,
+          adminArmyNumber: currentAdmin.armyNumber ?? 'UNKNOWN',
+        );
+      }
+
       // Reload personnel list
       await loadAllPersonnel();
+
+      // Trigger database sync
+      _syncService.syncDatabase();
 
       _setError(null);
       return newPersonnel;
@@ -176,8 +197,49 @@ class PersonnelProvider with ChangeNotifier {
         _selectedPersonnel = updatedPersonnel;
       }
 
+      // Log the change with admin information
+      final currentAdmin = await _authProvider.getCurrentUser();
+      if (currentAdmin != null) {
+        // Get the original personnel to track changes
+        final originalPersonnel =
+            await _personnelService.getPersonnelById(personnel.id);
+
+        // Create a map of changes
+        final Map<String, dynamic> changes = {};
+        if (originalPersonnel != null) {
+          final originalJson = originalPersonnel.toJson();
+          final updatedJson = updatedPersonnel.toJson();
+
+          // Compare fields and track changes
+          updatedJson.forEach((key, value) {
+            if (originalJson[key] != value) {
+              changes[key] = {
+                'from': originalJson[key],
+                'to': value,
+              };
+            }
+          });
+        }
+
+        await _syncService.addChange(
+          entityType: 'personnel',
+          entityId: updatedPersonnel.id,
+          changeType: ChangeType.update,
+          data: {
+            'personnel': updatedPersonnel.toJson(),
+            'changes': changes,
+          },
+          adminId: currentAdmin.id,
+          adminName: currentAdmin.name,
+          adminArmyNumber: currentAdmin.armyNumber ?? '',
+        );
+      }
+
       // Reload personnel list
       await loadAllPersonnel();
+
+      // Trigger database sync
+      _syncService.syncDatabase();
 
       _setError(null);
       return updatedPersonnel;

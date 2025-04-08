@@ -20,6 +20,7 @@ class DesignSystem {
   static const Color backgroundColor = Colors.white;
   static const Color textPrimaryColor = Color(0xFF001F3F);
   static const Color textSecondaryColor = Color(0xFF4A4A4A);
+  static const Color dividerColor = Color(0xFFE0E0E0);
 
   // Typography - base sizes (will be adjusted per platform)
   static const double fontSizeXSmall = 12.0;

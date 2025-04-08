@@ -6,6 +6,9 @@ import '../screens/about_screen.dart';
 import '../screens/contact_screen.dart';
 import '../screens/privacy_policy_screen.dart';
 import '../screens/terms_conditions_screen.dart';
+import '../screens/settings_screen.dart';
+import '../screens/facial_verification_screen.dart';
+import '../screens/live_facial_recognition_screen.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({Key? key}) : super(key: key);
@@ -14,22 +17,23 @@ class CustomDrawer extends StatefulWidget {
   State<CustomDrawer> createState() => _CustomDrawerState();
 }
 
-class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderStateMixin {
+class _CustomDrawerState extends State<CustomDrawer>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _drawerSlideAnimation;
   late Animation<double> _itemsSlideAnimation;
   late Animation<double> _itemsFadeAnimation;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    
+
     // Create animations
     _drawerSlideAnimation = Tween<double>(begin: -1.0, end: 0.0).animate(
       CurvedAnimation(
@@ -37,25 +41,25 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
         curve: Curves.easeInOut,
       ),
     );
-    
+
     _itemsSlideAnimation = Tween<double>(begin: -1.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _animationController,
         curve: Interval(0.2, 1.0, curve: Curves.easeInOut),
       ),
     );
-    
+
     _itemsFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
         curve: Interval(0.2, 1.0, curve: Curves.easeInOut),
       ),
     );
-    
+
     // Start animation when drawer opens
     _animationController.forward();
   }
-  
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -66,7 +70,7 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-    
+
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
@@ -151,7 +155,7 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
                     ),
                   ),
                 ),
-                
+
                 // Menu Items
                 Expanded(
                   child: Transform.translate(
@@ -174,7 +178,8 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
                             title: 'Facial Verification',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.pushNamed(context, '/facial_verification');
+                              Navigator.pushNamed(
+                                  context, '/facial_verification');
                             },
                           ),
                           _buildDrawerItem(
@@ -182,7 +187,37 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
                             title: 'Personnel Database',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.pushNamed(context, '/facial_verification');
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const FacialVerificationScreen(
+                                    initialTabIndex: 4,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.videocam,
+                            title: 'Live Recognition',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const LiveFacialRecognitionScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.settings,
+                            title: 'Settings',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.pushNamed(context, '/settings');
                             },
                           ),
                           const Divider(),
@@ -193,7 +228,8 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
                               Navigator.pop(context);
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const AboutScreen()),
+                                MaterialPageRoute(
+                                    builder: (context) => const AboutScreen()),
                               );
                             },
                           ),
@@ -204,7 +240,9 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
                               Navigator.pop(context);
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const ContactScreen()),
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const ContactScreen()),
                               );
                             },
                           ),
@@ -215,7 +253,9 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
                               Navigator.pop(context);
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const TermsConditionsScreen()),
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const TermsConditionsScreen()),
                               );
                             },
                           ),
@@ -226,7 +266,9 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
                               Navigator.pop(context);
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const PrivacyPolicyScreen()),
                               );
                             },
                           ),
@@ -237,7 +279,8 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
                             onTap: () async {
                               await authProvider.logout();
                               if (context.mounted) {
-                                Navigator.of(context).pushReplacementNamed('/login');
+                                Navigator.of(context)
+                                    .pushReplacementNamed('/login');
                               }
                             },
                           ),
@@ -246,7 +289,7 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
                     ),
                   ),
                 ),
-                
+
                 // Footer
                 Transform.translate(
                   offset: Offset(_itemsSlideAnimation.value * 100, 0),
@@ -272,7 +315,7 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
       },
     );
   }
-  
+
   Widget _buildDrawerItem({
     required IconData icon,
     required String title,
@@ -293,7 +336,8 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
         ),
       ),
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 4.0),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 24.0, vertical: 4.0),
       dense: true,
       visualDensity: VisualDensity.compact,
       shape: RoundedRectangleBorder(
