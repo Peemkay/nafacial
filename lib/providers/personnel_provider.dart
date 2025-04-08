@@ -10,6 +10,7 @@ class PersonnelProvider with ChangeNotifier {
   final PersonnelService _personnelService = PersonnelService();
   final DatabaseSyncService _syncService = DatabaseSyncService();
   final AuthProvider _authProvider = AuthProvider();
+  final NotificationService _notificationService;
 
   List<Personnel> _allPersonnel = [];
   List<Personnel> _filteredPersonnel = [];
@@ -27,6 +28,12 @@ class PersonnelProvider with ChangeNotifier {
   String? get error => _error;
   String get searchQuery => _searchQuery;
   PersonnelCategory? get selectedCategory => _selectedCategory;
+
+  // Constructor
+  PersonnelProvider({NotificationService? notificationService})
+      : _notificationService = notificationService ?? NotificationService() {
+    initialize();
+  }
 
   // Initialize the provider
   Future<void> initialize() async {
@@ -175,8 +182,7 @@ class PersonnelProvider with ChangeNotifier {
       _syncService.syncDatabase();
 
       // Show notification about the new personnel
-      final notificationService = NotificationService();
-      notificationService.showNotification(
+      _notificationService.showNotification(
         title: 'Personnel Added',
         body:
             'New personnel ${newPersonnel.fullName} (${newPersonnel.armyNumber}) has been added.',
@@ -252,8 +258,7 @@ class PersonnelProvider with ChangeNotifier {
       _syncService.syncDatabase();
 
       // Show notification about the update
-      final notificationService = NotificationService();
-      notificationService.showNotification(
+      _notificationService.showNotification(
         title: 'Personnel Updated',
         body:
             'Personnel ${updatedPersonnel.fullName} (${updatedPersonnel.armyNumber}) has been updated.',

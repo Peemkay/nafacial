@@ -39,12 +39,16 @@ class NAFacialApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => PersonnelProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => QuickActionsProvider()),
         ChangeNotifierProvider(create: (_) => AccessLogProvider()),
         ChangeNotifierProvider(create: (_) => VersionProvider()),
         ChangeNotifierProvider(create: (_) => NotificationService()),
+        ChangeNotifierProxyProvider<NotificationService, PersonnelProvider>(
+          create: (context) => PersonnelProvider(),
+          update: (context, notificationService, previous) =>
+              PersonnelProvider(notificationService: notificationService),
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) => MaterialApp(
