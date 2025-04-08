@@ -369,7 +369,13 @@ class _LoginScreenState extends State<LoginScreen>
 
                         // Version info
                         const SizedBox(height: 24),
-                        const VersionInfo(),
+                        const VersionInfo(
+                          useBackground: true,
+                          showIcon: true,
+                          fontSize: 13.0,
+                        ),
+                        // Add bottom padding to prevent overflow
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),

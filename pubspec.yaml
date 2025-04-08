@@ -37,6 +37,7 @@ dependencies:
   audioplayers: ^5.2.1
   vibration: ^1.8.4
   flutter_animate: ^4.5.0
+  # image_gallery_saver: ^2.0.3
 
 dev_dependencies:
   flutter_test:

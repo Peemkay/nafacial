@@ -3,17 +3,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:camera/camera.dart';
+// import 'package:image_gallery_saver/image_gallery_saver.dart';
 import '../config/design_system.dart';
 import '../widgets/camera_selection_dialog.dart';
 
 class WebcamAccess extends StatefulWidget {
   final Function(File) onImageCaptured;
   final bool showControls;
+  final bool isVideoMode;
 
   const WebcamAccess({
     Key? key,
     required this.onImageCaptured,
     this.showControls = true,
+    this.isVideoMode = false,
   }) : super(key: key);
 
   @override

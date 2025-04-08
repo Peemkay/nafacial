@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
+// import 'package:image_gallery_saver/image_gallery_saver.dart';
 import '../config/design_system.dart';
 import '../models/personnel_model.dart';
 import '../providers/personnel_provider.dart';
@@ -10,12 +11,15 @@ import '../widgets/platform_aware_widgets.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/fancy_bottom_nav_bar.dart';
 import '../widgets/camera_selection_dialog.dart';
+import '../widgets/camera_options_dialog.dart';
+import '../widgets/security_pattern_painter.dart';
 import '../services/facial_recognition_service.dart';
 import 'personnel_registration_screen.dart';
 import 'personnel_edit_screen.dart';
 import 'live_facial_recognition_screen.dart';
 import 'personnel_identification_result_screen.dart';
 import 'webcam_capture_screen.dart';
+import 'video_capture_screen.dart';
 
 class FacialVerificationScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -71,58 +75,155 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
     super.dispose();
   }
 
-  // Take a photo using the camera
+  // Take a photo or video using the camera
   Future<void> _takePhoto() async {
     try {
-      // Get available cameras
-      final cameras = await availableCameras();
-
-      if (cameras.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No cameras available'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-
-      // Show camera selection dialog
+      // Show camera options dialog
       if (mounted) {
-        await showCameraSelectionDialog(
+        showDialog(
           context: context,
-          cameras: cameras,
-          onCameraSelected: (camera) async {
-            // Use the selected camera
-            final XFile? photo = await _imagePicker.pickImage(
-              source: ImageSource.camera,
-              preferredCameraDevice:
-                  camera.lensDirection == CameraLensDirection.front
-                      ? CameraDevice.front
-                      : CameraDevice.rear,
-              imageQuality: 80,
-            );
+          builder: (context) => CameraOptionsDialog(
+            onModeSelected: (mode) async {
+              Navigator.pop(context); // Close the dialog
 
-            if (photo != null && mounted) {
-              setState(() {
-                _selectedImage = File(photo.path);
-              });
+              // Get available cameras
+              final cameras = await availableCameras();
 
-              // Process the image for facial verification
-              _identifyPersonnelFromImage(File(photo.path));
-              _processImageForVerification();
-            }
-          },
+              if (cameras.isEmpty) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('No cameras available'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+                return;
+              }
+
+              if (mode == CameraMode.photo) {
+                // Show camera selection dialog for photo
+                if (mounted) {
+                  await showCameraSelectionDialog(
+                    context: context,
+                    cameras: cameras,
+                    onCameraSelected: (camera) async {
+                      // Use the selected camera
+                      final XFile? photo = await _imagePicker.pickImage(
+                        source: ImageSource.camera,
+                        preferredCameraDevice:
+                            camera.lensDirection == CameraLensDirection.front
+                                ? CameraDevice.front
+                                : CameraDevice.rear,
+                        imageQuality: 80,
+                      );
+
+                      if (photo != null && mounted) {
+                        // Save to gallery - disabled for now
+                        // await GallerySaver.saveImage(photo.path);
+
+                        setState(() {
+                          _selectedImage = File(photo.path);
+                        });
+
+                        // Process the image for facial verification
+                        _identifyPersonnelFromImage(File(photo.path));
+                        _processImageForVerification();
+                      }
+                    },
+                  );
+                }
+              } else {
+                // Video mode
+                if (mounted) {
+                  await showCameraSelectionDialog(
+                    context: context,
+                    cameras: cameras,
+                    onCameraSelected: (camera) async {
+                      // Navigate to video capture screen
+                      final result = await Navigator.push<File>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => VideoCaptureScreen(
+                            cameras: cameras,
+                            initialCamera: camera,
+                          ),
+                        ),
+                      );
+
+                      if (result != null && mounted) {
+                        setState(() {
+                          _selectedImage = result;
+                          _currentIndex = 2; // Switch to video tab
+                        });
+
+                        // Process the video for verification
+                        _processVideoForVerification();
+                      }
+                    },
+                  );
+                }
+              }
+            },
+          ),
         );
       }
     } catch (e) {
+      debugPrint('Error taking photo/video: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error accessing camera: ${e.toString()}'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Process video for verification
+  Future<void> _processVideoForVerification() async {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Processing video for facial verification...'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    }
+
+    // Simulate processing delay
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Video processing complete. Facial verification successful!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Identify personnel from video (simulated)
+      final personnelProvider =
+          Provider.of<PersonnelProvider>(context, listen: false);
+      await personnelProvider.loadAllPersonnel();
+      final Personnel? identifiedPersonnel =
+          personnelProvider.allPersonnel.isNotEmpty
+              ? personnelProvider.allPersonnel.first
+              : null;
+
+      if (identifiedPersonnel != null && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PersonnelIdentificationResultScreen(
+              capturedImage: _selectedImage!,
+              identifiedPersonnel: identifiedPersonnel,
+              savedImagePath: _selectedImage!.path,
+              confidence: 0.85,
+              isVideo: true,
+            ),
           ),
         );
       }
@@ -154,7 +255,10 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
 
     if (video != null) {
       // Process the video for facial verification
-      _processVideoForVerification(File(video.path));
+      setState(() {
+        _selectedImage = File(video.path);
+      });
+      _processVideoForVerification();
     }
   }
 
@@ -228,30 +332,6 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
         );
       }
     }
-  }
-
-  // Process video for facial verification
-  void _processVideoForVerification(File videoFile) {
-    // In a real app, this would extract frames and use a facial recognition API
-    // For now, we'll just show a success message
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Video processing in progress...'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-
-    // Simulate processing delay
-    Future.delayed(const Duration(seconds: 3), () {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Video processing complete. Facial verification successful!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    });
   }
 
   // Verify by army number
@@ -532,72 +612,168 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  // Build camera verification tab
+  // Build camera verification tab with face detection
   Widget _buildCameraVerificationTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (_selectedImage != null)
-            Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                borderRadius:
-                    BorderRadius.circular(DesignSystem.borderRadiusMedium),
-                image: DecorationImage(
-                  image: FileImage(_selectedImage!),
-                  fit: BoxFit.cover,
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth > 600;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (_selectedImage != null)
+                Container(
+                  width: isLargeScreen ? 300 : 200,
+                  height: isLargeScreen ? 300 : 200,
+                  decoration: BoxDecoration(
+                    borderRadius:
+                        BorderRadius.circular(DesignSystem.borderRadiusMedium),
+                    image: DecorationImage(
+                      image: FileImage(_selectedImage!),
+                      fit: BoxFit.cover,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  width: isLargeScreen ? 300 : 200,
+                  height: isLargeScreen ? 300 : 200,
+                  decoration: BoxDecoration(
+                    borderRadius:
+                        BorderRadius.circular(DesignSystem.borderRadiusMedium),
+                    color: DesignSystem.primaryColor.withOpacity(0.1),
+                    border: Border.all(
+                      color: DesignSystem.primaryColor.withOpacity(0.3),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Security pattern background
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                            DesignSystem.borderRadiusMedium - 2),
+                        child: CustomPaint(
+                          painter: SecurityPatternPainter(
+                            gridSpacing: 15,
+                            gridColor: DesignSystem.skyBlue.withOpacity(0.2),
+                          ),
+                          size: Size(isLargeScreen ? 300 : 200,
+                              isLargeScreen ? 300 : 200),
+                        ),
+                      ),
+                      // Camera icon
+                      Icon(
+                        Icons.camera_alt,
+                        size: isLargeScreen ? 100 : 80,
+                        color: DesignSystem.primaryColor,
+                      ),
+                      // Face outline guide
+                      Positioned.fill(
+                        child: Center(
+                          child: Container(
+                            width: isLargeScreen ? 180 : 120,
+                            height: isLargeScreen ? 180 : 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color:
+                                    DesignSystem.accentColor.withOpacity(0.5),
+                                width: 2,
+                                style: BorderStyle.solid,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              SizedBox(height: DesignSystem.adjustedSpacingLarge),
+              Wrap(
+                spacing: DesignSystem.adjustedSpacingMedium,
+                runSpacing: DesignSystem.adjustedSpacingMedium,
+                alignment: WrapAlignment.center,
+                children: [
+                  PlatformButton(
+                    text: 'TAKE PHOTO',
+                    onPressed: _takePhoto,
+                    icon: Icons.camera_alt,
+                    isFullWidth: false,
+                  ),
+                  PlatformButton(
+                    text: 'USE EXTERNAL CAMERA',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const WebcamCaptureScreen(),
+                        ),
+                      );
+                    },
+                    icon: Icons.videocam,
+                    buttonType: PlatformButtonType.secondary,
+                    isFullWidth: false,
+                  ),
+                  PlatformButton(
+                    text: 'LIVE FACE DETECTION',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const WebcamCaptureScreen(
+                            useFaceDetection: true,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: Icons.face_retouching_natural,
+                    buttonType: PlatformButtonType.secondary,
+                    isFullWidth: false,
+                  ),
+                ],
+              ),
+              SizedBox(height: DesignSystem.adjustedSpacingMedium),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: DesignSystem.adjustedSpacingMedium,
+                  vertical: DesignSystem.adjustedSpacingSmall,
+                ),
+                decoration: BoxDecoration(
+                  color: DesignSystem.primaryColor.withOpacity(0.1),
+                  borderRadius:
+                      BorderRadius.circular(DesignSystem.borderRadiusSmall),
+                ),
+                child: PlatformText(
+                  'Position the face in the center of the frame for best results',
+                  style: TextStyle(
+                    color: DesignSystem.textSecondaryColor,
+                    fontSize: DesignSystem.adjustedFontSizeSmall,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
-            )
-          else
-            Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                borderRadius:
-                    BorderRadius.circular(DesignSystem.borderRadiusMedium),
-                color: DesignSystem.primaryColor.withOpacity(0.1),
-              ),
-              child: Icon(
-                Icons.camera_alt,
-                size: 80,
-                color: DesignSystem.primaryColor,
-              ),
-            ),
-          SizedBox(height: DesignSystem.adjustedSpacingLarge),
-          PlatformButton(
-            text: 'TAKE PHOTO',
-            onPressed: _takePhoto,
-            icon: Icons.camera_alt,
-            isFullWidth: false,
+            ],
           ),
-          SizedBox(height: DesignSystem.adjustedSpacingMedium),
-          PlatformButton(
-            text: 'USE EXTERNAL CAMERA',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const WebcamCaptureScreen(),
-                ),
-              );
-            },
-            icon: Icons.videocam,
-            buttonType: PlatformButtonType.secondary,
-            isFullWidth: false,
-          ),
-          SizedBox(height: DesignSystem.adjustedSpacingMedium),
-          PlatformText(
-            'Position the face in the center of the frame',
-            style: TextStyle(
-              color: DesignSystem.textSecondaryColor,
-              fontSize: DesignSystem.adjustedFontSizeSmall,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -655,43 +831,215 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
     );
   }
 
-  // Build video verification tab
+  // Build video verification tab with enhanced UI
   Widget _buildVideoVerificationTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              borderRadius:
-                  BorderRadius.circular(DesignSystem.borderRadiusMedium),
-              color: DesignSystem.primaryColor.withOpacity(0.1),
-            ),
-            child: Icon(
-              Icons.videocam,
-              size: 80,
-              color: DesignSystem.primaryColor,
-            ),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth > 600;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (_selectedImage != null)
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: isLargeScreen ? 300 : 200,
+                      height: isLargeScreen ? 300 : 200,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(
+                            DesignSystem.borderRadiusMedium),
+                        image: DecorationImage(
+                          image: FileImage(_selectedImage!),
+                          fit: BoxFit.cover,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Play button overlay
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Container(
+                  width: isLargeScreen ? 300 : 200,
+                  height: isLargeScreen ? 300 : 200,
+                  decoration: BoxDecoration(
+                    borderRadius:
+                        BorderRadius.circular(DesignSystem.borderRadiusMedium),
+                    color: DesignSystem.primaryColor.withOpacity(0.1),
+                    border: Border.all(
+                      color: DesignSystem.primaryColor.withOpacity(0.3),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Security pattern background
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                            DesignSystem.borderRadiusMedium - 2),
+                        child: CustomPaint(
+                          painter: SecurityPatternPainter(
+                            gridSpacing: 15,
+                            gridColor: DesignSystem.skyBlue.withOpacity(0.2),
+                          ),
+                          size: Size(isLargeScreen ? 300 : 200,
+                              isLargeScreen ? 300 : 200),
+                        ),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.videocam,
+                            size: isLargeScreen ? 80 : 60,
+                            color: DesignSystem.primaryColor,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Video Verification',
+                            style: TextStyle(
+                              color: DesignSystem.primaryColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: isLargeScreen ? 18 : 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              SizedBox(height: DesignSystem.adjustedSpacingLarge),
+              Wrap(
+                spacing: DesignSystem.adjustedSpacingMedium,
+                runSpacing: DesignSystem.adjustedSpacingMedium,
+                alignment: WrapAlignment.center,
+                children: [
+                  PlatformButton(
+                    text: 'RECORD VIDEO',
+                    onPressed: () async {
+                      try {
+                        // Get available cameras
+                        final cameras = await availableCameras();
+
+                        if (cameras.isEmpty) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('No cameras available'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                          return;
+                        }
+
+                        if (mounted) {
+                          await showCameraSelectionDialog(
+                            context: context,
+                            cameras: cameras,
+                            onCameraSelected: (camera) async {
+                              // Navigate to video capture screen
+                              final result = await Navigator.push<File>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => VideoCaptureScreen(
+                                    cameras: cameras,
+                                    initialCamera: camera,
+                                  ),
+                                ),
+                              );
+
+                              if (result != null && mounted) {
+                                setState(() {
+                                  _selectedImage = result;
+                                });
+
+                                // Process the video for verification
+                                _processVideoForVerification();
+                              }
+                            },
+                          );
+                        }
+                      } catch (e) {
+                        debugPrint('Error accessing camera: $e');
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Error accessing camera: ${e.toString()}'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    icon: Icons.videocam,
+                    isFullWidth: false,
+                  ),
+                  PlatformButton(
+                    text: 'SELECT VIDEO',
+                    onPressed: _pickVideo,
+                    icon: Icons.video_library,
+                    buttonType: PlatformButtonType.secondary,
+                    isFullWidth: false,
+                  ),
+                ],
+              ),
+              SizedBox(height: DesignSystem.adjustedSpacingMedium),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: DesignSystem.adjustedSpacingMedium,
+                  vertical: DesignSystem.adjustedSpacingSmall,
+                ),
+                decoration: BoxDecoration(
+                  color: DesignSystem.primaryColor.withOpacity(0.1),
+                  borderRadius:
+                      BorderRadius.circular(DesignSystem.borderRadiusSmall),
+                ),
+                child: PlatformText(
+                  'Record or select a video showing the face clearly for verification',
+                  style: TextStyle(
+                    color: DesignSystem.textSecondaryColor,
+                    fontSize: DesignSystem.adjustedFontSizeSmall,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: DesignSystem.adjustedSpacingLarge),
-          PlatformButton(
-            text: 'SELECT VIDEO',
-            onPressed: _pickVideo,
-            icon: Icons.video_library,
-            isFullWidth: false,
-          ),
-          SizedBox(height: DesignSystem.adjustedSpacingMedium),
-          PlatformText(
-            'Select a video showing the face clearly',
-            style: TextStyle(
-              color: DesignSystem.textSecondaryColor,
-              fontSize: DesignSystem.adjustedFontSizeSmall,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

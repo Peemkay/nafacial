@@ -15,6 +15,7 @@ class PersonnelIdentificationResultScreen extends StatefulWidget {
   final String? savedImagePath;
   final bool isLiveCapture;
   final double confidence;
+  final bool isVideo;
 
   const PersonnelIdentificationResultScreen({
     Key? key,
@@ -23,6 +24,7 @@ class PersonnelIdentificationResultScreen extends StatefulWidget {
     this.savedImagePath,
     this.isLiveCapture = false,
     this.confidence = 0.0,
+    this.isVideo = false,
   }) : super(key: key);
 
   @override
@@ -135,17 +137,44 @@ class _PersonnelIdentificationResultScreenState
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(
                                       DesignSystem.borderRadiusSmall),
-                                  child: Image.file(
-                                    widget.capturedImage,
-                                    fit: BoxFit.cover,
-                                    height: 200,
-                                    width: double.infinity,
-                                  ),
+                                  child: widget.isVideo
+                                      ? Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            Image.file(
+                                              widget.capturedImage,
+                                              fit: BoxFit.cover,
+                                              height: 200,
+                                              width: double.infinity,
+                                            ),
+                                            Container(
+                                              width: 50,
+                                              height: 50,
+                                              decoration: const BoxDecoration(
+                                                color: Colors.black54,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.play_arrow,
+                                                color: Colors.white,
+                                                size: 30,
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : Image.file(
+                                          widget.capturedImage,
+                                          fit: BoxFit.cover,
+                                          height: 200,
+                                          width: double.infinity,
+                                        ),
                                 ),
                                 SizedBox(
                                     height: DesignSystem.adjustedSpacingSmall),
                                 Text(
-                                  'Captured Image',
+                                  widget.isVideo
+                                      ? 'Captured Video'
+                                      : 'Captured Image',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
