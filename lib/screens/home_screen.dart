@@ -11,8 +11,11 @@ import '../providers/quick_actions_provider.dart';
 import '../providers/access_log_provider.dart';
 import '../models/access_log_model.dart';
 import '../providers/version_provider.dart';
+import '../services/notification_service.dart';
+import '../utils/responsive_utils.dart';
 import '../widgets/platform_aware_widgets.dart';
 import '../widgets/custom_drawer.dart';
+import '../widgets/notification_icon.dart';
 import 'facial_verification_screen.dart';
 import 'live_facial_recognition_screen.dart';
 import 'personnel_registration_screen.dart';
@@ -40,6 +43,19 @@ class _HomeScreenState extends State<HomeScreen> {
           Provider.of<AccessLogProvider>(context, listen: false);
       accessLogProvider.initialize();
 
+      // Add a test notification after 2 seconds
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          final notificationService =
+              Provider.of<NotificationService>(context, listen: false);
+          notificationService.showNotification(
+            title: 'Welcome to NAFacial',
+            body: 'You have successfully logged in to the system.',
+            type: NotificationType.info,
+          );
+        }
+      });
+
       // Initialize version provider
       final versionProvider =
           Provider.of<VersionProvider>(context, listen: false);
@@ -57,19 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('NAFacial Dashboard'),
         backgroundColor: DesignSystem.primaryColor,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              // Show notifications
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('No new notifications'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            tooltip: 'Notifications',
-          ),
+          const NotificationIcon(),
         ],
       ),
       drawer: const CustomDrawer(),
@@ -80,35 +84,233 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Welcome card
-                PlatformCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                // Admin cards section - responsive layout
+                ResponsiveUtils.isDesktop(context)
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CircleAvatar(
-                            backgroundColor: DesignSystem.primaryColor,
-                            radius: 30,
-                            child: Icon(
-                              Icons.person,
-                              color: DesignSystem.accentColor,
-                              size: 30,
+                          // Welcome card
+                          Expanded(
+                            flex: 3,
+                            child: PlatformCard(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundColor:
+                                            DesignSystem.primaryColor,
+                                        radius: 30,
+                                        child: Icon(
+                                          Icons.person,
+                                          color: DesignSystem.accentColor,
+                                          size: 30,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                          width: DesignSystem
+                                              .adjustedSpacingMedium),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            PlatformText(
+                                              'Welcome, ${user?.fullName ?? 'User'}',
+                                              isTitle: true,
+                                            ),
+                                            PlatformText(
+                                              '${user?.rank ?? 'Rank'} - ${user?.department ?? 'Department'}',
+                                              style: TextStyle(
+                                                color: DesignSystem
+                                                    .textSecondaryColor,
+                                                fontSize: DesignSystem
+                                                    .adjustedFontSizeSmall,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(
+                                      height:
+                                          DesignSystem.adjustedSpacingMedium),
+                                  const Divider(),
+                                  SizedBox(
+                                      height:
+                                          DesignSystem.adjustedSpacingSmall),
+                                  PlatformText(
+                                    'System Status: ACTIVE',
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontWeight: DesignSystem.fontWeightBold,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                      height:
+                                          DesignSystem.adjustedSpacingSmall),
+                                  PlatformText(
+                                    'Last Login: ${DateTime.now().toString().substring(0, 16)}',
+                                    style: TextStyle(
+                                      fontSize:
+                                          DesignSystem.adjustedFontSizeSmall,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           SizedBox(width: DesignSystem.adjustedSpacingMedium),
+                          // Biometric settings
                           Expanded(
+                            flex: 2,
+                            child: PlatformCard(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.fingerprint,
+                                        color: DesignSystem.primaryColor,
+                                        size: 24,
+                                      ),
+                                      SizedBox(
+                                          width: DesignSystem
+                                              .adjustedSpacingSmall),
+                                      Expanded(
+                                        child: PlatformText(
+                                          'Biometric Authentication',
+                                          isTitle: true,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(
+                                      height:
+                                          DesignSystem.adjustedSpacingMedium),
+                                  if (!authProvider.isBiometricAvailable) ...[
+                                    PlatformText(
+                                      'Biometric authentication is not available on this device.',
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: PlatformText(
+                                            'Enable Biometric Login',
+                                            style: TextStyle(
+                                              fontSize: DesignSystem
+                                                  .adjustedFontSizeMedium,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        Switch(
+                                          value:
+                                              user?.isBiometricEnabled ?? false,
+                                          onChanged: (value) async {
+                                            if (value) {
+                                              await authProvider
+                                                  .enableBiometric();
+                                            } else {
+                                              await authProvider
+                                                  .disableBiometric();
+                                            }
+                                          },
+                                          activeColor:
+                                              DesignSystem.primaryColor,
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(
+                                        height:
+                                            DesignSystem.adjustedSpacingSmall),
+                                    PlatformText(
+                                      'Use your fingerprint or face recognition for faster login.',
+                                      style: TextStyle(
+                                        fontSize:
+                                            DesignSystem.adjustedFontSizeSmall,
+                                        color: DesignSystem.textSecondaryColor,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          // Welcome card
+                          PlatformCard(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                PlatformText(
-                                  'Welcome, ${user?.fullName ?? 'User'}',
-                                  isTitle: true,
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor:
+                                          DesignSystem.primaryColor,
+                                      radius: 30,
+                                      child: Icon(
+                                        Icons.person,
+                                        color: DesignSystem.accentColor,
+                                        size: 30,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                        width:
+                                            DesignSystem.adjustedSpacingMedium),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          PlatformText(
+                                            'Welcome, ${user?.fullName ?? 'User'}',
+                                            isTitle: true,
+                                          ),
+                                          PlatformText(
+                                            '${user?.rank ?? 'Rank'} - ${user?.department ?? 'Department'}',
+                                            style: TextStyle(
+                                              color: DesignSystem
+                                                  .textSecondaryColor,
+                                              fontSize: DesignSystem
+                                                  .adjustedFontSizeSmall,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                                SizedBox(
+                                    height: DesignSystem.adjustedSpacingMedium),
+                                const Divider(),
+                                SizedBox(
+                                    height: DesignSystem.adjustedSpacingSmall),
                                 PlatformText(
-                                  '${user?.rank ?? 'Rank'} - ${user?.department ?? 'Department'}',
+                                  'System Status: ACTIVE',
                                   style: TextStyle(
-                                    color: DesignSystem.textSecondaryColor,
+                                    color: Colors.green,
+                                    fontWeight: DesignSystem.fontWeightBold,
+                                  ),
+                                ),
+                                SizedBox(
+                                    height: DesignSystem.adjustedSpacingSmall),
+                                PlatformText(
+                                  'Last Login: ${DateTime.now().toString().substring(0, 16)}',
+                                  style: TextStyle(
                                     fontSize:
                                         DesignSystem.adjustedFontSizeSmall,
                                   ),
@@ -116,93 +318,88 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
+                          SizedBox(height: DesignSystem.adjustedSpacingLarge),
+                          // Biometric settings
+                          PlatformCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.fingerprint,
+                                      color: DesignSystem.primaryColor,
+                                      size: 24,
+                                    ),
+                                    SizedBox(
+                                        width:
+                                            DesignSystem.adjustedSpacingSmall),
+                                    Expanded(
+                                      child: PlatformText(
+                                        'Biometric Authentication',
+                                        isTitle: true,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(
+                                    height: DesignSystem.adjustedSpacingMedium),
+                                if (!authProvider.isBiometricAvailable) ...[
+                                  PlatformText(
+                                    'Biometric authentication is not available on this device.',
+                                    style: TextStyle(
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                ] else ...[
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: PlatformText(
+                                          'Enable Biometric Login',
+                                          style: TextStyle(
+                                            fontSize: DesignSystem
+                                                .adjustedFontSizeMedium,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Switch(
+                                        value:
+                                            user?.isBiometricEnabled ?? false,
+                                        onChanged: (value) async {
+                                          if (value) {
+                                            await authProvider
+                                                .enableBiometric();
+                                          } else {
+                                            await authProvider
+                                                .disableBiometric();
+                                          }
+                                        },
+                                        activeColor: DesignSystem.primaryColor,
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(
+                                      height:
+                                          DesignSystem.adjustedSpacingSmall),
+                                  PlatformText(
+                                    'Use your fingerprint or face recognition for faster login.',
+                                    style: TextStyle(
+                                      fontSize:
+                                          DesignSystem.adjustedFontSizeSmall,
+                                      color: DesignSystem.textSecondaryColor,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
                         ],
                       ),
-                      SizedBox(height: DesignSystem.adjustedSpacingMedium),
-                      const Divider(),
-                      SizedBox(height: DesignSystem.adjustedSpacingSmall),
-                      PlatformText(
-                        'System Status: ACTIVE',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: DesignSystem.fontWeightBold,
-                        ),
-                      ),
-                      SizedBox(height: DesignSystem.adjustedSpacingSmall),
-                      PlatformText(
-                        'Last Login: ${DateTime.now().toString().substring(0, 16)}',
-                        style: TextStyle(
-                          fontSize: DesignSystem.adjustedFontSizeSmall,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: DesignSystem.adjustedSpacingLarge),
-
-                // Biometric settings
-                PlatformCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.fingerprint,
-                            color: DesignSystem.primaryColor,
-                            size: 24,
-                          ),
-                          SizedBox(width: DesignSystem.adjustedSpacingSmall),
-                          PlatformText(
-                            'Biometric Authentication',
-                            isTitle: true,
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: DesignSystem.adjustedSpacingMedium),
-                      if (!authProvider.isBiometricAvailable) ...[
-                        PlatformText(
-                          'Biometric authentication is not available on this device.',
-                          style: TextStyle(
-                            color: Colors.red,
-                          ),
-                        ),
-                      ] else ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            PlatformText(
-                              'Enable Biometric Login',
-                              style: TextStyle(
-                                fontSize: DesignSystem.adjustedFontSizeMedium,
-                              ),
-                            ),
-                            Switch(
-                              value: user?.isBiometricEnabled ?? false,
-                              onChanged: (value) async {
-                                if (value) {
-                                  await authProvider.enableBiometric();
-                                } else {
-                                  await authProvider.disableBiometric();
-                                }
-                              },
-                              activeColor: DesignSystem.primaryColor,
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: DesignSystem.adjustedSpacingSmall),
-                        PlatformText(
-                          'Use your fingerprint or face recognition for faster login.',
-                          style: TextStyle(
-                            fontSize: DesignSystem.adjustedFontSizeSmall,
-                            color: DesignSystem.textSecondaryColor,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
 
                 SizedBox(height: DesignSystem.adjustedSpacingLarge),
 
@@ -223,13 +420,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     final visibleActions =
                         quickActionsProvider.visibleQuickActions;
 
+                    // Responsive grid layout
+                    final bool isDesktop = ResponsiveUtils.isDesktop(context);
+                    final bool isTablet = ResponsiveUtils.isTablet(context);
+                    final int crossAxisCount = isDesktop
+                        ? 4
+                        : isTablet
+                            ? 3
+                            : 2;
+
                     return GridView.count(
-                      crossAxisCount:
-                          MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                      crossAxisCount: crossAxisCount,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: DesignSystem.adjustedSpacingMedium,
-                      crossAxisSpacing: DesignSystem.adjustedSpacingMedium,
+                      mainAxisSpacing: isDesktop || isTablet
+                          ? DesignSystem.adjustedSpacingLarge
+                          : DesignSystem.adjustedSpacingMedium,
+                      crossAxisSpacing: isDesktop || isTablet
+                          ? DesignSystem.adjustedSpacingLarge
+                          : DesignSystem.adjustedSpacingMedium,
+                      childAspectRatio: isDesktop || isTablet ? 1.2 : 1.0,
                       children: visibleActions.map((action) {
                         // Map the action to the appropriate function
                         VoidCallback onTap;
@@ -468,11 +678,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 size: 24,
               ),
               SizedBox(width: DesignSystem.adjustedSpacingSmall),
-              PlatformText(
-                'Personnel Database',
-                isTitle: true,
+              Expanded(
+                child: PlatformText(
+                  'Personnel Database',
+                  isTitle: true,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              const Spacer(),
               PlatformButton(
                 text: 'VIEW ALL',
                 onPressed: () {
@@ -598,32 +810,71 @@ class _HomeScreenState extends State<HomeScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final bool isDesktop = ResponsiveUtils.isDesktop(context);
+    final bool isTablet = ResponsiveUtils.isTablet(context);
+    final double iconSize = isDesktop
+        ? 40
+        : isTablet
+            ? 36
+            : 32;
+    final double elevation = isDesktop || isTablet ? 4.0 : 2.0;
+
     return PlatformCard(
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 32,
-            ),
+      elevation: elevation,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              color.withAlpha(15),
+            ],
           ),
-          SizedBox(height: DesignSystem.adjustedSpacingSmall),
-          PlatformText(
-            title,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontWeight: DesignSystem.fontWeightMedium,
+          borderRadius: BorderRadius.circular(DesignSystem.borderRadiusMedium),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(isDesktop || isTablet
+                  ? DesignSystem.adjustedSpacingMedium
+                  : DesignSystem.adjustedSpacingSmall),
+              decoration: BoxDecoration(
+                color: color.withAlpha(30),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withAlpha(40),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: iconSize,
+              ),
             ),
-          ),
-        ],
+            SizedBox(height: DesignSystem.adjustedSpacingSmall),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: PlatformText(
+                title,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: DesignSystem.fontWeightMedium,
+                  fontSize: isDesktop || isTablet
+                      ? DesignSystem.adjustedFontSizeMedium
+                      : DesignSystem.adjustedFontSizeSmall,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

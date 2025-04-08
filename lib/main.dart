@@ -8,6 +8,7 @@ import 'providers/theme_provider.dart';
 import 'providers/quick_actions_provider.dart';
 import 'providers/access_log_provider.dart';
 import 'providers/version_provider.dart';
+import 'services/notification_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -42,6 +43,7 @@ class NAFacialApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => QuickActionsProvider()),
         ChangeNotifierProvider(create: (_) => AccessLogProvider()),
         ChangeNotifierProvider(create: (_) => VersionProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationService()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) => MaterialApp(

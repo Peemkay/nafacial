@@ -4,6 +4,7 @@ import '../models/personnel_model.dart';
 import '../services/personnel_service.dart';
 import '../services/database_sync_service.dart';
 import '../providers/auth_provider.dart';
+import '../services/notification_service.dart';
 
 class PersonnelProvider with ChangeNotifier {
   final PersonnelService _personnelService = PersonnelService();
@@ -173,6 +174,15 @@ class PersonnelProvider with ChangeNotifier {
       // Trigger database sync
       _syncService.syncDatabase();
 
+      // Show notification about the new personnel
+      final notificationService = NotificationService();
+      notificationService.showNotification(
+        title: 'Personnel Added',
+        body:
+            'New personnel ${newPersonnel.fullName} (${newPersonnel.armyNumber}) has been added.',
+        type: NotificationType.success,
+      );
+
       _setError(null);
       return newPersonnel;
     } catch (e) {
@@ -240,6 +250,15 @@ class PersonnelProvider with ChangeNotifier {
 
       // Trigger database sync
       _syncService.syncDatabase();
+
+      // Show notification about the update
+      final notificationService = NotificationService();
+      notificationService.showNotification(
+        title: 'Personnel Updated',
+        body:
+            'Personnel ${updatedPersonnel.fullName} (${updatedPersonnel.armyNumber}) has been updated.',
+        type: NotificationType.success,
+      );
 
       _setError(null);
       return updatedPersonnel;
