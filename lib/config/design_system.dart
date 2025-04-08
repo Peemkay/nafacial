@@ -18,6 +18,29 @@ class DesignSystem {
   static const Color red = Color(0xFFD50000);
   static const Color militaryGreen = Color(0xFF1E5631);
 
+  // Enhanced dark mode palette
+  static const Color darkBlue = Color(0xFF0A1929);
+  static const Color darkNavyBlue = Color(0xFF172B4D);
+  static const Color darkSteelBlue = Color(0xFF2C3E50);
+  static const Color darkSlateBlue = Color(0xFF1A365D);
+  static const Color darkCyan = Color(0xFF0E7490);
+  static const Color darkTeal = Color(0xFF0F766E);
+  static const Color darkForestGreen = Color(0xFF166534);
+  static const Color darkOliveGreen = Color(0xFF3F6212);
+  static const Color darkGold = Color(0xFFB45309);
+  static const Color darkAmber = Color(0xFFD97706);
+
+  // Enhanced grey palette for dark mode
+  static const Color darkGrey1 = Color(0xFF121212); // Darkest
+  static const Color darkGrey2 = Color(0xFF1E1E1E);
+  static const Color darkGrey3 = Color(0xFF222222);
+  static const Color darkGrey4 = Color(0xFF272727);
+  static const Color darkGrey5 = Color(0xFF2C2C2C);
+  static const Color darkGrey6 = Color(0xFF323232);
+  static const Color darkGrey7 = Color(0xFF383838);
+  static const Color darkGrey8 = Color(0xFF424242);
+  static const Color darkGrey9 = Color(0xFF616161); // Lightest
+
   // Light theme colors
   static const Color lightPrimaryColor = navyBlue;
   static const Color lightSecondaryColor = skyBlue;
@@ -34,30 +57,43 @@ class DesignSystem {
   static const Color lightNavBarColor = Colors.white;
 
   // Dark theme colors
-  static const Color darkPrimaryColor = navyBlue;
-  static const Color darkSecondaryColor = skyBlue;
-  static const Color darkAccentColor = yellow;
-  static const Color darkBackgroundColor = Color(0xFF121212);
-  static const Color darkSurfaceColor = Color(0xFF1E1E1E);
-  static const Color darkCardColor = Color(0xFF2C2C2C);
+  static const Color darkPrimaryColor = darkSlateBlue;
+  static const Color darkSecondaryColor = darkCyan;
+  static const Color darkAccentColor = Color(0xFFFFD54F); // Softer yellow
+  static const Color darkBackgroundColor = darkGrey1;
+  static const Color darkSurfaceColor = darkGrey2;
+  static const Color darkCardColor = darkGrey5;
   static const Color darkIconColor = skyBlue;
-  static const Color darkTextPrimaryColor = Colors.white;
-  static const Color darkTextSecondaryColor = Color(0xFFB3B3B3);
-  static const Color darkDividerColor = Color(0xFF3E3E3E);
-  static const Color darkAppBarColor = Color(0xFF1E1E1E);
-  static const Color darkStatusBarColor = Color(0xFF121212);
-  static const Color darkNavBarColor = Color(0xFF1E1E1E);
+  static const Color darkTextPrimaryColor =
+      Color(0xFFE0E0E0); // Slightly off-white
+  static const Color darkTextSecondaryColor = Color(0xFFAAAAAA); // Softer grey
+  static const Color darkDividerColor = darkGrey7;
+  static const Color darkAppBarColor = darkGrey3;
+  static const Color darkStatusBarColor = darkGrey1;
+  static const Color darkNavBarColor = darkGrey3;
+
+  // Additional dark theme colors for UI elements
+  static const Color darkButtonColor = darkCyan;
+  static const Color darkButtonHoverColor = Color(0xFF0891B2); // Lighter cyan
+  static const Color darkSelectionColor = darkTeal;
+  static const Color darkHighlightColor = darkGold;
+  static const Color darkFocusColor = darkAmber;
+  static const Color darkSplashColor = Color(0xFF155E75); // Darker cyan
 
   // Semantic colors - consistent across themes but with appropriate contrast
   static const Color lightSuccessColor = green;
   static const Color lightWarningColor = amber;
   static const Color lightErrorColor = red;
   static const Color darkSuccessColor =
-      Color(0xFF66BB6A); // Lighter green for dark mode
+      Color(0xFF4CAF50); // Professional green for dark mode
   static const Color darkWarningColor =
-      Color(0xFFFFD54F); // Lighter amber for dark mode
+      Color(0xFFFFC107); // Professional amber for dark mode
   static const Color darkErrorColor =
-      Color(0xFFEF5350); // Lighter red for dark mode
+      Color(0xFFF44336); // Professional red for dark mode
+
+  // Additional semantic colors for dark mode
+  static const Color darkInfoColor = Color(0xFF2196F3); // Blue for information
+  static const Color darkDisabledColor = darkGrey8; // For disabled elements
 
   // Aliases for backward compatibility
   static const Color primaryColor = lightPrimaryColor;

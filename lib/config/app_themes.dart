@@ -205,9 +205,8 @@ class AppThemes {
     brightness: Brightness.dark,
     primaryColor: DesignSystem.darkPrimaryColor,
     colorScheme: const ColorScheme.dark(
-      primary: DesignSystem
-          .darkSecondaryColor, // Using skyBlue as primary in dark mode
-      secondary: DesignSystem.darkSecondaryColor,
+      primary: DesignSystem.darkSecondaryColor,
+      secondary: DesignSystem.darkCyan,
       tertiary: DesignSystem.darkAccentColor,
       error: DesignSystem.darkErrorColor,
       surface: DesignSystem.darkSurfaceColor,
@@ -217,6 +216,13 @@ class AppThemes {
       onSurface: DesignSystem.darkTextPrimaryColor,
       onBackground: DesignSystem.darkTextPrimaryColor,
       onError: Colors.white,
+      // Additional color scheme properties
+      primaryContainer: DesignSystem.darkSlateBlue,
+      secondaryContainer: DesignSystem.darkTeal,
+      tertiaryContainer: DesignSystem.darkGold,
+      errorContainer: DesignSystem.darkErrorColor.withAlpha(80),
+      surfaceVariant: DesignSystem.darkGrey4,
+      inverseSurface: DesignSystem.darkGrey8,
     ),
     scaffoldBackgroundColor: DesignSystem.darkBackgroundColor,
     appBarTheme: const AppBarTheme(
@@ -241,22 +247,42 @@ class AppThemes {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: DesignSystem.darkSecondaryColor,
+        backgroundColor: DesignSystem.darkButtonColor,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall),
         ),
+        elevation: 2,
+        shadowColor: DesignSystem.darkButtonColor.withAlpha(100),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: DesignSystem.darkSecondaryColor,
+        foregroundColor: DesignSystem.darkCyan,
+        overlayColor: MaterialStateProperty.resolveWith<Color>((states) {
+          if (states.contains(MaterialState.hovered)) {
+            return DesignSystem.darkCyan.withAlpha(30);
+          }
+          if (states.contains(MaterialState.pressed)) {
+            return DesignSystem.darkCyan.withAlpha(50);
+          }
+          return Colors.transparent;
+        }),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: DesignSystem.darkSecondaryColor,
-        side: const BorderSide(color: DesignSystem.darkSecondaryColor),
+        foregroundColor: DesignSystem.darkCyan,
+        side: const BorderSide(color: DesignSystem.darkCyan),
+        overlayColor: MaterialStateProperty.resolveWith<Color>((states) {
+          if (states.contains(MaterialState.hovered)) {
+            return DesignSystem.darkCyan.withAlpha(30);
+          }
+          if (states.contains(MaterialState.pressed)) {
+            return DesignSystem.darkCyan.withAlpha(50);
+          }
+          return Colors.transparent;
+        }),
       ),
     ),
     textTheme: const TextTheme(
@@ -321,9 +347,10 @@ class AppThemes {
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: DesignSystem.darkNavBarColor,
-      selectedItemColor: DesignSystem.darkIconColor,
+      selectedItemColor: DesignSystem.darkCyan,
       unselectedItemColor: DesignSystem.darkTextSecondaryColor,
       elevation: 8,
+      type: BottomNavigationBarType.fixed,
     ),
     iconTheme: const IconThemeData(
       color: DesignSystem.darkIconColor,
@@ -331,32 +358,65 @@ class AppThemes {
     switchTheme: SwitchThemeData(
       thumbColor: MaterialStateProperty.resolveWith<Color>((states) {
         if (states.contains(MaterialState.selected)) {
-          return DesignSystem.darkSecondaryColor;
+          return DesignSystem.darkCyan;
         }
-        return Colors.grey;
+        if (states.contains(MaterialState.disabled)) {
+          return DesignSystem.darkDisabledColor;
+        }
+        return DesignSystem.darkGrey9;
       }),
       trackColor: MaterialStateProperty.resolveWith<Color>((states) {
         if (states.contains(MaterialState.selected)) {
-          return DesignSystem.darkSecondaryColor.withAlpha(150);
+          return DesignSystem.darkCyan.withAlpha(150);
         }
-        return Colors.grey.withAlpha(150);
+        if (states.contains(MaterialState.disabled)) {
+          return DesignSystem.darkDisabledColor.withAlpha(100);
+        }
+        return DesignSystem.darkGrey7.withAlpha(150);
+      }),
+      overlayColor: MaterialStateProperty.resolveWith<Color>((states) {
+        if (states.contains(MaterialState.selected)) {
+          return DesignSystem.darkCyan.withAlpha(30);
+        }
+        return DesignSystem.darkGrey9.withAlpha(30);
       }),
     ),
     checkboxTheme: CheckboxThemeData(
       fillColor: MaterialStateProperty.resolveWith<Color>((states) {
         if (states.contains(MaterialState.selected)) {
-          return DesignSystem.darkSecondaryColor;
+          return DesignSystem.darkCyan;
+        }
+        if (states.contains(MaterialState.disabled)) {
+          return DesignSystem.darkDisabledColor;
         }
         return Colors.transparent;
       }),
       checkColor: MaterialStateProperty.all(Colors.white),
+      overlayColor: MaterialStateProperty.resolveWith<Color>((states) {
+        if (states.contains(MaterialState.selected)) {
+          return DesignSystem.darkCyan.withAlpha(30);
+        }
+        return DesignSystem.darkGrey9.withAlpha(30);
+      }),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall / 2),
+      ),
     ),
     radioTheme: RadioThemeData(
       fillColor: MaterialStateProperty.resolveWith<Color>((states) {
         if (states.contains(MaterialState.selected)) {
-          return DesignSystem.darkSecondaryColor;
+          return DesignSystem.darkCyan;
+        }
+        if (states.contains(MaterialState.disabled)) {
+          return DesignSystem.darkDisabledColor;
         }
         return DesignSystem.darkTextSecondaryColor;
+      }),
+      overlayColor: MaterialStateProperty.resolveWith<Color>((states) {
+        if (states.contains(MaterialState.selected)) {
+          return DesignSystem.darkCyan.withAlpha(30);
+        }
+        return DesignSystem.darkGrey9.withAlpha(30);
       }),
     ),
     dialogTheme: DialogTheme(
@@ -366,8 +426,10 @@ class AppThemes {
       ),
     ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: DesignSystem.darkSecondaryColor,
+      backgroundColor: DesignSystem.darkCyan,
       foregroundColor: Colors.white,
+      elevation: 4,
+      highlightElevation: 8,
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: DesignSystem.darkSurfaceColor,
@@ -380,19 +442,49 @@ class AppThemes {
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: DesignSystem.darkNavBarColor,
-      indicatorColor: DesignSystem.darkSecondaryColor.withAlpha(50),
+      indicatorColor: DesignSystem.darkCyan.withAlpha(50),
+      surfaceTintColor: Colors.transparent,
+      elevation: 4,
       iconTheme: MaterialStateProperty.resolveWith((states) {
         if (states.contains(MaterialState.selected)) {
-          return const IconThemeData(color: DesignSystem.darkIconColor);
+          return const IconThemeData(color: DesignSystem.darkCyan);
         }
         return const IconThemeData(color: DesignSystem.darkTextSecondaryColor);
       }),
       labelTextStyle: MaterialStateProperty.resolveWith((states) {
         if (states.contains(MaterialState.selected)) {
-          return const TextStyle(color: DesignSystem.darkIconColor);
+          return const TextStyle(
+            color: DesignSystem.darkCyan,
+            fontWeight: FontWeight.w500,
+          );
         }
         return const TextStyle(color: DesignSystem.darkTextSecondaryColor);
       }),
+    ),
+    // Additional theme properties
+    splashColor: DesignSystem.darkSplashColor,
+    highlightColor: DesignSystem.darkHighlightColor.withAlpha(30),
+    focusColor: DesignSystem.darkFocusColor.withAlpha(20),
+    hoverColor: DesignSystem.darkCyan.withAlpha(10),
+    disabledColor: DesignSystem.darkDisabledColor,
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: DesignSystem.darkCyan,
+      circularTrackColor: DesignSystem.darkGrey5,
+      linearTrackColor: DesignSystem.darkGrey5,
+    ),
+    tooltipTheme: TooltipThemeData(
+      decoration: BoxDecoration(
+        color: DesignSystem.darkGrey6,
+        borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(50),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      textStyle: const TextStyle(color: DesignSystem.darkTextPrimaryColor),
     ),
   );
 }
