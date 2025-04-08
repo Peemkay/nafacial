@@ -5,6 +5,7 @@ import '../config/theme.dart';
 import '../config/design_system.dart';
 import '../utils/responsive_utils.dart';
 import '../widgets/platform_aware_widgets.dart';
+import '../widgets/grid_background.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -344,30 +345,12 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     return PlatformScaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              DesignSystem.primaryColor,
-              DesignSystem.primaryColor.withAlpha(230),
-              AppTheme.green.withAlpha(204),
-            ],
-          ),
-        ),
+      body: GridBackground(
+        useGradient: true,
+        gridColor: Colors.white.withAlpha(20),
         child: SafeArea(
           child: Stack(
             children: [
-              // Security pattern overlay
-              Positioned.fill(
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: CustomPaint(
-                    painter: SecurityPatternPainter(),
-                  ),
-                ),
-              ),
               // Main content - responsive layout
               Center(
                 child: ConstrainedBox(

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../config/design_system.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
+import '../widgets/grid_background.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({Key? key}) : super(key: key);
@@ -67,24 +68,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return PlatformScaffold(
       appBar: AppBar(
         title: const Text('Secure Registration'),
-        backgroundColor: DesignSystem.primaryColor,
+        backgroundColor: isDarkMode
+            ? DesignSystem.darkSurfaceColor
+            : DesignSystem.primaryColor,
         elevation: 0,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              DesignSystem.primaryColor,
-              DesignSystem.primaryColor.withAlpha(230),
-              const Color(0xFF1E5631).withAlpha(204), // Military Green
-            ],
-          ),
-        ),
+      body: GridBackground(
+        useGradient: true,
+        gridColor: Colors.white.withAlpha(20),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -101,7 +97,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       PlatformContainer(
                         padding:
                             EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
-                        backgroundColor: Colors.white.withOpacity(0.1),
+                        backgroundColor: Colors.white.withAlpha(25),
                         borderRadius: BorderRadius.circular(
                             DesignSystem.borderRadiusMedium),
                         child: Row(
@@ -131,7 +127,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       PlatformCard(
                         padding:
                             EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
-                        backgroundColor: Colors.white.withOpacity(0.9),
+                        backgroundColor: Colors.white.withAlpha(230),
                         child: Form(
                           key: _formKey,
                           child: Column(

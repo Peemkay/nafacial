@@ -90,9 +90,16 @@ class _NotificationIconState extends State<NotificationIcon>
       bool isDesktop, bool isTablet, bool hasNotifications) {
     final iconSize = isDesktop || isTablet ? 28.0 : 24.0;
 
+    // Use the theme's icon color
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final iconColor = isDarkMode
+        ? DesignSystem.darkIconColor
+        : theme.iconTheme.color ?? DesignSystem.primaryColor;
+
     Widget icon = Icon(
       Icons.notifications,
-      color: DesignSystem.primaryColor,
+      color: iconColor,
       size: iconSize,
     );
 

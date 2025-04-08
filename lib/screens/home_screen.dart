@@ -16,6 +16,8 @@ import '../utils/responsive_utils.dart';
 import '../widgets/platform_aware_widgets.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/notification_icon.dart';
+import '../widgets/grid_background.dart';
+import '../providers/theme_provider.dart';
 import 'facial_verification_screen.dart';
 import 'live_facial_recognition_screen.dart';
 import 'personnel_registration_screen.dart';
@@ -66,24 +68,29 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
     final user = authProvider.currentUser;
 
     return PlatformScaffold(
       appBar: AppBar(
         title: const Text('NAFacial Dashboard'),
-        backgroundColor: DesignSystem.primaryColor,
+        backgroundColor: isDarkMode ? DesignSystem.darkAppBarColor : DesignSystem.lightAppBarColor,
         actions: [
           const NotificationIcon(),
         ],
       ),
       drawer: const CustomDrawer(),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+      body: GridBackground(
+        useGradient: true,
+        gridColor: Colors.white.withAlpha(20),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // Admin cards section - responsive layout
                 ResponsiveUtils.isDesktop(context)
                     ? Row(

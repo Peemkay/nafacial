@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../config/design_system.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
+import '../widgets/grid_background.dart';
 import 'registration_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -138,18 +139,9 @@ class _LoginScreenState extends State<LoginScreen>
         MediaQuery.of(context).orientation == Orientation.landscape;
 
     return PlatformScaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              DesignSystem.primaryColor,
-              DesignSystem.primaryColor.withAlpha(230),
-              const Color(0xFF1E5631).withAlpha(204), // Military Green
-            ],
-          ),
-        ),
+      body: GridBackground(
+        useGradient: true,
+        gridColor: Colors.white.withAlpha(20),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -217,7 +209,7 @@ class _LoginScreenState extends State<LoginScreen>
                         PlatformText(
                           'Nigerian Army Facial Verification System',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withAlpha(230),
                             fontSize: DesignSystem.adjustedFontSizeSmall,
                             letterSpacing: DesignSystem.letterSpacingWide,
                           ),
@@ -228,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen>
                         PlatformCard(
                           padding: EdgeInsets.all(
                               DesignSystem.adjustedSpacingMedium),
-                          backgroundColor: Colors.white.withOpacity(0.9),
+                          backgroundColor: Colors.white.withAlpha(230),
                           child: Form(
                             key: _formKey,
                             child: Column(

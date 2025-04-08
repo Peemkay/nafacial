@@ -14,10 +14,14 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
+    final isDarkMode = themeProvider.isDarkMode;
+
     return PlatformScaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: DesignSystem.primaryColor,
+        backgroundColor: isDarkMode
+            ? DesignSystem.darkAppBarColor
+            : DesignSystem.lightAppBarColor,
       ),
       body: SafeArea(
         child: ListView(
@@ -35,7 +39,9 @@ class SettingsScreen extends StatelessWidget {
                       themeProvider.isDarkMode
                           ? Icons.dark_mode
                           : Icons.light_mode,
-                      color: DesignSystem.primaryColor,
+                      color: themeProvider.isDarkMode
+                          ? DesignSystem.darkIconColor
+                          : DesignSystem.lightIconColor,
                     ),
                     title: const Text('Theme Mode'),
                     subtitle: Text(
@@ -45,15 +51,19 @@ class SettingsScreen extends StatelessWidget {
                       onChanged: (value) {
                         themeProvider.toggleTheme();
                       },
-                      activeColor: DesignSystem.primaryColor,
+                      activeColor: themeProvider.isDarkMode
+                          ? DesignSystem.darkSecondaryColor
+                          : DesignSystem.lightPrimaryColor,
                     ),
                   ),
                   const Divider(),
                   // Theme selection
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.palette,
-                      color: DesignSystem.primaryColor,
+                      color: themeProvider.isDarkMode
+                          ? DesignSystem.darkIconColor
+                          : DesignSystem.lightIconColor,
                     ),
                     title: const Text('Select Theme'),
                     onTap: () => _showThemeSelectionDialog(context),
@@ -248,12 +258,16 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: DesignSystem.primaryColor,
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) => Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: themeProvider.isDarkMode
+                ? DesignSystem.darkSecondaryColor
+                : DesignSystem.lightPrimaryColor,
+          ),
         ),
       ),
     );
