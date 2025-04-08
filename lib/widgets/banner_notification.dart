@@ -1,145 +1,245 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:badges/badges.dart' as badges;
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 import '../config/design_system.dart';
 import '../services/notification_service.dart';
-import '../utils/responsive_utils.dart';
 
-class NotificationIcon extends StatefulWidget {
-  const NotificationIcon({Key? key}) : super(key: key);
+class BannerNotification extends StatefulWidget {
+  final NotificationItem notification;
+  final VoidCallback onDismiss;
+  final VoidCallback onTap;
+
+  const BannerNotification({
+    Key? key,
+    required this.notification,
+    required this.onDismiss,
+    required this.onTap,
+  }) : super(key: key);
 
   @override
-  State<NotificationIcon> createState() => _NotificationIconState();
+  State<BannerNotification> createState() => _BannerNotificationState();
 }
 
-class _NotificationIconState extends State<NotificationIcon>
+class _BannerNotificationState extends State<BannerNotification>
     with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  bool _isAnimating = false;
+  late AnimationController _controller;
+  late Animation<Offset> _offsetAnimation;
+  bool _isDismissing = false;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
       vsync: this,
-      duration: const Duration(milliseconds: 500),
     );
 
-    // Listen for new notifications to trigger animation
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final notificationService =
-          Provider.of<NotificationService>(context, listen: false);
-      notificationService.notificationStream.listen((notification) {
-        if (mounted) {
-          setState(() {
-            _isAnimating = true;
-          });
-          _animationController.reset();
-          _animationController.forward().then((_) {
-            if (mounted) {
-              setState(() {
-                _isAnimating = false;
-              });
-            }
-          });
-        }
-      });
+    _offsetAnimation = Tween<Offset>(
+      begin: const Offset(0, -1.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+      reverseCurve: Curves.easeIn,
+    ));
+
+    // Auto-dismiss after 5 seconds
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted && !_isDismissing) {
+        _dismissBanner();
+      }
     });
+
+    _controller.forward();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _controller.dispose();
     super.dispose();
+  }
+
+  void _dismissBanner() {
+    if (_isDismissing) return;
+
+    setState(() {
+      _isDismissing = true;
+    });
+
+    _controller.reverse().then((_) {
+      widget.onDismiss();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final notificationService = Provider.of<NotificationService>(context);
-    final bool isDesktop = ResponsiveUtils.isDesktop(context);
-    final bool isTablet = ResponsiveUtils.isTablet(context);
-    final bool hasNotifications = notificationService.notificationCount > 0;
+    // Get icon and color based on notification type
+    IconData icon;
+    Color color;
 
-    return GestureDetector(
-      onTap: () => _showNotificationsPanel(context),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: badges.Badge(
-          position: badges.BadgePosition.topEnd(top: -5, end: -3),
-          showBadge: hasNotifications,
-          badgeContent: Text(
-            notificationService.notificationCount.toString(),
-            style: const TextStyle(
+    switch (widget.notification.type) {
+      case NotificationType.success:
+        icon = Icons.check_circle;
+        color = Colors.green;
+        break;
+      case NotificationType.warning:
+        icon = Icons.warning_amber;
+        color = Colors.orange;
+        break;
+      case NotificationType.error:
+        icon = Icons.error;
+        color = Colors.red;
+        break;
+      case NotificationType.info:
+        icon = Icons.info;
+        color = DesignSystem.primaryColor;
+        break;
+    }
+
+    return SlideTransition(
+      position: _offsetAnimation,
+      child: Material(
+        elevation: 4,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          onVerticalDragEnd: (_) => _dismissBanner(),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
               color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
+              border: Border(
+                bottom: BorderSide(
+                  color: color,
+                  width: 2,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: color.withOpacity(0.1),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        widget.notification.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.notification.body,
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontSize: 14,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: _dismissBanner,
+                  color: Colors.grey[600],
+                  iconSize: 20,
+                ),
+              ],
             ),
           ),
-          badgeStyle: const badges.BadgeStyle(
-            badgeColor: Colors.red,
-            padding: EdgeInsets.all(5),
-          ),
-          child: _buildAnimatedIcon(isDesktop, isTablet, hasNotifications),
         ),
       ),
     );
   }
+}
 
-  Widget _buildAnimatedIcon(
-      bool isDesktop, bool isTablet, bool hasNotifications) {
-    final iconSize = isDesktop || isTablet ? 28.0 : 24.0;
+class BannerNotificationManager extends StatefulWidget {
+  final Widget child;
 
-    Widget icon = Icon(
-      Icons.notifications,
-      color: DesignSystem.primaryColor,
-      size: iconSize,
-    );
+  const BannerNotificationManager({
+    Key? key,
+    required this.child,
+  }) : super(key: key);
 
-    // Apply animations
-    if (_isAnimating) {
-      icon = icon
-          .animate(controller: _animationController)
-          .shake(duration: 500.ms, hz: 4)
-          .scale(
-              begin: const Offset(1, 1),
-              end: const Offset(1.2, 1.2),
-              duration: 250.ms)
-          .then()
-          .scale(
-              begin: const Offset(1.2, 1.2),
-              end: const Offset(1, 1),
-              duration: 250.ms);
-    } else if (hasNotifications) {
-      // Subtle pulse animation for when there are unread notifications
-      icon = icon
-          .animate(
-              autoPlay: true,
-              onComplete: (controller) {
-                controller.repeat(); // Repeat the animation
-              })
-          .fadeIn(duration: 300.ms)
-          .then()
-          .scale(
-            begin: const Offset(1, 1),
-            end: const Offset(1.05, 1.05),
-            duration: 1000.ms,
-          )
-          .then()
-          .scale(
-            begin: const Offset(1.05, 1.05),
-            end: const Offset(1, 1),
-            duration: 1000.ms,
-          );
+  @override
+  State<BannerNotificationManager> createState() =>
+      _BannerNotificationManagerState();
+}
+
+class _BannerNotificationManagerState extends State<BannerNotificationManager> {
+  NotificationItem? _currentNotification;
+  final List<NotificationItem> _notificationQueue = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Listen for new notifications
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notificationService =
+          Provider.of<NotificationService>(context, listen: false);
+      notificationService.notificationStream.listen(_handleNewNotification);
+    });
+  }
+
+  void _handleNewNotification(NotificationItem notification) {
+    if (mounted) {
+      if (_currentNotification == null) {
+        setState(() {
+          _currentNotification = notification;
+        });
+      } else {
+        // Add to queue if a notification is already showing
+        _notificationQueue.add(notification);
+      }
     }
+  }
 
-    return icon;
+  void _dismissCurrentNotification() {
+    if (mounted) {
+      setState(() {
+        if (_notificationQueue.isNotEmpty) {
+          // Show next notification in queue
+          _currentNotification = _notificationQueue.removeAt(0);
+        } else {
+          _currentNotification = null;
+        }
+      });
+    }
+  }
+
+  void _onNotificationTap() {
+    if (_currentNotification != null) {
+      // Mark as read in the notification service
+      final notificationService =
+          Provider.of<NotificationService>(context, listen: false);
+      notificationService.markAsRead(_currentNotification!.id);
+
+      // Dismiss the banner
+      _dismissCurrentNotification();
+
+      // Open the notification panel
+      _showNotificationsPanel(context);
+    }
   }
 
   void _showNotificationsPanel(BuildContext context) {
+    // This is a simplified version - you would typically call your existing notification panel here
     final notificationService =
         Provider.of<NotificationService>(context, listen: false);
-    final notifications = notificationService.notifications;
 
     showModalBottomSheet(
       context: context,
@@ -189,7 +289,8 @@ class _NotificationIconState extends State<NotificationIcon>
                         ),
                         Row(
                           children: [
-                            if (notifications.isNotEmpty) ...[
+                            if (notificationService
+                                .notifications.isNotEmpty) ...[
                               TextButton(
                                 onPressed: () {
                                   notificationService.markAllAsRead();
@@ -214,7 +315,7 @@ class _NotificationIconState extends State<NotificationIcon>
 
                   // Notifications list
                   Expanded(
-                    child: notifications.isEmpty
+                    child: notificationService.notifications.isEmpty
                         ? const Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -237,9 +338,10 @@ class _NotificationIconState extends State<NotificationIcon>
                           )
                         : ListView.builder(
                             controller: scrollController,
-                            itemCount: notifications.length,
+                            itemCount: notificationService.notifications.length,
                             itemBuilder: (context, index) {
-                              final notification = notifications[index];
+                              final notification =
+                                  notificationService.notifications[index];
                               return _buildNotificationItem(
                                 context,
                                 notification,
@@ -324,7 +426,7 @@ class _NotificationIconState extends State<NotificationIcon>
         margin: const EdgeInsets.symmetric(vertical: 4),
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: color.withAlpha(30),
+            backgroundColor: color.withOpacity(0.1),
             child: Icon(
               icon,
               color: color,
@@ -357,6 +459,28 @@ class _NotificationIconState extends State<NotificationIcon>
           },
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        widget.child,
+        if (_currentNotification != null)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: BannerNotification(
+                notification: _currentNotification!,
+                onDismiss: _dismissCurrentNotification,
+                onTap: _onNotificationTap,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -9,6 +9,7 @@ import 'providers/quick_actions_provider.dart';
 import 'providers/access_log_provider.dart';
 import 'providers/version_provider.dart';
 import 'services/notification_service.dart';
+import 'widgets/banner_notification.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -68,12 +69,14 @@ class NAFacialApp extends StatelessWidget {
           },
           builder: (context, child) {
             // Apply a responsive layout wrapper to the entire app
-            return MediaQuery(
-              // Set text scaling to ensure consistent text sizes
-              data: MediaQuery.of(context).copyWith(
-                textScaler: const TextScaler.linear(1.0),
+            return BannerNotificationManager(
+              child: MediaQuery(
+                // Set text scaling to ensure consistent text sizes
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: const TextScaler.linear(1.0),
+                ),
+                child: child!,
               ),
-              child: child!,
             );
           },
         ),
