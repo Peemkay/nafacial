@@ -69,3 +69,4 @@ class MainActivity: FlutterActivity() {
     private fun getRouteFromIntent(intent: Intent): String? {
         return intent.getStringExtra("route")
     }
+}

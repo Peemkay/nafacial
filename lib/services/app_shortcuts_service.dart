@@ -19,32 +19,45 @@ class AppShortcutsService {
     if (!Platform.isAndroid && !Platform.isIOS) return;
 
     try {
-      final quickActionsProvider =
-          Provider.of<QuickActionsProvider>(context, listen: false);
+      // Store the context for later use
+      final contextRef = context;
 
-      // Get the top 4 visible quick actions for shortcuts
-      final visibleActions = quickActionsProvider.visibleQuickActions;
-      final shortcutItems = <ShortcutItem>[];
-
-      // Add up to 4 shortcuts (platform limitation)
-      for (int i = 0; i < visibleActions.length && i < 4; i++) {
-        final action = visibleActions[i];
-        shortcutItems.add(
-          ShortcutItem(
-            type: action.id,
-            localizedTitle: action.title,
-            icon: _getIconNameForPlatform(action.icon),
-          ),
-        );
-      }
-
-      // Set the shortcuts
-      _quickActions.setShortcutItems(shortcutItems);
-
-      // Listen for shortcut item invocations
+      // Listen for shortcut item invocations first
       _quickActions.initialize((shortcutType) {
         // Handle the shortcut action
-        _handleShortcut(context, shortcutType);
+        _handleShortcut(contextRef, shortcutType);
+      });
+
+      // Get the quick actions provider before the async gap
+      final quickActionsProvider =
+          Provider.of<QuickActionsProvider>(context, listen: false);
+      final visibleActions = quickActionsProvider.visibleQuickActions;
+
+      // Then set up the shortcuts with a delay to avoid race conditions
+      Future.delayed(const Duration(seconds: 1), () {
+        try {
+          // Create shortcut items
+          final shortcutItems = <ShortcutItem>[];
+
+          // Add up to 4 shortcuts (platform limitation)
+          for (int i = 0; i < visibleActions.length && i < 4; i++) {
+            final action = visibleActions[i];
+            shortcutItems.add(
+              ShortcutItem(
+                type: action.id,
+                localizedTitle: action.title,
+                icon: _getIconNameForPlatform(action.icon),
+              ),
+            );
+          }
+
+          // Set the shortcuts
+          if (shortcutItems.isNotEmpty) {
+            _quickActions.setShortcutItems(shortcutItems);
+          }
+        } catch (e) {
+          debugPrint('Error setting app shortcuts: $e');
+        }
       });
     } catch (e) {
       debugPrint('Error initializing app shortcuts: $e');
@@ -58,18 +71,22 @@ class AppShortcutsService {
 
   /// Handle shortcut action when app is launched from a shortcut
   void _handleShortcut(BuildContext context, String shortcutType) {
-    final quickActionsProvider =
-        Provider.of<QuickActionsProvider>(context, listen: false);
-
-    // Find the action with the matching ID
-    final action = quickActionsProvider.quickActions.firstWhere(
-      (action) => action.id == shortcutType,
-      orElse: () => quickActionsProvider.quickActions.first,
-    );
-
-    // Navigate to the appropriate route
+    // Use a post-frame callback to ensure the widget tree is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Navigator.of(context).pushNamed(action.route);
+      // Check if the context is still valid
+      if (context.mounted) {
+        final quickActionsProvider =
+            Provider.of<QuickActionsProvider>(context, listen: false);
+
+        // Find the action with the matching ID
+        final action = quickActionsProvider.quickActions.firstWhere(
+          (action) => action.id == shortcutType,
+          orElse: () => quickActionsProvider.quickActions.first,
+        );
+
+        // Navigate to the appropriate route
+        Navigator.of(context).pushNamed(action.route);
+      }
     });
   }
 
