@@ -13,7 +13,9 @@ class GalleryScreen extends StatelessWidget {
     return PlatformScaffold(
       appBar: AppBar(
         title: const Text('Gallery'),
-        backgroundColor: DesignSystem.primaryColor,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? DesignSystem.darkAppBarColor
+            : DesignSystem.lightAppBarColor,
       ),
       body: SafeArea(
         child: Padding(
@@ -140,7 +142,7 @@ class GalleryScreen extends StatelessWidget {
   Future<void> _pickImage(BuildContext context, ImageSource source) async {
     final imagePicker = ImagePicker();
     final pickedFile = await imagePicker.pickImage(source: source);
-    
+
     if (pickedFile != null && context.mounted) {
       Navigator.push(
         context,

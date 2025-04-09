@@ -1,27 +1,23 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import '../config/design_system.dart';
-import '../models/personnel_model.dart';
 import '../providers/auth_provider.dart';
-import '../providers/personnel_provider.dart';
 import '../providers/quick_actions_provider.dart';
-import '../providers/access_log_provider.dart';
-import '../models/access_log_model.dart';
 import '../providers/version_provider.dart';
-import '../services/notification_service.dart';
 import '../utils/responsive_utils.dart';
 import '../widgets/platform_aware_widgets.dart';
 import '../widgets/custom_drawer.dart';
-import '../widgets/notification_icon.dart';
 import '../widgets/grid_background.dart';
-import '../widgets/version_info.dart';
+import '../widgets/notification_icon.dart';
+import '../widgets/web_layout.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/security_features_slider.dart';
 import 'facial_verification_screen.dart';
 import 'live_facial_recognition_screen.dart';
 import 'personnel_registration_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -32,127 +28,180 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-
-    // Initialize version provider
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final versionProvider = Provider.of<VersionProvider>(context, listen: false);
-      versionProvider.initialize();
-    });
-  }
-
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Load personnel data if needed
-      // Load access logs if needed
-    } catch (e) {
-      // Handle errors
-      debugPrint('Error loading data: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
+  final ImagePicker picker = ImagePicker();
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    // Get providers
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDarkMode = themeProvider.isDarkMode;
-    final user = authProvider.currentUser;
+    final isWebPlatform = ResponsiveUtils.isWebPlatform();
 
     return Scaffold(
       key: _scaffoldKey,
-      appBar: AppBar(
-        title: const Text('NAFacial Dashboard'),
-        backgroundColor: isDarkMode ? DesignSystem.darkAppBarColor : DesignSystem.lightAppBarColor,
-        actions: const [
-          NotificationIcon(),
-        ],
-      ),
-      drawer: const CustomDrawer(),
-      body: GridBackground(
-        useGradient: true,
-        gridColor: Colors.white.withAlpha(20),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Admin cards section - responsive layout
-                  ResponsiveUtils.isDesktop(context)
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+      // Use custom web layout for web platform, regular layout for others
+      appBar: isWebPlatform
+          ? null // No AppBar for web, we'll use our custom header
+          : AppBar(
+              title: const Text('NAFacial Dashboard'),
+              backgroundColor: isDarkMode
+                  ? DesignSystem.darkAppBarColor
+                  : DesignSystem.lightAppBarColor,
+              actions: const [
+                NotificationIcon(),
+              ],
+            ),
+      drawer: isWebPlatform ? null : const CustomDrawer(), // No drawer for web
+      body: isWebPlatform
+          // Web layout with header and footer
+          ? WebLayout(
+              onMenuPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              content: _buildMainContent(context, isDarkMode, isWebPlatform),
+            )
+          // Mobile/desktop layout
+          : _buildMainContent(context, isDarkMode, isWebPlatform),
+    );
+  }
+
+  Widget _buildMainContent(
+      BuildContext context, bool isDarkMode, bool isWebPlatform) {
+    return GridBackground(
+      useGradient: isDarkMode, // Only use gradient in dark mode
+      gridColor:
+          isDarkMode ? Colors.white.withAlpha(20) : Colors.grey.withAlpha(10),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Admin cards section - always in row layout
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: _buildAdminCard(context),
+                    ),
+                    SizedBox(width: DesignSystem.adjustedSpacingMedium),
+                    Expanded(
+                      flex: 1,
+                      child: _buildBiometricCard(context),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: DesignSystem.adjustedSpacingLarge),
+
+                // Quick actions section
+                PlatformCard(
+                  child: Padding(
+                    padding: EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Quick actions header
+                        Row(
                           children: [
-                            Expanded(
-                              flex: 1,
-                              child: _buildAdminCard(context),
+                            const Icon(
+                              Icons.flash_on,
+                              color: DesignSystem.primaryColor,
+                              size: 24,
                             ),
-                            SizedBox(width: DesignSystem.adjustedSpacingMedium),
-                            Expanded(
-                              flex: 1,
-                              child: _buildBiometricCard(context),
+                            SizedBox(width: DesignSystem.adjustedSpacingSmall),
+                            const Expanded(
+                              child: PlatformText(
+                                'Quick Actions',
+                                isTitle: true,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            _buildAdminCard(context),
-                            SizedBox(height: DesignSystem.adjustedSpacingMedium),
-                            _buildBiometricCard(context),
+                            PlatformButton(
+                              text: 'CUSTOMIZE',
+                              onPressed: () {
+                                Navigator.of(context).pushNamed('/settings');
+                              },
+                              isSmall: true,
+                              isPrimary: false,
+                            ),
                           ],
                         ),
+                        SizedBox(height: DesignSystem.adjustedSpacingMedium),
+                        const Divider(),
+                        SizedBox(height: DesignSystem.adjustedSpacingMedium),
 
-                  SizedBox(height: DesignSystem.adjustedSpacingLarge),
-
-                  // Quick actions
-                  const PlatformText(
-                    'Quick Actions',
-                    isTitle: true,
+                        // Quick actions grid
+                        Consumer<QuickActionsProvider>(
+                          builder: (context, quickActionsProvider, child) {
+                            return GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: ResponsiveUtils.isDesktop(
+                                        context)
+                                    ? 4
+                                    : ResponsiveUtils.isTablet(context)
+                                        ? 3
+                                        : 2, // Changed from 3 to 2 for mobile to fix overflow
+                                crossAxisSpacing:
+                                    DesignSystem.adjustedSpacingSmall,
+                                mainAxisSpacing:
+                                    DesignSystem.adjustedSpacingSmall,
+                                childAspectRatio: ResponsiveUtils.isDesktop(
+                                        context)
+                                    ? 1.5
+                                    : ResponsiveUtils.isTablet(context)
+                                        ? 1.3
+                                        : 1.2, // Increased aspect ratio to make cards smaller
+                              ),
+                              itemCount:
+                                  quickActionsProvider.quickActions.length,
+                              itemBuilder: (context, index) {
+                                final action =
+                                    quickActionsProvider.quickActions[index];
+                                return _buildQuickActionCard(context, action);
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                  SizedBox(height: DesignSystem.adjustedSpacingMedium),
+                ),
 
-                  Consumer<QuickActionsProvider>(
-                    builder: (context, quickActionsProvider, child) {
-                      return GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount:
-                              ResponsiveUtils.isDesktop(context) ? 4 : 2,
-                          crossAxisSpacing: DesignSystem.adjustedSpacingSmall,
-                          mainAxisSpacing: DesignSystem.adjustedSpacingSmall,
-                          childAspectRatio: 1.2,
+                // Security Features Slider
+                const SizedBox(height: 24),
+                const SecurityFeaturesSlider(),
+
+                // App version at the bottom
+                SizedBox(height: DesignSystem.adjustedSpacingLarge),
+                // Only show version info on non-web platforms (web has it in the footer)
+                if (!isWebPlatform)
+                  Consumer<VersionProvider>(
+                    builder: (context, versionProvider, child) {
+                      final deviceInfo = MediaQuery.of(context).size.width > 600
+                          ? 'Desktop'
+                          : MediaQuery.of(context).size.width < 400
+                              ? 'Mobile'
+                              : 'Tablet';
+                      return Center(
+                        child: Text(
+                          'NAFacial v${versionProvider.currentVersion} | $deviceInfo',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDarkMode
+                                ? Colors.white.withAlpha(150)
+                                : Colors.black.withAlpha(100),
+                          ),
                         ),
-                        itemCount: quickActionsProvider.quickActions.length,
-                        itemBuilder: (context, index) {
-                          final action =
-                              quickActionsProvider.quickActions[index];
-                          return _buildQuickActionCard(context, action);
-                        },
                       );
                     },
                   ),
 
-                  SizedBox(height: DesignSystem.adjustedSpacingLarge),
-                  
-                  // Version info at the bottom
-                  const SizedBox(height: 24),
-                  const VersionInfo(),
-                ],
-              ),
+                SizedBox(height: DesignSystem.adjustedSpacingLarge),
+              ],
             ),
           ),
         ),
@@ -170,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             children: [
-              CircleAvatar(
+              const CircleAvatar(
                 backgroundColor: DesignSystem.primaryColor,
                 radius: 30,
                 child: Icon(
@@ -191,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontSize: 18,
                       ),
                     ),
-                    PlatformText(
+                    const PlatformText(
                       'Administrator',
                       style: TextStyle(
                         color: DesignSystem.accentColor,
@@ -203,24 +252,71 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 16),
           const Divider(),
-          const SizedBox(height: 8),
-          const PlatformText(
-            'System Status: ACTIVE',
-            style: TextStyle(
-              color: Colors.green,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          PlatformText(
-            'Last Login: ${DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now())}',
-            style: TextStyle(
-              fontSize: 12,
-              color: DesignSystem.textSecondaryColor,
-            ),
+          const SizedBox(height: 16),
+          // Admin actions
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildAdminAction(
+                context,
+                'Profile',
+                Icons.person,
+                () => Navigator.pushNamed(context, '/profile'),
+              ),
+              _buildAdminAction(
+                context,
+                'Settings',
+                Icons.settings,
+                () => Navigator.pushNamed(context, '/settings'),
+              ),
+              _buildAdminAction(
+                context,
+                'Logout',
+                Icons.logout,
+                () async {
+                  await authProvider.logout();
+                  if (context.mounted) {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  }
+                },
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAdminAction(
+    BuildContext context,
+    String label,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: DesignSystem.primaryColor,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: DesignSystem.fontWeightMedium,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -232,23 +328,39 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.fingerprint,
                 color: DesignSystem.primaryColor,
-                size: 24,
+                size: 30,
               ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: PlatformText(
-                  'Biometric Authentication',
-                  isTitle: true,
-                  overflow: TextOverflow.ellipsis,
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    PlatformText(
+                      'Biometric Authentication',
+                      isTitle: true,
+                      style: TextStyle(
+                        fontSize: 18,
+                      ),
+                    ),
+                    PlatformText(
+                      'Secure your account',
+                      style: TextStyle(
+                        color: DesignSystem.accentColor,
+                        fontWeight: DesignSystem.fontWeightMedium,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          const Divider(),
           const SizedBox(height: 16),
           if (!authProvider.isBiometricAvailable) ...[
             const PlatformText(
@@ -285,32 +397,88 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ],
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 16),
+          // Biometric actions
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildAdminAction(
+                context,
+                'Verify',
+                Icons.face,
+                () => Navigator.pushNamed(context, '/facial_verification'),
+              ),
+              _buildAdminAction(
+                context,
+                'Live Scan',
+                Icons.camera_alt,
+                () => Navigator.pushNamed(context, '/live_recognition'),
+              ),
+              _buildAdminAction(
+                context,
+                'Gallery',
+                Icons.photo_library,
+                () => _openGallery(context),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildQuickActionCard(BuildContext context, QuickAction action) {
-    return PlatformCard(
+  Widget _buildQuickActionCard(BuildContext context, dynamic action) {
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall),
+      ),
+      color:
+          isDarkMode ? DesignSystem.darkCardColor.withAlpha(200) : Colors.white,
       child: InkWell(
         onTap: () => _handleQuickActionTap(context, action),
         borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall),
         child: Padding(
-          padding: EdgeInsets.all(DesignSystem.adjustedSpacingSmall),
+          padding: EdgeInsets.all(isMobile
+              ? 4.0
+              : 8.0), // Further reduced padding to make cards smaller
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                action.icon,
-                color: DesignSystem.primaryColor,
-                size: 32,
+              // Icon with colored background
+              Container(
+                padding: EdgeInsets.all(
+                    isMobile ? 4.0 : 6.0), // Further reduced padding
+                decoration: BoxDecoration(
+                  color: action.color.withAlpha(isDarkMode ? 60 : 30),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  action.icon,
+                  color: isDarkMode ? Colors.white : action.color,
+                  size: isMobile ? 16 : 22, // Even smaller icons
+                ),
               ),
-              const SizedBox(height: 8),
-              PlatformText(
-                action.title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
+              SizedBox(height: isMobile ? 3 : 4), // Further reduced spacing
+              // Title with responsive font size
+              Flexible(
+                child: Text(
+                  action.title,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1, // Limit to one line to prevent overflow
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: isMobile ? 9 : 11, // Even smaller font size
+                    color: isDarkMode
+                        ? Colors.white.withAlpha(220)
+                        : DesignSystem.lightTextPrimaryColor,
+                  ),
                 ),
               ),
             ],
@@ -320,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _handleQuickActionTap(BuildContext context, QuickAction action) {
+  void _handleQuickActionTap(BuildContext context, dynamic action) {
     switch (action.id) {
       case 'facial_verification':
         Navigator.push(
@@ -359,19 +527,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openGallery(BuildContext context) async {
-    final ImagePicker picker = ImagePicker();
     try {
       final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      if (image != null) {
-        if (!mounted) return;
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => FacialVerificationScreen(
-              initialImage: File(image.path),
+      if (image != null && mounted) {
+        // Use a post-frame callback to ensure we're not using context across async gaps
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const FacialVerificationScreen(
+                initialTabIndex: 1, // Photo tab
+              ),
             ),
-          ),
-        );
+          );
+        });
       }
     } catch (e) {
       debugPrint('Error picking image: $e');

@@ -6,9 +6,9 @@ import '../screens/about_screen.dart';
 import '../screens/contact_screen.dart';
 import '../screens/privacy_policy_screen.dart';
 import '../screens/terms_conditions_screen.dart';
-import '../screens/settings_screen.dart';
 import '../screens/facial_verification_screen.dart';
 import '../screens/live_facial_recognition_screen.dart';
+import '../screens/personnel_registration_screen.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({Key? key}) : super(key: key);
@@ -45,14 +45,14 @@ class _CustomDrawerState extends State<CustomDrawer>
     _itemsSlideAnimation = Tween<double>(begin: -1.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: Interval(0.2, 1.0, curve: Curves.easeInOut),
+        curve: const Interval(0.2, 1.0, curve: Curves.easeInOut),
       ),
     );
 
     _itemsFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: Interval(0.2, 1.0, curve: Curves.easeInOut),
+        curve: const Interval(0.2, 1.0, curve: Curves.easeInOut),
       ),
     );
 
@@ -82,7 +82,7 @@ class _CustomDrawerState extends State<CustomDrawer>
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withAlpha(50),
                   blurRadius: 10,
                   spreadRadius: 2,
                 ),
@@ -116,7 +116,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             color: Colors.white,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
+                                color: Colors.black.withAlpha(50),
                                 blurRadius: 5,
                                 spreadRadius: 1,
                               ),
@@ -165,6 +165,8 @@ class _CustomDrawerState extends State<CustomDrawer>
                       child: ListView(
                         padding: EdgeInsets.zero,
                         children: [
+                          // Home Section
+                          _buildDrawerHeader('Main Navigation'),
                           _buildDrawerItem(
                             icon: Icons.home,
                             title: 'Home',
@@ -174,8 +176,19 @@ class _CustomDrawerState extends State<CustomDrawer>
                             },
                           ),
                           _buildDrawerItem(
+                            icon: Icons.dashboard,
+                            title: 'Dashboard',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.pushReplacementNamed(context, '/home');
+                            },
+                          ),
+
+                          // Verification Section
+                          _buildDrawerHeader('Verification'),
+                          _buildDrawerItem(
                             icon: Icons.camera_alt,
-                            title: 'Facial Verification',
+                            title: 'Verification',
                             onTap: () {
                               Navigator.pop(context);
                               Navigator.pushNamed(
@@ -183,8 +196,39 @@ class _CustomDrawerState extends State<CustomDrawer>
                             },
                           ),
                           _buildDrawerItem(
+                            icon: Icons.face_retouching_natural,
+                            title: 'Live Recognition',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const LiveFacialRecognitionScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.camera_enhance,
+                            title: 'Quick Scan',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const LiveFacialRecognitionScreen(),
+                                ),
+                              );
+                            },
+                          ),
+
+                          // Personnel Section
+                          _buildDrawerHeader('Personnel Management'),
+                          _buildDrawerItem(
                             icon: Icons.people,
-                            title: 'Personnel Database',
+                            title: 'Database',
                             onTap: () {
                               Navigator.pop(context);
                               Navigator.push(
@@ -199,19 +243,119 @@ class _CustomDrawerState extends State<CustomDrawer>
                             },
                           ),
                           _buildDrawerItem(
-                            icon: Icons.videocam,
-                            title: 'Live Recognition',
+                            icon: Icons.person_add,
+                            title: 'Register',
                             onTap: () {
                               Navigator.pop(context);
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      const LiveFacialRecognitionScreen(),
+                                      const PersonnelRegistrationScreen(),
                                 ),
                               );
                             },
                           ),
+                          _buildDrawerItem(
+                            icon: Icons.badge,
+                            title: 'ID Management',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showFeatureComingSoon(context);
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.military_tech,
+                            title: 'Rank Management',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showFeatureComingSoon(context);
+                            },
+                          ),
+
+                          // Security Section
+                          _buildDrawerHeader('Security'),
+                          _buildDrawerItem(
+                            icon: Icons.security,
+                            title: 'Access Control',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showFeatureComingSoon(context);
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.history,
+                            title: 'Access Logs',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showFeatureComingSoon(context);
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.fingerprint,
+                            title: 'Biometric Settings',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showFeatureComingSoon(context);
+                            },
+                          ),
+
+                          // Media Section
+                          _buildDrawerHeader('Media'),
+                          _buildDrawerItem(
+                            icon: Icons.photo_library,
+                            title: 'Gallery',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.pushNamed(context, '/gallery');
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.video_library,
+                            title: 'Video Archive',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showFeatureComingSoon(context);
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.upload_file,
+                            title: 'Import/Export',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showFeatureComingSoon(context);
+                            },
+                          ),
+
+                          // Reports Section
+                          _buildDrawerHeader('Reports & Analytics'),
+                          _buildDrawerItem(
+                            icon: Icons.analytics,
+                            title: 'Analytics Dashboard',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showFeatureComingSoon(context);
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.bar_chart,
+                            title: 'Statistical Reports',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showFeatureComingSoon(context);
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.summarize,
+                            title: 'Activity Summary',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showFeatureComingSoon(context);
+                            },
+                          ),
+
+                          // Settings & Info Section
+                          _buildDrawerHeader('Settings & Information'),
                           _buildDrawerItem(
                             icon: Icons.settings,
                             title: 'Settings',
@@ -220,16 +364,100 @@ class _CustomDrawerState extends State<CustomDrawer>
                               Navigator.pushNamed(context, '/settings');
                             },
                           ),
-                          const Divider(),
                           _buildDrawerItem(
-                            icon: Icons.info,
+                            icon: Icons.update,
+                            title: 'Check for Updates',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showFeatureComingSoon(context);
+                            },
+                          ),
+
+                          // Information Section
+                          _buildDrawerHeader('Information'),
+                          _buildDrawerItem(
+                            icon: Icons.info_outline,
                             title: 'About',
                             onTap: () {
                               Navigator.pop(context);
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => const AboutScreen()),
+                                  builder: (context) => const AboutScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.contact_support,
+                            title: 'Contact Us',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ContactScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.description_outlined,
+                            title: 'Terms & Conditions',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const TermsConditionsScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.privacy_tip_outlined,
+                            title: 'Privacy Policy',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const PrivacyPolicyScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.map,
+                            title: 'App Roadmap',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showFeatureComingSoon(context);
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.logout,
+                            title: 'Logout',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showLogoutConfirmation(context);
+                            },
+                          ),
+                          // Add a spacer at the bottom
+                          const SizedBox(height: 16),
+
+                          _buildDrawerItem(
+                            icon: Icons.info_outline,
+                            title: 'About',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AboutScreen(),
+                                ),
                               );
                             },
                           ),
@@ -297,8 +525,8 @@ class _CustomDrawerState extends State<CustomDrawer>
                     opacity: _itemsFadeAnimation.value,
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      child: const Text(
-                        '© 2023 Nigerian Army',
+                      child: Text(
+                        '© ${DateTime.now().year} Nigerian Army',
                         style: TextStyle(
                           color: DesignSystem.textSecondaryColor,
                           fontSize: 12,
@@ -313,6 +541,66 @@ class _CustomDrawerState extends State<CustomDrawer>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildDrawerHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Divider(),
+          const SizedBox(height: 8),
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              color: DesignSystem.primaryColor.withAlpha(180),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFeatureComingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('This feature is coming soon!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              final authProvider =
+                  Provider.of<AuthProvider>(context, listen: false);
+              // Store the context reference
+              final contextRef = context;
+              authProvider.logout().then((_) {
+                Navigator.pushReplacementNamed(contextRef, '/login');
+              });
+            },
+            child: const Text('LOGOUT'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -343,7 +631,8 @@ class _CustomDrawerState extends State<CustomDrawer>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
       ),
-      hoverColor: DesignSystem.primaryColor.withOpacity(0.1),
+      hoverColor: DesignSystem.primaryColor.withAlpha(20),
+      selectedTileColor: DesignSystem.primaryColor.withAlpha(30),
     );
   }
 }

@@ -346,6 +346,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     return PlatformScaffold(
       body: GridBackground(
+        isSpecialScreen: true,
         useGradient: true,
         gridColor: Colors.white.withAlpha(20),
         child: SafeArea(

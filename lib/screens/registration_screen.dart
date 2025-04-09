@@ -80,6 +80,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         elevation: 0,
       ),
       body: GridBackground(
+        isSpecialScreen: true,
         useGradient: true,
         gridColor: Colors.white.withAlpha(20),
         child: SafeArea(

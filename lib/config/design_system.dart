@@ -61,18 +61,18 @@ class DesignSystem {
   static const Color darkSecondaryColor = darkCyan;
   static const Color darkAccentColor = Color(0xFFFFD54F); // Softer yellow
   static const Color darkBackgroundColor =
-      Color(0xFF0A0A0A); // Darker background
-  static const Color darkSurfaceColor = Color(0xFF121212); // Darker surface
-  static const Color darkCardColor = Color(0xFF1A1A1A); // Darker card
-  static const Color darkIconColor = Color(0xFF9E9E9E); // Grey icons
+      Color(0xFF0D2A4A); // Dark blue background
+  static const Color darkSurfaceColor = Color(0xFF0F3058); // Dark blue surface
+  static const Color darkCardColor = Color(0xFF103464); // Dark blue card
+  static const Color darkIconColor = skyBlue; // Sky blue icons
   static const Color darkTextPrimaryColor = Colors.white; // Pure white text
   static const Color darkTextSecondaryColor =
       Color(0xFFBDBDBD); // Light grey text
-  static const Color darkDividerColor = Color(0xFF2C2C2C); // Darker divider
-  static const Color darkAppBarColor = Color(0xFF1A1A1A); // Darker app bar
+  static const Color darkDividerColor = Color(0xFF2C4A6A); // Dark blue divider
+  static const Color darkAppBarColor = Color(0xFF0A2240); // Dark blue app bar
   static const Color darkStatusBarColor =
-      Color(0xFF0A0A0A); // Darker status bar
-  static const Color darkNavBarColor = Color(0xFF1A1A1A); // Darker nav bar
+      Color(0xFF071A30); // Dark blue status bar
+  static const Color darkNavBarColor = Color(0xFF0A2240); // Dark blue nav bar
 
   // Additional dark theme colors for UI elements
   static const Color darkButtonColor = darkCyan;

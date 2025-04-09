@@ -43,7 +43,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // App Name and Version
                 const Text(
                   'NAFacial',
@@ -62,7 +62,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // About Section
                 const PlatformText(
                   'About',
@@ -78,7 +78,7 @@ class AboutScreen extends StatelessWidget {
                   textAlign: TextAlign.justify,
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Features Section
                 const PlatformText(
                   'Key Features',
@@ -88,25 +88,29 @@ class AboutScreen extends StatelessWidget {
                 _buildFeatureItem(
                   icon: Icons.face,
                   title: 'Facial Recognition',
-                  description: 'Advanced biometric authentication using facial recognition technology.',
+                  description:
+                      'Advanced biometric authentication using facial recognition technology.',
                 ),
                 _buildFeatureItem(
                   icon: Icons.verified_user,
                   title: 'Personnel Verification',
-                  description: 'Quick and accurate verification of military personnel.',
+                  description:
+                      'Quick and accurate verification of military personnel.',
                 ),
                 _buildFeatureItem(
                   icon: Icons.people,
                   title: 'Personnel Database',
-                  description: 'Comprehensive database management for military personnel records.',
+                  description:
+                      'Comprehensive database management for military personnel records.',
                 ),
                 _buildFeatureItem(
                   icon: Icons.security,
                   title: 'Secure Authentication',
-                  description: 'Multi-factor authentication for enhanced security.',
+                  description:
+                      'Multi-factor authentication for enhanced security.',
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Copyright and Legal
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -115,16 +119,16 @@ class AboutScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
-                    children: const [
+                    children: [
                       Text(
-                        '© 2023 Nigerian Army',
-                        style: TextStyle(
+                        '© ${DateTime.now().year} Nigerian Army',
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
                       ),
-                      SizedBox(height: 8),
-                      Text(
+                      const SizedBox(height: 8),
+                      const Text(
                         'All rights reserved. Unauthorized use, reproduction, or distribution of this application or its contents is strictly prohibited.',
                         style: TextStyle(
                           fontSize: 12,
@@ -142,7 +146,7 @@ class AboutScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildFeatureItem({
     required IconData icon,
     required String title,

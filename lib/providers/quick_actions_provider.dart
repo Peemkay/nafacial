@@ -22,55 +22,62 @@ class QuickAction {
 class QuickActionsProvider with ChangeNotifier {
   static const String _visibilityPreferenceKey = 'quick_actions_visibility';
 
-  List<QuickAction> _quickActions = [
+  final List<QuickAction> _quickActions = [
     QuickAction(
       id: 'facial_verification',
       title: 'Facial Verification',
       icon: Icons.face,
-      color: Color(0xFF001F3F), // Primary color
+      color: const Color(0xFF1E88E5), // Blue
       route: '/facial_verification',
     ),
     QuickAction(
       id: 'personnel_database',
       title: 'Personnel Database',
       icon: Icons.people,
-      color: Color(0xFF2C3E50), // Secondary color
+      color: const Color(0xFF43A047), // Green
       route: '/personnel_database',
     ),
     QuickAction(
       id: 'access_logs',
       title: 'Access Logs',
       icon: Icons.history,
-      color: Colors.orange,
+      color: const Color(0xFFE53935), // Red
       route: '/access_logs',
     ),
     QuickAction(
       id: 'settings',
       title: 'System Settings',
       icon: Icons.settings,
-      color: Colors.grey.shade700,
+      color: const Color(0xFF546E7A), // Blue Grey
       route: '/settings',
     ),
     QuickAction(
       id: 'live_recognition',
       title: 'Live Recognition',
       icon: Icons.camera_alt,
-      color: Colors.purple,
+      color: const Color(0xFF8E24AA), // Purple
       route: '/live_recognition',
     ),
     QuickAction(
       id: 'register_personnel',
       title: 'Register Personnel',
       icon: Icons.person_add,
-      color: Colors.teal,
+      color: const Color(0xFF00897B), // Teal
       route: '/register_personnel',
     ),
     QuickAction(
       id: 'gallery',
       title: 'Gallery',
       icon: Icons.photo_library,
-      color: Colors.deepPurple,
+      color: const Color(0xFF5E35B1), // Deep Purple
       route: '/gallery',
+    ),
+    QuickAction(
+      id: 'notifications',
+      title: 'Notifications',
+      icon: Icons.notifications,
+      color: const Color(0xFFFFB300), // Amber
+      route: '/notifications',
     ),
   ];
 
@@ -89,11 +96,10 @@ class QuickActionsProvider with ChangeNotifier {
 
     if (savedVisibility != null) {
       // Create a map of visibility settings
-      final visibilityMap = Map.fromIterable(
-        savedVisibility,
-        key: (item) => item.split(':')[0],
-        value: (item) => item.split(':')[1] == 'true',
-      );
+      final visibilityMap = {
+        for (var item in savedVisibility)
+          item.split(':')[0]: item.split(':')[1] == 'true',
+      };
 
       // Update quick actions visibility
       for (var action in _quickActions) {

@@ -1470,7 +1470,13 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
     return PlatformScaffold(
       appBar: AppBar(
         title: const Text('Facial Verification'),
-        backgroundColor: DesignSystem.primaryColor,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? DesignSystem.darkAppBarColor
+            : DesignSystem.lightAppBarColor,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       drawer: const CustomDrawer(),
       body: SafeArea(

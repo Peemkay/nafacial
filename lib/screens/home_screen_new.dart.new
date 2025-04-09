@@ -1,0 +1,634 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import '../config/design_system.dart';
+import '../models/quick_action_model.dart';
+import '../providers/auth_provider.dart';
+import '../providers/quick_actions_provider.dart';
+import '../providers/version_provider.dart';
+import '../utils/responsive_utils.dart';
+import '../widgets/platform_aware_widgets.dart';
+import '../widgets/custom_drawer.dart';
+import '../widgets/grid_background.dart';
+import '../widgets/notification_icon.dart';
+import '../widgets/web_layout.dart';
+import '../providers/theme_provider.dart';
+import 'facial_verification_screen.dart';
+import 'live_facial_recognition_screen.dart';
+import 'personnel_registration_screen.dart';
+import 'personnel_database_screen.dart';
+import 'settings_screen.dart';
+
+class HomeScreenNew extends StatefulWidget {
+  const HomeScreenNew({Key? key}) : super(key: key);
+
+  @override
+  State<HomeScreenNew> createState() => _HomeScreenNewState();
+}
+
+class _HomeScreenNewState extends State<HomeScreenNew> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final ImagePicker picker = ImagePicker();
+
+  @override
+  Widget build(BuildContext context) {
+    // Get providers
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+    final isWeb = ResponsiveUtils.isWebPlatform();
+
+    return Scaffold(
+      key: _scaffoldKey,
+      // Use custom web layout for web platform, regular layout for others
+      appBar: isWeb
+          ? null // No AppBar for web, we'll use our custom header
+          : AppBar(
+              title: const Text('NAFacial Dashboard'),
+              backgroundColor: isDarkMode
+                  ? DesignSystem.darkAppBarColor
+                  : DesignSystem.lightAppBarColor,
+              actions: const [
+                NotificationIcon(),
+              ],
+            ),
+      drawer: isWeb ? null : const CustomDrawer(), // No drawer for web
+      body: isWeb
+          // Web layout with header and footer
+          ? WebLayout(
+              onMenuPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              content: _buildMainContent(context, isDarkMode),
+            )
+          // Mobile/desktop layout
+          : _buildMainContent(context, isDarkMode),
+    );
+  }
+
+  Widget _buildMainContent(BuildContext context, bool isDarkMode) {
+    return GridBackground(
+      useGradient: isDarkMode, // Only use gradient in dark mode
+      gridColor: isDarkMode
+          ? Colors.white.withAlpha(20)
+          : Colors.grey.withAlpha(10),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Welcome section
+              _buildWelcomeSection(context),
+              
+              const SizedBox(height: 24),
+              
+              // Admin and Biometric sections
+              _buildAdminAndBiometricSection(context),
+              
+              const SizedBox(height: 24),
+              
+              // Quick Actions section
+              _buildQuickActionsSection(context),
+              
+              const SizedBox(height: 24),
+              
+              // App version (only shown on non-web platforms)
+              if (!ResponsiveUtils.isWebPlatform())
+                Consumer<VersionProvider>(
+                  builder: (context, versionProvider, child) {
+                    final deviceInfo = MediaQuery.of(context).size.width > 600
+                        ? 'Desktop'
+                        : MediaQuery.of(context).size.width < 400
+                            ? 'Mobile'
+                            : 'Tablet';
+                    return Center(
+                      child: Text(
+                        'NAFacial v${versionProvider.currentVersion} | $deviceInfo',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDarkMode
+                              ? Colors.white.withAlpha(150)
+                              : Colors.black.withAlpha(100),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdminAndBiometricSection(BuildContext context) {
+    // Use row for desktop, column for mobile
+    return ResponsiveUtils.isDesktop(context)
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _buildAdminCard(context)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildBiometricCard(context)),
+            ],
+          )
+        : Column(
+            children: [
+              _buildAdminCard(context),
+              const SizedBox(height: 16),
+              _buildBiometricCard(context),
+            ],
+          );
+  }
+
+  Widget _buildAdminCard(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.currentUser;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignSystem.borderRadiusMedium),
+      ),
+      color: isDarkMode ? DesignSystem.darkCardColor : Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.admin_panel_settings,
+                  color: DesignSystem.accentColor,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Admin',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode
+                        ? Colors.white
+                        : DesignSystem.lightTextPrimaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (user != null) ...[
+              _buildInfoRow(
+                'Name',
+                user.fullName ?? 'N/A',
+                isDarkMode,
+              ),
+              _buildInfoRow(
+                'Rank',
+                user.rank ?? 'N/A',
+                isDarkMode,
+              ),
+              _buildInfoRow(
+                'Army Number',
+                user.armyNumber ?? 'N/A',
+                isDarkMode,
+              ),
+              _buildInfoRow(
+                'Role',
+                user.role ?? 'User',
+                isDarkMode,
+              ),
+            ] else ...[
+              Text(
+                'Not logged in',
+                style: TextStyle(
+                  color: isDarkMode
+                      ? Colors.white.withAlpha(200)
+                      : Colors.black.withAlpha(150),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    // Navigate to profile or login
+                  },
+                  child: Text(
+                    user != null ? 'View Profile' : 'Login',
+                    style: TextStyle(
+                      color: DesignSystem.accentColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBiometricCard(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignSystem.borderRadiusMedium),
+      ),
+      color: isDarkMode ? DesignSystem.darkCardColor : Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.face,
+                  color: DesignSystem.accentColor,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Biometric Verification',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode
+                        ? Colors.white
+                        : DesignSystem.lightTextPrimaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Verify personnel identity using facial recognition technology.',
+              style: TextStyle(
+                color: isDarkMode
+                    ? Colors.white.withAlpha(200)
+                    : Colors.black.withAlpha(150),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildBiometricButton(
+                  context,
+                  'Camera',
+                  Icons.camera_alt,
+                  () => _navigateToFacialVerification(context),
+                  isDarkMode,
+                ),
+                _buildBiometricButton(
+                  context,
+                  'Gallery',
+                  Icons.photo_library,
+                  () => _pickImageFromGallery(context),
+                  isDarkMode,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBiometricButton(
+    BuildContext context,
+    String label,
+    IconData icon,
+    VoidCallback onPressed,
+    bool isDarkMode,
+  ) {
+    return Column(
+      children: [
+        ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            shape: const CircleBorder(),
+            padding: const EdgeInsets.all(16),
+            backgroundColor: DesignSystem.primaryColor,
+          ),
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: 24,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            color: isDarkMode
+                ? Colors.white.withAlpha(200)
+                : Colors.black.withAlpha(150),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWelcomeSection(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.currentUser;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignSystem.borderRadiusMedium),
+      ),
+      color: isDarkMode ? DesignSystem.darkCardColor : Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: DesignSystem.primaryColor,
+              child: Icon(
+                Icons.person,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome${user != null ? ', ${user.fullName}' : ''}',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode
+                          ? Colors.white
+                          : DesignSystem.lightTextPrimaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'NAFacial - Nigerian Army Facial Recognition System',
+                    style: TextStyle(
+                      color: isDarkMode
+                          ? Colors.white.withAlpha(200)
+                          : Colors.black.withAlpha(150),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsSection(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignSystem.borderRadiusMedium),
+      ),
+      color: isDarkMode ? DesignSystem.darkCardColor : Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.flash_on,
+                  color: DesignSystem.accentColor,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Quick Actions',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode
+                        ? Colors.white
+                        : DesignSystem.lightTextPrimaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Consumer<QuickActionsProvider>(
+              builder: (context, quickActionsProvider, child) {
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: ResponsiveUtils.isDesktop(context)
+                        ? 4
+                        : ResponsiveUtils.isTablet(context)
+                            ? 3
+                            : 2, // Changed from 3 to 2 for mobile to fix overflow
+                    crossAxisSpacing: DesignSystem.adjustedSpacingSmall,
+                    mainAxisSpacing: DesignSystem.adjustedSpacingSmall,
+                    childAspectRatio: ResponsiveUtils.isDesktop(context)
+                        ? 1.2
+                        : ResponsiveUtils.isTablet(context)
+                            ? 1.1
+                            : 1.0, // Adjusted aspect ratio for better fit on mobile
+                  ),
+                  itemCount: quickActionsProvider.quickActions.length,
+                  itemBuilder: (context, index) {
+                    final action = quickActionsProvider.quickActions[index];
+                    return _buildQuickActionCard(context, action);
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCard(BuildContext context, QuickAction action) {
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall),
+      ),
+      color:
+          isDarkMode ? DesignSystem.darkCardColor.withAlpha(200) : Colors.white,
+      child: InkWell(
+        onTap: () => _handleQuickActionTap(context, action),
+        borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall),
+        child: Padding(
+          padding: EdgeInsets.all(isMobile ? 6.0 : 10.0), // Reduced padding for better fit
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon with colored background
+              Container(
+                padding: EdgeInsets.all(isMobile ? 6.0 : 8.0), // Reduced padding
+                decoration: BoxDecoration(
+                  color: action.color.withAlpha(isDarkMode ? 60 : 30),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  action.icon,
+                  color: isDarkMode ? Colors.white : action.color,
+                  size: isMobile ? 20 : 26, // Slightly smaller icons
+                ),
+              ),
+              SizedBox(height: isMobile ? 4 : 6), // Reduced spacing
+              // Title with responsive font size
+              Flexible(
+                child: Text(
+                  action.title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: isMobile ? 10 : 12, // Smaller font size
+                    color: isDarkMode
+                        ? Colors.white.withAlpha(220)
+                        : DesignSystem.lightTextPrimaryColor,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handleQuickActionTap(BuildContext context, QuickAction action) {
+    switch (action.id) {
+      case 'facial_verification':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const FacialVerificationScreen(),
+          ),
+        );
+        break;
+      case 'live_recognition':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const LiveFacialRecognitionScreen(),
+          ),
+        );
+        break;
+      case 'personnel_database':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const PersonnelDatabaseScreen(),
+          ),
+        );
+        break;
+      case 'personnel_registration':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const PersonnelRegistrationScreen(),
+          ),
+        );
+        break;
+      case 'settings':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SettingsScreen(),
+          ),
+        );
+        break;
+      default:
+        // Handle other actions
+        break;
+    }
+  }
+
+  Widget _buildInfoRow(String label, String value, bool isDarkMode) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isDarkMode
+                    ? Colors.white.withAlpha(200)
+                    : Colors.black.withAlpha(150),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : DesignSystem.lightTextPrimaryColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToFacialVerification(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const FacialVerificationScreen(),
+      ),
+    );
+  }
+
+  Future<void> _pickImageFromGallery(BuildContext context) async {
+    try {
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      // Use mounted check to ensure the widget is still in the tree
+      if (image != null && mounted) {
+        // Use a post-frame callback to ensure we're not using context across async gaps
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FacialVerificationScreen(
+                initialImagePath: image.path,
+              ),
+            ),
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+    }
+  }
+}

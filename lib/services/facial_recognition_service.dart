@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
@@ -15,44 +17,83 @@ class FacialRecognitionService {
   Future<Map<String, dynamic>?> identifyPersonnel(
       File imageFile, List<Personnel> personnelList) async {
     if (personnelList.isEmpty) {
+      debugPrint('No personnel in database for identification');
       return null;
     }
 
     try {
+      // Verify the image file exists and has content
+      if (!await imageFile.exists()) {
+        debugPrint('Capture image file does not exist: ${imageFile.path}');
+        return null;
+      }
+
+      final fileSize = await imageFile.length();
+      if (fileSize <= 0) {
+        debugPrint('Capture image file is empty (0 bytes): ${imageFile.path}');
+        return null;
+      }
+
+      debugPrint('Starting facial recognition on ${imageFile.path}');
+
       // Load the captured image
       final capturedImage = await _loadAndProcessImage(imageFile.path);
       if (capturedImage == null) {
+        debugPrint('Failed to process captured image for recognition');
         return null;
       }
 
       // Track the best match
       Personnel? bestMatch;
       double highestConfidence = 0.0;
+      int processedCount = 0;
+      int errorCount = 0;
 
       // Compare with each personnel photo
       for (final personnel in personnelList) {
-        if (personnel.photoUrl != null) {
+        if (personnel.photoUrl != null && personnel.photoUrl!.isNotEmpty) {
           try {
             // Load the personnel photo
             final personnelImage =
                 await _loadAndProcessImage(personnel.photoUrl!);
-            if (personnelImage == null) continue;
+            if (personnelImage == null) {
+              debugPrint('Failed to process photo for ${personnel.fullName}');
+              continue;
+            }
+
+            processedCount++;
 
             // Calculate similarity between the images
             final confidence =
                 await _calculateImageSimilarity(capturedImage, personnelImage);
+
+            debugPrint(
+                'Similarity with ${personnel.fullName}: ${confidence.toStringAsFixed(2)}');
 
             // Update best match if this is better
             if (confidence > highestConfidence && confidence > 0.75) {
               // Higher threshold for more precise matching
               highestConfidence = confidence;
               bestMatch = personnel;
+              debugPrint(
+                  'New best match: ${personnel.fullName} with confidence ${confidence.toStringAsFixed(2)}');
             }
           } catch (e) {
             // Skip this personnel if there's an error with their photo
+            errorCount++;
+            debugPrint('Error comparing with ${personnel.fullName}: $e');
             continue;
           }
         }
+      }
+
+      debugPrint(
+          'Processed $processedCount personnel photos with $errorCount errors');
+      if (bestMatch != null) {
+        debugPrint(
+            'Best match: ${bestMatch.fullName} with confidence ${highestConfidence.toStringAsFixed(2)}');
+      } else {
+        debugPrint('No match found above threshold');
       }
 
       // If no personnel had photos or no good match was found, try to match by simulating
@@ -78,7 +119,7 @@ class FacialRecognitionService {
       return null;
     } catch (e) {
       // Log error and return null
-      print('Error in facial recognition: $e');
+      debugPrint('Error in facial recognition: $e');
       return null;
     }
   }
@@ -86,12 +127,39 @@ class FacialRecognitionService {
   /// Load and process an image for comparison
   Future<img.Image?> _loadAndProcessImage(String imagePath) async {
     try {
-      // Read the image file
-      final bytes = await File(imagePath).readAsBytes();
+      // Verify the file exists
+      final file = File(imagePath);
+      if (!await file.exists()) {
+        debugPrint('Image file does not exist: $imagePath');
+        return null;
+      }
+
+      // Check file size
+      final fileSize = await file.length();
+      if (fileSize <= 0) {
+        debugPrint('Image file is empty (0 bytes): $imagePath');
+        return null;
+      }
+
+      // Read the image file with timeout
+      final bytes = await file.readAsBytes().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          throw TimeoutException('Reading image file timed out');
+        },
+      );
+
+      if (bytes.isEmpty) {
+        debugPrint('Image bytes are empty: $imagePath');
+        return null;
+      }
 
       // Decode the image
       final image = img.decodeImage(bytes);
-      if (image == null) return null;
+      if (image == null) {
+        debugPrint('Failed to decode image: $imagePath');
+        return null;
+      }
 
       // Resize for consistent comparison
       final resized = img.copyResize(image, width: 128, height: 128);
@@ -99,7 +167,7 @@ class FacialRecognitionService {
       // Convert to grayscale for simpler comparison
       return img.grayscale(resized);
     } catch (e) {
-      print('Error processing image: $e');
+      debugPrint('Error processing image $imagePath: $e');
       return null;
     }
   }
@@ -137,16 +205,16 @@ class FacialRecognitionService {
           structuralSimilarity * 0.4 +
           featureSimilarity * 0.4);
 
-      print(
-          'Similarity scores - Histogram: ${histogramSimilarity.toStringAsFixed(3)}, ' +
-              'Structural: ${structuralSimilarity.toStringAsFixed(3)}, ' +
-              'Feature: ${featureSimilarity.toStringAsFixed(3)}, ' +
-              'Combined: ${combinedSimilarity.toStringAsFixed(3)}');
+      debugPrint(
+          'Similarity scores - Histogram: ${histogramSimilarity.toStringAsFixed(3)}, '
+          'Structural: ${structuralSimilarity.toStringAsFixed(3)}, '
+          'Feature: ${featureSimilarity.toStringAsFixed(3)}, '
+          'Combined: ${combinedSimilarity.toStringAsFixed(3)}');
 
       return combinedSimilarity;
     } catch (e) {
       // Log error and return 0.0 (no similarity)
-      print('Error calculating image similarity: $e');
+      debugPrint('Error calculating image similarity: $e');
       return 0.0;
     }
   }
@@ -189,7 +257,7 @@ class FacialRecognitionService {
 
       return intersection;
     } catch (e) {
-      print('Error calculating histogram similarity: $e');
+      debugPrint('Error calculating histogram similarity: $e');
       return 0.0;
     }
   }
@@ -202,8 +270,8 @@ class FacialRecognitionService {
       const k1 = 0.01;
       const k2 = 0.03;
       const L = 255.0; // Dynamic range for 8-bit images
-      final c1 = (k1 * L) * (k1 * L);
-      final c2 = (k2 * L) * (k2 * L);
+      const c1 = (k1 * L) * (k1 * L);
+      const c2 = (k2 * L) * (k2 * L);
 
       // Calculate means
       double mean1 = 0.0;
@@ -250,7 +318,7 @@ class FacialRecognitionService {
 
       return numerator / denominator;
     } catch (e) {
-      print('Error calculating structural similarity: $e');
+      debugPrint('Error calculating structural similarity: $e');
       return 0.0;
     }
   }
@@ -290,7 +358,7 @@ class FacialRecognitionService {
 
       return similarity;
     } catch (e) {
-      print('Error calculating feature similarity: $e');
+      debugPrint('Error calculating feature similarity: $e');
       return 0.0;
     }
   }
@@ -302,11 +370,25 @@ class FacialRecognitionService {
     Map<String, dynamic> additionalMetadata,
   ) async {
     try {
+      // Verify the source image exists
+      if (!await imageFile.exists()) {
+        throw Exception('Source image file does not exist');
+      }
+
       // Create directory for storing images if it doesn't exist
       final appDir = await getApplicationDocumentsDirectory();
       final imagesDir = Directory('${appDir.path}/captured_images');
-      if (!await imagesDir.exists()) {
-        await imagesDir.create(recursive: true);
+      try {
+        if (!await imagesDir.exists()) {
+          await imagesDir.create(recursive: true);
+        }
+      } catch (e) {
+        debugPrint('Error creating directory: $e');
+        // Try to create parent directories if needed
+        await Directory(path.dirname(imagesDir.path)).create(recursive: true);
+        if (!await imagesDir.exists()) {
+          await imagesDir.create();
+        }
       }
 
       // Generate a unique filename with timestamp
@@ -315,29 +397,63 @@ class FacialRecognitionService {
       final fileName = 'facial_scan_${personnelId}_$timestamp.jpg';
       final savedImagePath = path.join(imagesDir.path, fileName);
 
-      // Copy the image to the new location
-      await imageFile.copy(savedImagePath);
+      try {
+        // Copy the image to the new location with timeout
+        await imageFile.copy(savedImagePath).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            throw TimeoutException('Image copy operation timed out');
+          },
+        );
 
-      // Create metadata file
-      final metadataFileName = 'facial_scan_${personnelId}_$timestamp.json';
-      final metadataFilePath = path.join(imagesDir.path, metadataFileName);
+        // Verify the copied file exists and has content
+        final savedFile = File(savedImagePath);
+        if (!await savedFile.exists()) {
+          throw Exception('Failed to copy image file');
+        }
 
-      // Prepare metadata
-      final metadata = <String, dynamic>{
-        'timestamp': DateTime.now().toIso8601String(),
-        'imageFileName': fileName,
-        'scanResult': personnel != null ? 'identified' : 'not_identified',
-        'personnelData': personnel?.toMap(),
-        ...additionalMetadata,
-      };
+        final fileSize = await savedFile.length();
+        if (fileSize <= 0) {
+          throw Exception('Copied file is empty');
+        }
 
-      // Save metadata to file
-      final metadataFile = File(metadataFilePath);
-      await metadataFile.writeAsString(formatMetadataJson(metadata));
+        // Create metadata file
+        final metadataFileName = 'facial_scan_${personnelId}_$timestamp.json';
+        final metadataFilePath = path.join(imagesDir.path, metadataFileName);
 
-      return savedImagePath;
+        // Prepare metadata
+        final metadata = <String, dynamic>{
+          'timestamp': DateTime.now().toIso8601String(),
+          'imageFileName': fileName,
+          'scanResult': personnel != null ? 'identified' : 'not_identified',
+          'personnelData': personnel?.toMap(),
+          ...additionalMetadata,
+        };
+
+        // Save metadata to file
+        final metadataFile = File(metadataFilePath);
+        await metadataFile.writeAsString(formatMetadataJson(metadata)).timeout(
+          const Duration(seconds: 3),
+          onTimeout: () {
+            throw TimeoutException('Metadata write operation timed out');
+          },
+        );
+
+        return savedImagePath;
+      } catch (e) {
+        debugPrint('Error in file operations: $e');
+        // Clean up any partial files that might have been created
+        final savedFile = File(savedImagePath);
+        if (await savedFile.exists()) {
+          await savedFile.delete().catchError((e) {
+            debugPrint('Error deleting partial file: $e');
+            return savedFile; // Return the original file on error
+          });
+        }
+        return imageFile.path; // Return original path if saving failed
+      }
     } catch (e) {
-      print('Error saving image with metadata: $e');
+      debugPrint('Error saving image with metadata: $e');
       return imageFile.path; // Return original path if saving failed
     }
   }
@@ -362,10 +478,10 @@ class FacialRecognitionService {
     // Remove trailing comma from last line
     String result = buffer.toString();
     if (result.endsWith(',\n')) {
-      result = result.substring(0, result.length - 2) + '\n';
+      result = '${result.substring(0, result.length - 2)}\n';
     }
 
-    result += '}';
+    result = '$result}';
     return result;
   }
 
@@ -420,7 +536,7 @@ class FacialRecognitionService {
 
       return scans;
     } catch (e) {
-      print('Error getting saved scans: $e');
+      debugPrint('Error getting saved scans: $e');
       return [];
     }
   }

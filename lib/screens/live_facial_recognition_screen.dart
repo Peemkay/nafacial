@@ -34,7 +34,9 @@ class _LiveFacialRecognitionScreenState
     return PlatformScaffold(
       appBar: AppBar(
         title: const Text('Live Facial Recognition'),
-        backgroundColor: DesignSystem.primaryColor,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? DesignSystem.darkAppBarColor
+            : DesignSystem.lightAppBarColor,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),

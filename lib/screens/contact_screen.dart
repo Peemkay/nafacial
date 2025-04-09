@@ -15,7 +15,7 @@ class _ContactScreenState extends State<ContactScreen> {
   final _emailController = TextEditingController();
   final _messageController = TextEditingController();
   bool _isSubmitting = false;
-  
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -23,21 +23,21 @@ class _ContactScreenState extends State<ContactScreen> {
     _messageController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() {
         _isSubmitting = true;
       });
-      
+
       // Simulate API call
       await Future.delayed(const Duration(seconds: 2));
-      
+
       if (mounted) {
         setState(() {
           _isSubmitting = false;
         });
-        
+
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -45,7 +45,7 @@ class _ContactScreenState extends State<ContactScreen> {
             backgroundColor: DesignSystem.successColor,
           ),
         );
-        
+
         // Clear form
         _nameController.clear();
         _emailController.clear();
@@ -83,12 +83,12 @@ class _ContactScreenState extends State<ContactScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Contact Information
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: DesignSystem.primaryColor.withOpacity(0.05),
+                    color: DesignSystem.primaryColor.withAlpha(15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -108,7 +108,7 @@ class _ContactScreenState extends State<ContactScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Contact Form
                 const PlatformText(
                   'Send us a Message',
@@ -133,7 +133,7 @@ class _ContactScreenState extends State<ContactScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Email Field
                       PlatformTextField(
                         controller: _emailController,
@@ -144,14 +144,15 @@ class _ContactScreenState extends State<ContactScreen> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your email';
                           }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                              .hasMatch(value)) {
                             return 'Please enter a valid email';
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Message Field
                       PlatformTextField(
                         controller: _messageController,
@@ -166,7 +167,7 @@ class _ContactScreenState extends State<ContactScreen> {
                         },
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Submit Button
                       PlatformButton(
                         text: _isSubmitting ? 'SENDING...' : 'SEND MESSAGE',
@@ -178,7 +179,7 @@ class _ContactScreenState extends State<ContactScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Footer
                 const Center(
                   child: Text(
@@ -198,7 +199,7 @@ class _ContactScreenState extends State<ContactScreen> {
       ),
     );
   }
-  
+
   Widget _buildContactItem({
     required IconData icon,
     required String title,
@@ -210,7 +211,7 @@ class _ContactScreenState extends State<ContactScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: DesignSystem.primaryColor.withOpacity(0.1),
+            color: DesignSystem.primaryColor.withAlpha(25),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -237,6 +238,30 @@ class _ContactScreenState extends State<ContactScreen> {
                 style: const TextStyle(
                   fontSize: 14,
                   color: DesignSystem.textSecondaryColor,
+                ),
+              ),
+              const SizedBox(height: 40),
+              // Footer with copyright
+              Center(
+                child: Column(
+                  children: [
+                    Text(
+                      '© ${DateTime.now().year} Nigerian Army',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'All rights reserved. Unauthorized use, reproduction, or distribution of this application or its contents is strictly prohibited.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: DesignSystem.textSecondaryColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
             ],

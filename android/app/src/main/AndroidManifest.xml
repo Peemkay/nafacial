@@ -22,7 +22,7 @@
     <application
         android:label="NAFacial"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/launcher_icon"
         android:resizeableActivity="true"
         android:allowBackup="true">
         <activity

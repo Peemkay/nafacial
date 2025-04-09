@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -73,60 +74,129 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final CameraController? cameraController = _cameraController;
+    if (!mounted) return;
 
-    // App state changed before we got the chance to initialize the camera
-    if (cameraController == null || !cameraController.value.isInitialized) {
-      return;
-    }
+    try {
+      final CameraController? cameraController = _cameraController;
 
-    if (state == AppLifecycleState.inactive) {
-      cameraController.dispose();
-    } else if (state == AppLifecycleState.resumed) {
-      _initializeCamera();
+      // App state changed before we got the chance to initialize the camera
+      if (cameraController == null) {
+        return;
+      }
+
+      if (state == AppLifecycleState.inactive ||
+          state == AppLifecycleState.paused) {
+        // Stop timer first
+        _detectionTimer?.cancel();
+
+        // Then dispose camera safely
+        if (_cameraController != null) {
+          final CameraController oldController = _cameraController!;
+          _cameraController = null;
+          _isCameraInitialized = false;
+          oldController.dispose().catchError((e) {
+            debugPrint('Error disposing camera on lifecycle change: $e');
+          });
+        }
+      } else if (state == AppLifecycleState.resumed) {
+        // Reinitialize camera when app is resumed
+        if (!_isCameraInitialized) {
+          _initializeCamera();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error handling app lifecycle state change: $e');
     }
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _detectionTimer?.cancel();
-    _cameraController?.dispose();
-    _faceDetector.close();
-    super.dispose();
+    try {
+      // Remove observer first
+      WidgetsBinding.instance.removeObserver(this);
+
+      // Cancel timer
+      if (_detectionTimer != null) {
+        _detectionTimer!.cancel();
+        _detectionTimer = null;
+      }
+
+      // Dispose camera controller safely
+      if (_cameraController != null) {
+        final CameraController oldController = _cameraController!;
+        _cameraController = null;
+        oldController.dispose().catchError((e) {
+          debugPrint('Error disposing camera in dispose method: $e');
+        });
+      }
+
+      // Close face detector
+      _faceDetector.close().catchError((e) {
+        debugPrint('Error closing face detector: $e');
+      });
+    } catch (e) {
+      debugPrint('Error in dispose method: $e');
+    } finally {
+      super.dispose();
+    }
   }
 
   /// Switch to a different camera
   Future<void> switchCamera(CameraDescription cameraDescription) async {
-    if (_cameraController == null) return;
-
-    // Stop current camera and timer
-    _detectionTimer?.cancel();
-    await _cameraController!.dispose();
-
-    // Initialize new camera
-    _cameraController = CameraController(
-      cameraDescription,
-      ResolutionPreset.medium,
-      enableAudio: false,
-      imageFormatGroup: Platform.isAndroid
-          ? ImageFormatGroup.yuv420
-          : ImageFormatGroup.bgra8888,
-    );
+    if (!mounted || _cameraController == null) return;
 
     try {
-      await _cameraController!.initialize();
+      // Stop current camera and timer
+      _detectionTimer?.cancel();
 
-      if (mounted) {
-        setState(() {
-          _isCameraInitialized = true;
-        });
+      // Safely dispose of the previous controller
+      final CameraController oldController = _cameraController!;
+      _cameraController = null;
+      await oldController.dispose().catchError((e) {
+        debugPrint('Error disposing previous camera: $e');
+      });
 
-        // Restart face detection
-        _startFaceDetection();
-      }
+      if (!mounted) return;
+
+      // Initialize new camera
+      _cameraController = CameraController(
+        cameraDescription,
+        ResolutionPreset.medium,
+        enableAudio: false,
+        imageFormatGroup: kIsWeb
+            ? ImageFormatGroup.jpeg
+            : Platform.isAndroid
+                ? ImageFormatGroup.yuv420
+                : ImageFormatGroup.bgra8888,
+      );
+
+      if (!mounted) return;
+
+      await _cameraController!.initialize().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Camera initialization timed out');
+        },
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isCameraInitialized = true;
+      });
+
+      // Restart face detection
+      _startFaceDetection();
     } catch (e) {
-      print('Error switching camera: $e');
+      debugPrint('Error switching camera: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error switching camera: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -142,67 +212,142 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
   }
 
   Future<void> _initializeCamera() async {
-    _cameras = await availableCameras();
+    if (!mounted) return;
 
-    if (_cameras == null || _cameras!.isEmpty) {
-      return;
-    }
-
-    // Notify parent about available cameras if callback is provided
-    if (widget.onCamerasAvailable != null) {
-      widget.onCamerasAvailable!(_cameras!);
-    }
-
-    // For desktop and web, show camera selection dialog if multiple cameras are available
-    if ((kIsWeb || DesignSystem.isWindows) && _cameras!.length > 1 && mounted) {
-      CameraDescription? selectedCamera;
-
-      await showCameraSelectionDialog(
-        context: context,
-        cameras: _cameras!,
-        onCameraSelected: (camera) {
-          selectedCamera = camera;
+    try {
+      // Get available cameras with timeout
+      _cameras = await availableCameras().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Camera detection timed out');
         },
       );
 
-      if (selectedCamera != null) {
-        await _setupCameraController(selectedCamera!);
+      if (!mounted) return;
+
+      if (_cameras == null || _cameras!.isEmpty) {
+        debugPrint('No cameras available');
         return;
       }
-    }
 
-    // Use the provided camera, front camera, or first available camera
-    final selectedCamera = widget.initialCamera ??
-        _cameras!.firstWhere(
-          (camera) => camera.lensDirection == CameraLensDirection.front,
-          orElse: () => _cameras!.first,
+      // Notify parent about available cameras if callback is provided
+      if (widget.onCamerasAvailable != null) {
+        widget.onCamerasAvailable!(_cameras!);
+      }
+
+      if (!mounted) return;
+
+      // For desktop and web, show camera selection dialog if multiple cameras are available
+      if ((kIsWeb || DesignSystem.isWindows) &&
+          _cameras!.length > 1 &&
+          mounted) {
+        CameraDescription? selectedCamera;
+
+        await showCameraSelectionDialog(
+          context: context,
+          cameras: _cameras!,
+          onCameraSelected: (camera) {
+            selectedCamera = camera;
+          },
         );
 
-    await _setupCameraController(selectedCamera);
+        if (!mounted) return;
+
+        if (selectedCamera != null) {
+          await _setupCameraController(selectedCamera!);
+          return;
+        }
+      }
+
+      if (!mounted) return;
+
+      // Use the provided camera, front camera, or first available camera
+      CameraDescription selectedCamera;
+      try {
+        selectedCamera = widget.initialCamera ??
+            _cameras!.firstWhere(
+              (camera) => camera.lensDirection == CameraLensDirection.front,
+              orElse: () => _cameras!.first,
+            );
+      } catch (e) {
+        debugPrint('Error selecting camera: $e');
+        if (_cameras!.isNotEmpty) {
+          selectedCamera = _cameras!.first;
+        } else {
+          return; // No cameras available
+        }
+      }
+
+      await _setupCameraController(selectedCamera);
+    } catch (e) {
+      debugPrint('Error initializing camera: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error initializing camera: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _setupCameraController(CameraDescription camera) async {
-    _cameraController = CameraController(
-      camera,
-      ResolutionPreset.medium,
-      enableAudio: false,
-      imageFormatGroup: kIsWeb
-          ? ImageFormatGroup.jpeg
-          : Platform.isAndroid
-              ? ImageFormatGroup.yuv420
-              : ImageFormatGroup.bgra8888,
-    );
-
-    await _cameraController!.initialize();
-
     if (!mounted) return;
 
-    setState(() {
-      _isCameraInitialized = true;
-    });
+    try {
+      // Dispose previous controller if it exists
+      if (_cameraController != null) {
+        final CameraController oldController = _cameraController!;
+        _cameraController = null;
+        await oldController.dispose().catchError((e) {
+          debugPrint('Error disposing previous camera: $e');
+        });
+      }
 
-    // Start face detection
-    _startFaceDetection();
+      if (!mounted) return;
+
+      // Create new controller
+      _cameraController = CameraController(
+        camera,
+        ResolutionPreset.medium,
+        enableAudio: false,
+        imageFormatGroup: kIsWeb
+            ? ImageFormatGroup.jpeg
+            : Platform.isAndroid
+                ? ImageFormatGroup.yuv420
+                : ImageFormatGroup.bgra8888,
+      );
+
+      if (!mounted) return;
+
+      // Initialize with timeout
+      await _cameraController!.initialize().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Camera initialization timed out');
+        },
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isCameraInitialized = true;
+      });
+
+      // Start face detection
+      _startFaceDetection();
+    } catch (e) {
+      debugPrint('Error setting up camera controller: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error setting up camera: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _startFaceDetection() {
@@ -217,21 +362,123 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
     });
   }
 
+  // Static map to store web image bytes (workaround for web platform)
+  static final Map<String, Uint8List> _webImageBytes = {};
+
   Future<void> _processImage() async {
-    if (_isProcessingFrame) return;
+    if (_isProcessingFrame ||
+        !mounted ||
+        _cameraController == null ||
+        !_cameraController!.value.isInitialized) {
+      return;
+    }
+
     _isProcessingFrame = true;
+    File? tempFile;
 
     try {
-      final XFile imageFile = await _cameraController!.takePicture();
-      final inputImage = InputImage.fromFilePath(imageFile.path);
-      _imageSize = Size(
-        _cameraController!.value.previewSize!.height,
-        _cameraController!.value.previewSize!.width,
+      // Take picture with timeout
+      final XFile imageFile = await _cameraController!.takePicture().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          throw TimeoutException('Taking picture timed out');
+        },
       );
 
-      final faces = await _faceDetector.processImage(inputImage);
+      if (!mounted) return;
 
-      if (mounted) {
+      if (kIsWeb) {
+        // For web, we need to handle the XFile differently
+        try {
+          final bytes = await imageFile.readAsBytes();
+
+          // Create a temporary path for web
+          final tempPath = 'temp_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          tempFile = File(tempPath);
+
+          // Store the bytes in a static map that can be accessed later if needed
+          _webImageBytes[tempPath] = bytes;
+
+          // Process image for face detection - for web we need to use InputImage.fromBytes
+          final inputImage = InputImage.fromBytes(
+            bytes: bytes,
+            metadata: InputImageMetadata(
+              size: const Size(
+                  640, 480), // Default size, will be adjusted if possible
+              rotation: InputImageRotation.rotation0deg,
+              format: InputImageFormat.yuv420,
+              bytesPerRow: 640 * 4, // Estimate for RGBA
+            ),
+          );
+
+          debugPrint('Web image captured and processed for face detection');
+
+          // Get image size safely
+          Size? previewSize = _cameraController!.value.previewSize;
+          if (previewSize != null) {
+            _imageSize = Size(previewSize.height, previewSize.width);
+          }
+
+          // Process image with timeout
+          final faces = await _faceDetector.processImage(inputImage).timeout(
+            const Duration(seconds: 2),
+            onTimeout: () {
+              throw TimeoutException('Face detection timed out');
+            },
+          );
+
+          if (!mounted) return;
+
+          setState(() {
+            _detectedFaces = faces;
+          });
+
+          if (faces.isNotEmpty) {
+            _framesWithFace++;
+            if (_framesWithFace >= _requiredFramesWithFace) {
+              // We have detected a face consistently for the required number of frames
+              widget.onFaceDetected(tempFile, faces);
+              _framesWithFace = 0; // Reset counter
+            }
+          } else {
+            _framesWithFace = 0; // Reset counter if no face detected
+          }
+        } catch (webError) {
+          debugPrint('Web-specific error in face detection: $webError');
+          // Continue processing to avoid stopping face detection completely
+        }
+      } else {
+        // Native platforms (Android, iOS, Windows, etc.)
+        // Create file and verify it exists
+        tempFile = File(imageFile.path);
+        if (!await tempFile.exists()) {
+          throw Exception('Captured image file does not exist');
+        }
+
+        final fileSize = await tempFile.length();
+        if (fileSize <= 0) {
+          throw Exception('Captured image file is empty (0 bytes)');
+        }
+
+        // Process image for face detection
+        final inputImage = InputImage.fromFilePath(imageFile.path);
+
+        // Get image size safely
+        Size? previewSize = _cameraController!.value.previewSize;
+        if (previewSize != null) {
+          _imageSize = Size(previewSize.height, previewSize.width);
+        }
+
+        // Process image with timeout
+        final faces = await _faceDetector.processImage(inputImage).timeout(
+          const Duration(seconds: 2),
+          onTimeout: () {
+            throw TimeoutException('Face detection timed out');
+          },
+        );
+
+        if (!mounted) return;
+
         setState(() {
           _detectedFaces = faces;
         });
@@ -240,7 +487,7 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
           _framesWithFace++;
           if (_framesWithFace >= _requiredFramesWithFace) {
             // We have detected a face consistently for the required number of frames
-            widget.onFaceDetected(File(imageFile.path), faces);
+            widget.onFaceDetected(tempFile, faces);
             _framesWithFace = 0; // Reset counter
           }
         } else {
@@ -249,8 +496,11 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
       }
     } catch (e) {
       debugPrint('Error processing image: $e');
+      // Don't reset frames with face on error to avoid losing progress
     } finally {
-      _isProcessingFrame = false;
+      if (mounted) {
+        _isProcessingFrame = false;
+      }
     }
   }
 

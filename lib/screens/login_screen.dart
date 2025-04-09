@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
 import '../config/design_system.dart';
 import '../providers/auth_provider.dart';
@@ -141,6 +139,7 @@ class _LoginScreenState extends State<LoginScreen>
 
     return PlatformScaffold(
       body: GridBackground(
+        isSpecialScreen: true,
         useGradient: true,
         gridColor: Colors.white.withAlpha(20),
         child: SafeArea(
@@ -368,7 +367,7 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
 
                         // Version info
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 50),
                         const VersionInfo(
                           useBackground: true,
                           showIcon: true,
