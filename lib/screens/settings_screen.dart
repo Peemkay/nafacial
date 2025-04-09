@@ -155,6 +155,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       );
                     },
                   ),
+                  const Divider(),
+                  ListTile(
+                    leading: Icon(
+                      Icons.fingerprint,
+                      color: isDarkMode
+                          ? DesignSystem.darkIconColor
+                          : DesignSystem.lightIconColor,
+                    ),
+                    title: const Text('Biometric Management'),
+                    subtitle: const Text(
+                        'Manage biometric devices and authentication'),
+                    onTap: () {
+                      Navigator.pushNamed(context, '/biometric_management');
+                    },
+                  ),
                 ],
               ),
             ),

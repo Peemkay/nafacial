@@ -14,8 +14,7 @@ dependencies:
   animated_text_kit: ^4.2.2
   lottie: ^2.6.0
   google_fonts: ^5.1.0
-  local_auth: ^2.1.6
-  flutter_secure_storage: ^8.0.0
+  # Biometric authentication
   shared_preferences: ^2.2.0
   provider: ^6.0.5
   crypto: ^3.0.3
@@ -39,6 +38,13 @@ dependencies:
   flutter_animate: ^4.5.0
   quick_actions: ^1.0.7
   # image_gallery_saver: ^2.0.3
+  local_auth: ^2.1.8
+  flutter_plugin_android_lifecycle: ^2.0.17
+  usb_serial: ^0.5.1
+  flutter_secure_storage: ^9.0.0
+  biometric_storage: ^5.0.0+4
+  flutter_webrtc: ^0.9.47
+  flutter_usb_connection: ^0.0.1
 
 dev_dependencies:
   flutter_test:

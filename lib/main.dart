@@ -23,6 +23,7 @@ import 'screens/personnel_registration_screen.dart';
 import 'screens/gallery_screen.dart';
 import 'screens/registration_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/biometric_management_screen.dart';
 
 // Global navigator key for accessing navigator from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -146,6 +147,8 @@ class _NAFacialAppState extends State<NAFacialApp> {
             '/register': (context) =>
                 const LightThemeWrapper(child: RegistrationScreen()),
             '/profile': (context) => const ProfileScreen(),
+            '/biometric_management': (context) =>
+                const BiometricManagementScreen(),
           },
           builder: (context, child) {
             // Apply a responsive layout wrapper to the entire app

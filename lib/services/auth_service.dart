@@ -4,14 +4,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:local_auth/error_codes.dart' as auth_error;
+import '../services/biometric_service.dart';
+import '../models/biometric_device.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 
 class AuthService {
   // Use secure storage for mobile and desktop, shared preferences for web
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  final LocalAuthentication _localAuth = LocalAuthentication();
+  final BiometricService _biometricService = BiometricService();
   late SharedPreferences _prefs;
 
   // Key constants
@@ -208,10 +209,13 @@ class AuthService {
     }
 
     try {
-      final canCheckBiometrics = await _localAuth.canCheckBiometrics;
-      final isDeviceSupported = await _localAuth.isDeviceSupported();
-      return canCheckBiometrics && isDeviceSupported;
-    } on PlatformException {
+      // Initialize the biometric service if needed
+      await _biometricService.initialize();
+
+      // Check if any biometric devices are available
+      return _biometricService.availableDevices.isNotEmpty;
+    } catch (e) {
+      debugPrint('Error checking biometric availability: $e');
       return false;
     }
   }
@@ -224,8 +228,33 @@ class AuthService {
     }
 
     try {
-      return await _localAuth.getAvailableBiometrics();
-    } on PlatformException {
+      // Initialize the biometric service if needed
+      await _biometricService.initialize();
+
+      // Convert BiometricDeviceType to BiometricType
+      final devices = _biometricService.availableDevices;
+      final biometricTypes = <BiometricType>[];
+
+      for (final device in devices) {
+        switch (device.type) {
+          case BiometricDeviceType.fingerprint:
+            biometricTypes.add(BiometricType.fingerprint);
+            break;
+          case BiometricDeviceType.facial:
+            biometricTypes.add(BiometricType.face);
+            break;
+          case BiometricDeviceType.iris:
+            biometricTypes.add(BiometricType.iris);
+            break;
+          default:
+            // Skip other types
+            break;
+        }
+      }
+
+      return biometricTypes;
+    } catch (e) {
+      debugPrint('Error getting available biometrics: $e');
       return [];
     }
   }
@@ -243,12 +272,12 @@ class AuthService {
     }
 
     try {
-      final didAuthenticate = await _localAuth.authenticate(
-        localizedReason: 'Please authenticate to enable biometric login',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: true,
-        ),
+      // Initialize the biometric service if needed
+      await _biometricService.initialize();
+
+      // Use the biometric service for authentication
+      final didAuthenticate = await _biometricService.authenticate(
+        reason: 'Please authenticate to enable biometric login',
       );
 
       if (didAuthenticate) {
@@ -273,13 +302,8 @@ class AuthService {
       }
 
       return false;
-    } on PlatformException catch (e) {
-      if (e.code == auth_error.notAvailable ||
-          e.code == auth_error.notEnrolled ||
-          e.code == auth_error.passcodeNotSet) {
-        // Handle specific biometric errors
-        return false;
-      }
+    } catch (e) {
+      debugPrint('Error enabling biometric: $e');
       return false;
     }
   }
@@ -298,12 +322,12 @@ class AuthService {
     }
 
     try {
-      final didAuthenticate = await _localAuth.authenticate(
-        localizedReason: 'Please authenticate to login',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: true,
-        ),
+      // Initialize the biometric service if needed
+      await _biometricService.initialize();
+
+      // Use the biometric service for authentication
+      final didAuthenticate = await _biometricService.authenticate(
+        reason: 'Please authenticate to login to NAFacial',
       );
 
       if (didAuthenticate) {
@@ -320,9 +344,8 @@ class AuthService {
       }
 
       return null;
-    } on PlatformException {
-      return null;
     } catch (e) {
+      debugPrint('Error during biometric login: $e');
       return null;
     }
   }

@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
 import '../widgets/grid_background.dart';
 import '../widgets/version_info.dart';
+import '../widgets/biometric_auth_button.dart';
 import 'registration_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -327,14 +328,27 @@ class _LoginScreenState extends State<LoginScreen>
                                   SizedBox(
                                       height:
                                           DesignSystem.adjustedSpacingSmall),
-                                  PlatformButton(
-                                    text: 'LOGIN WITH BIOMETRIC',
-                                    onPressed: authProvider.isLoading
-                                        ? null
-                                        : () => _loginWithBiometric(),
-                                    icon: Icons.fingerprint,
-                                    isFullWidth: true,
-                                    isPrimary: false,
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      BiometricAuthButton(
+                                        text: 'Login with Biometric',
+                                        reason:
+                                            'Authenticate to login to NAFacial',
+                                        onSuccess: () => _loginWithBiometric(),
+                                        onError: (error) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                  'Biometric error: $error'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        },
+                                        size: 56,
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ],

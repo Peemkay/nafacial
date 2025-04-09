@@ -17,39 +17,44 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
   // List of AI-generated security features
   final List<SecurityFeature> _securityFeatures = [
     SecurityFeature(
-      title: 'Advanced Facial Recognition',
+      title: 'Nigerian Army Tactical Recognition',
       description:
-          'AI-powered facial recognition with 99.8% accuracy and liveness detection to prevent spoofing attacks.',
+          'Advanced facial recognition system developed for Nigerian Army personnel identification with 99.9% accuracy in diverse field conditions.',
       icon: Icons.face_retouching_natural,
-      color: Colors.blue,
+      color: const Color(0xFF1A8D1A), // Nigerian green
+      imagePath: 'assets/images/military_facial_scan.png',
     ),
     SecurityFeature(
-      title: 'Neural Network Analysis',
+      title: 'NAS Neural Defense Network',
       description:
-          'Deep learning algorithms analyze facial features in real-time to detect anomalies and unauthorized access attempts.',
+          'Nigerian Army Signals proprietary deep learning algorithms that analyze facial features in real-time to detect unauthorized access attempts.',
       icon: Icons.psychology,
-      color: Colors.purple,
+      color: const Color(0xFF008751), // Nigerian flag green
+      imagePath: 'assets/images/military_neural_network.png',
     ),
     SecurityFeature(
-      title: 'Biometric Authentication',
+      title: 'Multi-Spectrum Biometric Shield',
       description:
-          'Multi-factor biometric verification using facial geometry, iris patterns, and behavioral analysis.',
+          'Military-grade biometric verification combining facial geometry, iris patterns, and behavioral analysis for Nigerian defense installations.',
       icon: Icons.fingerprint,
-      color: Colors.green,
+      color: const Color(0xFF00573F), // Dark green
+      imagePath: 'assets/images/military_biometric.png',
     ),
     SecurityFeature(
-      title: 'Encrypted Data Storage',
+      title: 'Sovereign Data Fortress',
       description:
-          'Military-grade encryption for all biometric data with decentralized storage to prevent unauthorized access.',
+          'Nigerian Army Signals developed encryption protocol for all biometric data with decentralized storage to ensure national security integrity.',
       icon: Icons.security,
-      color: Colors.red,
+      color: const Color(0xFF0D0D0D), // Nigerian black
+      imagePath: 'assets/images/military_encryption.png',
     ),
     SecurityFeature(
-      title: 'Threat Intelligence',
+      title: 'Eagle Eye Surveillance',
       description:
-          'Real-time monitoring and alerts for suspicious activities with AI-powered threat detection.',
+          'Real-time monitoring system with AI-powered threat detection designed specifically for Nigerian military installations and checkpoints.',
       icon: Icons.shield,
-      color: Colors.orange,
+      color: const Color(0xFF2D4B9A), // Nigerian blue
+      imagePath: 'assets/images/military_surveillance.png',
     ),
   ];
 
@@ -169,12 +174,12 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            feature.color.withOpacity(isDarkMode ? 0.2 : 0.1),
-            feature.color.withOpacity(isDarkMode ? 0.1 : 0.05),
+            feature.color.withAlpha(isDarkMode ? 50 : 25),
+            feature.color.withAlpha(isDarkMode ? 25 : 13),
           ],
         ),
         border: Border.all(
-          color: feature.color.withOpacity(0.3),
+          color: feature.color.withAlpha(75),
           width: 1,
         ),
       ),
@@ -183,12 +188,13 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Military-themed header with icon and title
             Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: feature.color.withOpacity(isDarkMode ? 0.3 : 0.2),
+                    color: feature.color.withAlpha(isDarkMode ? 75 : 50),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -212,26 +218,83 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+
+            // Military image placeholder (would be replaced with actual images)
+            if (feature.imagePath != null)
+              Expanded(
+                flex: 2,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: feature.color.withAlpha(15),
+                    border: Border.all(
+                      color: feature.color.withAlpha(50),
+                      width: 1,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(7),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Military-themed placeholder with gradient overlay
+                        Container(
+                          color: Colors.black12,
+                          child: Center(
+                            child: Icon(
+                              _getMilitaryIcon(feature.title),
+                              size: 48,
+                              color: feature.color.withAlpha(100),
+                            ),
+                          ),
+                        ),
+                        // Gradient overlay for military aesthetic
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                feature.color.withAlpha(40),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 12),
+
+            // Description
             Expanded(
+              flex: 1,
               child: Text(
                 feature.description,
                 style: TextStyle(
                   fontSize: isMobile ? 12 : 14,
                   color: isDarkMode
-                      ? Colors.white.withOpacity(0.8)
-                      : Colors.black.withOpacity(0.7),
+                      ? Colors.white.withAlpha(204) // 0.8 alpha
+                      : Colors.black.withAlpha(178), // 0.7 alpha
                 ),
               ),
             ),
+
             const SizedBox(height: 8),
+
+            // NAS badge
             Align(
               alignment: Alignment.bottomRight,
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: feature.color.withOpacity(isDarkMode ? 0.3 : 0.2),
+                  color: feature.color.withAlpha(isDarkMode ? 75 : 50),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
@@ -260,11 +323,27 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
         color: _currentPage == index
             ? DesignSystem.accentColor
             : (isDarkMode
-                ? Colors.white.withOpacity(0.3)
-                : Colors.grey.withOpacity(0.3)),
+                ? Colors.white.withAlpha(77) // 0.3 alpha
+                : Colors.grey.withAlpha(77)), // 0.3 alpha
         borderRadius: BorderRadius.circular(4),
       ),
     );
+  }
+
+  // Helper method to get appropriate military-themed icons
+  IconData _getMilitaryIcon(String title) {
+    if (title.contains('Recognition')) {
+      return Icons.face_retouching_natural;
+    } else if (title.contains('Neural')) {
+      return Icons.psychology;
+    } else if (title.contains('Biometric')) {
+      return Icons.fingerprint;
+    } else if (title.contains('Fortress')) {
+      return Icons.security;
+    } else if (title.contains('Eagle')) {
+      return Icons.shield;
+    }
+    return Icons.military_tech;
   }
 }
 
@@ -273,11 +352,13 @@ class SecurityFeature {
   final String description;
   final IconData icon;
   final Color color;
+  final String? imagePath;
 
   SecurityFeature({
     required this.title,
     required this.description,
     required this.icon,
     required this.color,
+    this.imagePath,
   });
 }

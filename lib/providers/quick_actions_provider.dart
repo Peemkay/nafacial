@@ -79,6 +79,13 @@ class QuickActionsProvider with ChangeNotifier {
       color: const Color(0xFFFFB300), // Amber
       route: '/notifications',
     ),
+    QuickAction(
+      id: 'biometric_management',
+      title: 'Biometrics',
+      icon: Icons.fingerprint,
+      color: const Color(0xFF00796B), // Teal
+      route: '/biometric_management',
+    ),
   ];
 
   List<QuickAction> get quickActions => _quickActions;
