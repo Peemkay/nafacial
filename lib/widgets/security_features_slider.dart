@@ -13,36 +13,41 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   Timer? _timer;
-  
+
   // List of AI-generated security features
   final List<SecurityFeature> _securityFeatures = [
     SecurityFeature(
       title: 'Advanced Facial Recognition',
-      description: 'AI-powered facial recognition with 99.8% accuracy and liveness detection to prevent spoofing attacks.',
+      description:
+          'AI-powered facial recognition with 99.8% accuracy and liveness detection to prevent spoofing attacks.',
       icon: Icons.face_retouching_natural,
       color: Colors.blue,
     ),
     SecurityFeature(
       title: 'Neural Network Analysis',
-      description: 'Deep learning algorithms analyze facial features in real-time to detect anomalies and unauthorized access attempts.',
+      description:
+          'Deep learning algorithms analyze facial features in real-time to detect anomalies and unauthorized access attempts.',
       icon: Icons.psychology,
       color: Colors.purple,
     ),
     SecurityFeature(
       title: 'Biometric Authentication',
-      description: 'Multi-factor biometric verification using facial geometry, iris patterns, and behavioral analysis.',
+      description:
+          'Multi-factor biometric verification using facial geometry, iris patterns, and behavioral analysis.',
       icon: Icons.fingerprint,
       color: Colors.green,
     ),
     SecurityFeature(
       title: 'Encrypted Data Storage',
-      description: 'Military-grade encryption for all biometric data with decentralized storage to prevent unauthorized access.',
+      description:
+          'Military-grade encryption for all biometric data with decentralized storage to prevent unauthorized access.',
       icon: Icons.security,
       color: Colors.red,
     ),
     SecurityFeature(
       title: 'Threat Intelligence',
-      description: 'Real-time monitoring and alerts for suspicious activities with AI-powered threat detection.',
+      description:
+          'Real-time monitoring and alerts for suspicious activities with AI-powered threat detection.',
       icon: Icons.shield,
       color: Colors.orange,
     ),
@@ -69,7 +74,7 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
       } else {
         _currentPage = 0;
       }
-      
+
       if (_pageController.hasClients) {
         _pageController.animateToPage(
           _currentPage,
@@ -84,7 +89,7 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -110,13 +115,15 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: isDarkMode ? Colors.white : DesignSystem.lightTextPrimaryColor,
+                    color: isDarkMode
+                        ? Colors.white
+                        : DesignSystem.lightTextPrimaryColor,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // Slider
             SizedBox(
               height: isMobile ? 180 : 200,
@@ -129,13 +136,14 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
                   });
                 },
                 itemBuilder: (context, index) {
-                  return _buildFeatureCard(_securityFeatures[index], isDarkMode, isMobile);
+                  return _buildFeatureCard(
+                      _securityFeatures[index], isDarkMode, isMobile);
                 },
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Dots indicator
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -150,7 +158,8 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
     );
   }
 
-  Widget _buildFeatureCard(SecurityFeature feature, bool isDarkMode, bool isMobile) {
+  Widget _buildFeatureCard(
+      SecurityFeature feature, bool isDarkMode, bool isMobile) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -195,7 +204,9 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
                     style: TextStyle(
                       fontSize: isMobile ? 16 : 18,
                       fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white : DesignSystem.lightTextPrimaryColor,
+                      color: isDarkMode
+                          ? Colors.white
+                          : DesignSystem.lightTextPrimaryColor,
                     ),
                   ),
                 ),
@@ -217,13 +228,14 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
             Align(
               alignment: Alignment.bottomRight,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: feature.color.withOpacity(isDarkMode ? 0.3 : 0.2),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
-                  'AI-Powered',
+                  'Powered by NAS',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -247,7 +259,9 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
       decoration: BoxDecoration(
         color: _currentPage == index
             ? DesignSystem.accentColor
-            : (isDarkMode ? Colors.white.withOpacity(0.3) : Colors.grey.withOpacity(0.3)),
+            : (isDarkMode
+                ? Colors.white.withOpacity(0.3)
+                : Colors.grey.withOpacity(0.3)),
         borderRadius: BorderRadius.circular(4),
       ),
     );

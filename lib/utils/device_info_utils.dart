@@ -5,7 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 class DeviceInfoUtils {
   static final DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
-  
+
   /// Get the device name and type
   static Future<String> getDeviceInfo() async {
     try {
@@ -48,6 +48,6 @@ class DeviceInfoUtils {
   static Future<String> getFullVersionInfo() async {
     final deviceInfo = await getDeviceInfo();
     final appVersion = await getAppVersion();
-    return '$appVersion • $deviceInfo';
+    return 'NAFacial $appVersion | Powered by NAS | $deviceInfo';
   }
 }

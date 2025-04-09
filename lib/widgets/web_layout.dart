@@ -649,14 +649,14 @@ class WebFooter extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '© ${DateTime.now().year} Nigerian Army. All rights reserved.',
+              '© ${DateTime.now().year} Nigerian Army Signals (NAS). All rights reserved.',
               style: const TextStyle(
                 color: Colors.white, // Always white
                 fontSize: 12,
               ),
             ),
             Text(
-              'NAFacial v${versionProvider.currentVersion} | $deviceInfo',
+              'NAFacial v${versionProvider.currentVersion} | Powered by NAS | $deviceInfo',
               style: const TextStyle(
                 color: Colors.white, // Always white
                 fontSize: 12,

@@ -188,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               : 'Tablet';
                       return Center(
                         child: Text(
-                          'NAFacial v${versionProvider.currentVersion} | $deviceInfo',
+                          'NAFacial v${versionProvider.currentVersion} | Powered by NAS | $deviceInfo',
                           style: TextStyle(
                             fontSize: 12,
                             color: isDarkMode

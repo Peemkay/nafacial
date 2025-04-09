@@ -121,10 +121,19 @@ class AboutScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(
-                        '© ${DateTime.now().year} Nigerian Army',
+                        '© ${DateTime.now().year} Nigerian Army Signals (NAS)',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Powered by NAS',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                          color: DesignSystem.accentColor,
                         ),
                       ),
                       const SizedBox(height: 8),

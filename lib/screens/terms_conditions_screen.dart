@@ -123,7 +123,7 @@ class TermsConditionsScreen extends StatelessWidget {
                 _buildSection(
                   title: '12. Contact Information',
                   content:
-                      'For any questions about these Terms and Conditions, please contact us at offrmbabubakar@gmail.com.',
+                      'For any questions about these Terms and Conditions, please contact Nigerian Army Signals (NAS) at offrmbabubakar@gmail.com.',
                 ),
 
                 // Footer
