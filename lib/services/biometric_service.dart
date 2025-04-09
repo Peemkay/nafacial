@@ -8,7 +8,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/biometric_device.dart';
 import '../models/biometric_template.dart';
-import '../utils/platform_utils.dart';
 
 /// Service to handle biometric authentication across different platforms and devices
 class BiometricService {
@@ -18,22 +17,22 @@ class BiometricService {
 
   final LocalAuthentication _localAuth = LocalAuthentication();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  
+
   // Stream controllers for device events
-  final StreamController<List<BiometricDevice>> _devicesController = 
+  final StreamController<List<BiometricDevice>> _devicesController =
       StreamController<List<BiometricDevice>>.broadcast();
-  
+
   // Available biometric devices
   List<BiometricDevice> _availableDevices = [];
-  
+
   // Currently selected device
   BiometricDevice? _currentDevice;
-  
+
   // Getters
   Stream<List<BiometricDevice>> get devicesStream => _devicesController.stream;
   List<BiometricDevice> get availableDevices => _availableDevices;
   BiometricDevice? get currentDevice => _currentDevice;
-  
+
   /// Initialize the biometric service
   Future<void> initialize() async {
     try {
@@ -43,38 +42,37 @@ class BiometricService {
         debugPrint('Biometrics not available on this device');
         return;
       }
-      
+
       // Get available biometric types
       final availableBiometrics = await _localAuth.getAvailableBiometrics();
       debugPrint('Available biometrics: $availableBiometrics');
-      
+
       // Initialize built-in biometric devices
       _initializeBuiltInDevices(availableBiometrics);
-      
+
       // Initialize external devices if on supported platforms
       if (!kIsWeb) {
         if (Platform.isAndroid || Platform.isWindows) {
           await _initializeExternalDevices();
         }
       }
-      
+
       // Notify listeners
       _devicesController.add(_availableDevices);
-      
+
       // Set default device if available
       if (_availableDevices.isNotEmpty) {
         _currentDevice = _availableDevices.first;
       }
-      
     } catch (e) {
       debugPrint('Error initializing biometric service: $e');
     }
   }
-  
+
   /// Initialize built-in biometric devices
   void _initializeBuiltInDevices(List<BiometricType> availableBiometrics) {
     _availableDevices = [];
-    
+
     // Add fingerprint device if available
     if (availableBiometrics.contains(BiometricType.fingerprint)) {
       _availableDevices.add(
@@ -87,7 +85,7 @@ class BiometricService {
         ),
       );
     }
-    
+
     // Add face recognition device if available
     if (availableBiometrics.contains(BiometricType.face)) {
       _availableDevices.add(
@@ -100,7 +98,7 @@ class BiometricService {
         ),
       );
     }
-    
+
     // Add iris recognition device if available
     if (availableBiometrics.contains(BiometricType.iris)) {
       _availableDevices.add(
@@ -114,35 +112,35 @@ class BiometricService {
       );
     }
   }
-  
+
   /// Initialize external biometric devices
   Future<void> _initializeExternalDevices() async {
     try {
-      // Request USB permissions on Android
+      // Request necessary permissions on Android
       if (Platform.isAndroid) {
-        final status = await Permission.usb.request();
+        // For Android 10+ we need storage permission to access USB devices
+        final status = await Permission.storage.request();
         if (status != PermissionStatus.granted) {
-          debugPrint('USB permission denied');
+          debugPrint('Storage permission denied');
           return;
         }
       }
-      
+
       // Scan for USB devices
       await _scanForUsbDevices();
-      
+
       // Start listening for device connection/disconnection events
       _startDeviceMonitoring();
-      
     } catch (e) {
       debugPrint('Error initializing external devices: $e');
     }
   }
-  
+
   /// Scan for USB biometric devices
   Future<void> _scanForUsbDevices() async {
     // This is a placeholder for actual USB device scanning
     // In a real implementation, you would use platform-specific code to detect USB devices
-    
+
     if (Platform.isWindows) {
       // Simulate finding a USB fingerprint scanner on Windows
       _availableDevices.add(
@@ -156,7 +154,7 @@ class BiometricService {
         ),
       );
     }
-    
+
     if (Platform.isAndroid) {
       // On Android, we would use the UsbManager to find devices
       // This is a placeholder for demonstration
@@ -172,23 +170,23 @@ class BiometricService {
       );
     }
   }
-  
+
   /// Start monitoring for device connection/disconnection events
   void _startDeviceMonitoring() {
     // This would be implemented with platform-specific code
     // For example, on Android, you would register a BroadcastReceiver for USB events
     // On Windows, you might use Win32 API calls
-    
+
     // For demonstration, we'll just log that monitoring has started
     debugPrint('Started monitoring for biometric device connections');
   }
-  
+
   /// Select a biometric device to use
   void selectDevice(BiometricDevice device) {
     _currentDevice = device;
     debugPrint('Selected biometric device: ${device.name}');
   }
-  
+
   /// Authenticate using the current biometric device
   Future<bool> authenticate({
     String reason = 'Please authenticate to continue',
@@ -199,7 +197,7 @@ class BiometricService {
       debugPrint('No biometric device selected');
       return false;
     }
-    
+
     try {
       // For built-in devices, use the local_auth package
       if (_currentDevice!.isBuiltIn) {
@@ -222,7 +220,8 @@ class BiometricService {
       } else if (e.code == auth_error.notEnrolled) {
         debugPrint('No biometrics enrolled on this device');
       } else if (e.code == auth_error.lockedOut) {
-        debugPrint('Biometric authentication locked out due to too many attempts');
+        debugPrint(
+            'Biometric authentication locked out due to too many attempts');
       } else if (e.code == auth_error.permanentlyLockedOut) {
         debugPrint('Biometric authentication permanently locked out');
       }
@@ -232,21 +231,20 @@ class BiometricService {
       return false;
     }
   }
-  
+
   /// Authenticate with an external biometric device
   Future<bool> _authenticateWithExternalDevice(
-    BiometricDevice device, 
-    String reason
-  ) async {
+      BiometricDevice device, String reason) async {
     // This would be implemented with device-specific logic
     // For demonstration, we'll simulate a successful authentication
-    
-    await Future.delayed(const Duration(seconds: 2)); // Simulate processing time
-    
+
+    await Future.delayed(
+        const Duration(seconds: 2)); // Simulate processing time
+
     debugPrint('Authenticated with external device: ${device.name}');
     return true;
   }
-  
+
   /// Enroll a new biometric template
   Future<bool> enrollTemplate({
     required String userId,
@@ -257,7 +255,7 @@ class BiometricService {
       debugPrint('No biometric device selected');
       return false;
     }
-    
+
     try {
       // Create a new template
       final template = BiometricTemplate(
@@ -267,10 +265,10 @@ class BiometricService {
         data: templateData,
         createdAt: DateTime.now(),
       );
-      
+
       // Store the template securely
       await _storeTemplate(template);
-      
+
       debugPrint('Enrolled new biometric template for user: $userId');
       return true;
     } catch (e) {
@@ -278,19 +276,22 @@ class BiometricService {
       return false;
     }
   }
-  
+
   /// Store a biometric template securely
   Future<void> _storeTemplate(BiometricTemplate template) async {
     // Convert template to JSON
     final templateJson = template.toJson();
-    
+
     // Store in secure storage
     await _secureStorage.write(
-      key: 'biometric_template_${template.userId}_${template.type}',
+      key: 'biometric_template_' +
+          template.userId +
+          '_' +
+          template.type.toString(),
       value: templateJson,
     );
   }
-  
+
   /// Retrieve a biometric template
   Future<BiometricTemplate?> getTemplate({
     required String userId,
@@ -299,13 +300,13 @@ class BiometricService {
     try {
       // Retrieve from secure storage
       final templateJson = await _secureStorage.read(
-        key: 'biometric_template_${userId}_${templateType}',
+        key: 'biometric_template_' + userId + '_' + templateType.toString(),
       );
-      
+
       if (templateJson == null) {
         return null;
       }
-      
+
       // Parse template from JSON
       return BiometricTemplate.fromJson(templateJson);
     } catch (e) {
@@ -313,7 +314,7 @@ class BiometricService {
       return null;
     }
   }
-  
+
   /// Verify a biometric sample against a stored template
   Future<bool> verifyBiometric({
     required String userId,
@@ -326,18 +327,19 @@ class BiometricService {
         userId: userId,
         templateType: templateType,
       );
-      
+
       if (template == null) {
         debugPrint('No template found for user: $userId');
         return false;
       }
-      
+
       // Compare the sample with the template
       // In a real implementation, this would use a biometric matching algorithm
       // For demonstration, we'll simulate a match
-      
-      await Future.delayed(const Duration(seconds: 1)); // Simulate processing time
-      
+
+      await Future.delayed(
+          const Duration(seconds: 1)); // Simulate processing time
+
       debugPrint('Verified biometric for user: $userId');
       return true;
     } catch (e) {
@@ -345,7 +347,7 @@ class BiometricService {
       return false;
     }
   }
-  
+
   /// Dispose resources
   void dispose() {
     _devicesController.close();
