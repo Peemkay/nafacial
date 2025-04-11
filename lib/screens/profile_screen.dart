@@ -14,17 +14,17 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   late TextEditingController _fullNameController;
   late TextEditingController _usernameController;
   late TextEditingController _rankController;
   late TextEditingController _departmentController;
   late TextEditingController _armyNumberController;
-  
+
   bool _isEditing = false;
   bool _isLoading = false;
   String? _errorMessage;
-  
+
   @override
   void initState() {
     super.initState();
@@ -33,13 +33,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _rankController = TextEditingController();
     _departmentController = TextEditingController();
     _armyNumberController = TextEditingController();
-    
+
     // Load user data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserData();
     });
   }
-  
+
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -49,11 +49,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _armyNumberController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _loadUserData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = await authProvider.getCurrentUser();
-    
+
     if (user != null) {
       setState(() {
         _fullNameController.text = user.fullName;
@@ -64,21 +64,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     }
   }
-  
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-    
+
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUser = await authProvider.getCurrentUser();
-      
+
       if (currentUser != null) {
         // Create updated user
         final updatedUser = currentUser.copyWith(
@@ -86,15 +86,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           rank: _rankController.text.trim(),
           department: _departmentController.text.trim(),
         );
-        
+
         // Update user
         final success = await authProvider.updateUserProfile(updatedUser);
-        
+
         if (success && mounted) {
           setState(() {
             _isEditing = false;
           });
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Profile updated successfully'),
@@ -117,11 +117,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
+
     return PlatformScaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -155,13 +155,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
           final user = authProvider.currentUser;
-          
+
           if (user == null) {
             return const Center(
               child: Text('User not found'),
             );
           }
-          
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Form(
@@ -191,18 +191,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        // User name
+                        // User name with rank and initials
                         Text(
-                          user.fullName,
+                          '${user.rank} ${user.initials}',
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        // User role
+                        // Full name and role
                         Text(
-                          user.isAdmin ? 'Administrator' : 'User',
+                          '${user.fullName} - ${user.isAdmin ? 'Administrator' : 'User'}',
                           style: TextStyle(
                             fontSize: 16,
                             color: isDarkMode
@@ -214,7 +214,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
-                  
+
                   // Error message
                   if (_errorMessage != null) ...[
                     Container(
@@ -239,7 +239,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ],
-                  
+
                   // Profile form
                   Card(
                     margin: const EdgeInsets.only(bottom: 16),
@@ -256,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Full Name
                           TextFormField(
                             controller: _fullNameController,
@@ -274,7 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Username
                           TextFormField(
                             controller: _usernameController,
@@ -286,7 +286,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             enabled: false, // Username cannot be changed
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Rank
                           TextFormField(
                             controller: _rankController,
@@ -304,7 +304,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Department
                           TextFormField(
                             controller: _departmentController,
@@ -322,7 +322,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Army Number
                           TextFormField(
                             controller: _armyNumberController,
@@ -337,7 +337,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ),
-                  
+
                   // Biometric settings
                   Card(
                     margin: const EdgeInsets.only(bottom: 16),
@@ -354,7 +354,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          
                           SwitchListTile(
                             title: const Text('Enable Biometric Login'),
                             subtitle: Text(
@@ -366,22 +365,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             onChanged: (value) async {
                               if (value) {
                                 // Enable biometric
-                                final success = await authProvider.enableBiometric();
+                                final success =
+                                    await authProvider.enableBiometric();
                                 if (!success && mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Failed to enable biometric login'),
+                                      content: Text(
+                                          'Failed to enable biometric login'),
                                       backgroundColor: Colors.red,
                                     ),
                                   );
                                 }
                               } else {
                                 // Disable biometric
-                                final success = await authProvider.disableBiometric();
+                                final success =
+                                    await authProvider.disableBiometric();
                                 if (!success && mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Failed to disable biometric login'),
+                                      content: Text(
+                                          'Failed to disable biometric login'),
                                       backgroundColor: Colors.red,
                                     ),
                                   );
@@ -393,7 +396,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ),
-                  
+
                   // Save button
                   if (_isEditing)
                     Padding(

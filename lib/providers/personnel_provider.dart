@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/personnel_model.dart';
+import '../models/notification_model.dart';
 import '../services/personnel_service.dart';
 import '../services/database_sync_service.dart';
 import '../providers/auth_provider.dart';
-import '../services/notification_service.dart';
+import '../providers/notification_service.dart';
 
 class PersonnelProvider with ChangeNotifier {
   final PersonnelService _personnelService = PersonnelService();
@@ -132,10 +133,22 @@ class PersonnelProvider with ChangeNotifier {
     }
   }
 
+  // Get personnel by ID
+  Personnel? getPersonnelById(String id) {
+    try {
+      return _allPersonnel.firstWhere(
+        (personnel) => personnel.id == id,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
   // Add new personnel
   Future<Personnel?> addPersonnel({
     required String armyNumber,
     required String fullName,
+    required String initials,
     required Rank rank,
     required String unit,
     required Corps corps,
@@ -151,6 +164,7 @@ class PersonnelProvider with ChangeNotifier {
       final newPersonnel = await _personnelService.addPersonnel(
         armyNumber: armyNumber,
         fullName: fullName,
+        initials: initials,
         rank: rank,
         unit: unit,
         corps: corps,
@@ -181,11 +195,11 @@ class PersonnelProvider with ChangeNotifier {
       // Trigger database sync
       _syncService.syncDatabase();
 
-      // Show notification about the new personnel
+      // Show notification about the new personnel with admin info
       _notificationService.showNotification(
         title: 'Personnel Added',
         body:
-            'New personnel ${newPersonnel.fullName} (${newPersonnel.armyNumber}) has been added.',
+            'New personnel ${newPersonnel.fullName} (${newPersonnel.armyNumber}) has been added by ${currentAdmin?.rank ?? ''} ${currentAdmin?.fullName ?? 'Unknown'} (${currentAdmin?.armyNumber ?? 'Unknown'}).',
         type: NotificationType.success,
       );
 
@@ -257,11 +271,49 @@ class PersonnelProvider with ChangeNotifier {
       // Trigger database sync
       _syncService.syncDatabase();
 
-      // Show notification about the update
+      // Show notification about the update with admin info and changes
+      String changesText = '';
+      // Only process changes if we have a current admin
+      if (currentAdmin != null) {
+        // Get the original personnel to compare changes
+        final originalPersonnel =
+            await _personnelService.getPersonnelById(personnel.id);
+        final Map<String, dynamic> changesMap = {};
+
+        if (originalPersonnel != null) {
+          final originalJson = originalPersonnel.toJson();
+          final updatedJson = updatedPersonnel.toJson();
+
+          // Compare fields and track changes for notification
+          updatedJson.forEach((key, value) {
+            if (originalJson[key] != value) {
+              changesMap[key] = {
+                'from': originalJson[key],
+                'to': value,
+              };
+            }
+          });
+        }
+
+        if (changesMap.isNotEmpty) {
+          // Get the first 2 changes to show in notification
+          final changesList = changesMap.entries.take(2).map((entry) {
+            final fieldName = entry.key;
+            final fieldChanges = entry.value;
+            return '$fieldName: ${fieldChanges['from']} → ${fieldChanges['to']}';
+          }).toList();
+
+          changesText = '\nChanges: ${changesList.join(', ')}';
+          if (changesMap.length > 2) {
+            changesText += ' and ${changesMap.length - 2} more';
+          }
+        }
+      }
+
       _notificationService.showNotification(
         title: 'Personnel Updated',
         body:
-            'Personnel ${updatedPersonnel.fullName} (${updatedPersonnel.armyNumber}) has been updated.',
+            'Personnel ${updatedPersonnel.fullName} (${updatedPersonnel.armyNumber}) has been updated by ${currentAdmin?.rank ?? ''} ${currentAdmin?.fullName ?? 'Unknown'} (${currentAdmin?.armyNumber ?? 'Unknown'}).$changesText',
         type: NotificationType.success,
       );
 

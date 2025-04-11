@@ -21,6 +21,7 @@ class _PersonnelRegistrationScreenState
   final _formKey = GlobalKey<FormState>();
   final _armyNumberController = TextEditingController();
   final _fullNameController = TextEditingController();
+  final _initialsController = TextEditingController();
   // Rank is now a dropdown
   final _unitController = TextEditingController();
   final _notesController = TextEditingController();
@@ -403,6 +404,7 @@ class _PersonnelRegistrationScreenState
         final newPersonnel = await personnelProvider.addPersonnel(
           armyNumber: _armyNumberController.text.trim(),
           fullName: _fullNameController.text.trim(),
+          initials: _initialsController.text.trim(),
           rank: _selectedRank,
           unit: _unitController.text.trim(),
           corps: _selectedCorps,
@@ -450,6 +452,10 @@ class _PersonnelRegistrationScreenState
       appBar: AppBar(
         title: const Text('Register New Personnel'),
         backgroundColor: DesignSystem.primaryColor,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       drawer: const CustomDrawer(),
       body: SafeArea(
@@ -550,6 +556,21 @@ class _PersonnelRegistrationScreenState
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter full name';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: DesignSystem.adjustedSpacingMedium),
+
+                  // Initials
+                  PlatformTextField(
+                    controller: _initialsController,
+                    label: 'Initials',
+                    prefixIcon: Icons.short_text,
+                    hint: 'e.g., IM Yunusa (Officer) or Ibrahim MY (Soldier)',
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter initials';
                       }
                       return null;
                     },

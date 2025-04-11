@@ -42,7 +42,7 @@ dependencies:
   flutter_plugin_android_lifecycle: ^2.0.17
   usb_serial: ^0.5.1
   flutter_secure_storage: ^9.0.0
-  biometric_storage: ^5.0.0+4
+  # Removed biometric_storage due to Java 17 requirement
   flutter_webrtc: ^0.9.47
 
 dev_dependencies:

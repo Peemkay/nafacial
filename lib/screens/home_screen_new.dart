@@ -76,21 +76,30 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Admin cards section - always in row layout
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 1,
-                      child: _buildAdminCard(context),
-                    ),
-                    SizedBox(width: DesignSystem.adjustedSpacingMedium),
-                    Expanded(
-                      flex: 1,
-                      child: _buildBiometricCard(context),
-                    ),
-                  ],
-                ),
+                // Admin cards section - responsive layout
+                ResponsiveUtils.isDesktop(context) ||
+                        ResponsiveUtils.isTablet(context)
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 1,
+                            child: _buildAdminCard(context),
+                          ),
+                          SizedBox(width: DesignSystem.adjustedSpacingMedium),
+                          Expanded(
+                            flex: 1,
+                            child: _buildBiometricCard(context),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          _buildAdminCard(context),
+                          SizedBox(height: DesignSystem.adjustedSpacingMedium),
+                          _buildBiometricCard(context),
+                        ],
+                      ),
 
                 SizedBox(height: DesignSystem.adjustedSpacingLarge),
 
@@ -151,10 +160,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     DesignSystem.adjustedSpacingSmall,
                                 childAspectRatio: ResponsiveUtils.isDesktop(
                                         context)
-                                    ? 1.5
+                                    ? 1.2
                                     : ResponsiveUtils.isTablet(context)
-                                        ? 1.3
-                                        : 1.2, // Increased aspect ratio to make cards smaller
+                                        ? 1.0
+                                        : 0.9, // Decreased aspect ratio to make cards larger
                               ),
                               itemCount:
                                   quickActionsProvider.quickActions.length,
@@ -444,16 +453,16 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: () => _handleQuickActionTap(context, action),
         borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall),
         child: Padding(
-          padding: EdgeInsets.all(isMobile
-              ? 4.0
-              : 8.0), // Further reduced padding to make cards smaller
+          padding: EdgeInsets.all(
+              isMobile ? 8.0 : 12.0), // Increased padding for better visibility
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Icon with colored background
               Container(
-                padding: EdgeInsets.all(
-                    isMobile ? 4.0 : 6.0), // Further reduced padding
+                padding: EdgeInsets.all(isMobile
+                    ? 10.0
+                    : 14.0), // Increased padding for larger icons
                 decoration: BoxDecoration(
                   color: action.color.withAlpha(isDarkMode ? 60 : 30),
                   shape: BoxShape.circle,
@@ -461,10 +470,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Icon(
                   action.icon,
                   color: isDarkMode ? Colors.white : action.color,
-                  size: isMobile ? 16 : 22, // Even smaller icons
+                  size: isMobile ? 32 : 40, // Increased icon size
                 ),
               ),
-              SizedBox(height: isMobile ? 3 : 4), // Further reduced spacing
+              SizedBox(height: isMobile ? 8 : 10), // Increased spacing
               // Title with responsive font size
               Flexible(
                 child: Text(
@@ -474,7 +483,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   maxLines: 1, // Limit to one line to prevent overflow
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
-                    fontSize: isMobile ? 9 : 11, // Even smaller font size
+                    fontSize: isMobile ? 14 : 16, // Increased font size
                     color: isDarkMode
                         ? Colors.white.withAlpha(220)
                         : DesignSystem.lightTextPrimaryColor,
@@ -489,30 +498,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleQuickActionTap(BuildContext context, dynamic action) {
+    debugPrint('Tapped on quick action: ${action.id}');
+
     switch (action.id) {
       case 'facial_verification':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const FacialVerificationScreen(),
-          ),
-        );
+        Navigator.pushNamed(context, '/facial_verification');
         break;
       case 'live_recognition':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const LiveFacialRecognitionScreen(),
-          ),
-        );
+        Navigator.pushNamed(context, '/live_recognition');
         break;
-      case 'personnel_registration':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const PersonnelRegistrationScreen(),
-          ),
-        );
+      case 'personnel_database':
+        Navigator.pushNamed(context, '/personnel_database');
+        break;
+      case 'access_logs':
+        Navigator.pushNamed(context, '/access_logs');
+        break;
+      case 'register_personnel':
+        Navigator.pushNamed(context, '/register_personnel');
         break;
       case 'settings':
         Navigator.pushNamed(context, '/settings');
@@ -520,8 +522,26 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'gallery':
         _openGallery(context);
         break;
+      case 'notifications':
+        Navigator.pushNamed(context, '/notifications');
+        break;
+      case 'biometric_management':
+        Navigator.pushNamed(context, '/biometric_management');
+        break;
       default:
-        // Handle other actions
+        // For any other actions, use the route property from the action
+        if (action.route != null && action.route.isNotEmpty) {
+          Navigator.pushNamed(context, action.route);
+        } else {
+          debugPrint('No route defined for action: ${action.id}');
+          // Show a snackbar to inform the user
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${action.title} feature coming soon!'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
         break;
     }
   }

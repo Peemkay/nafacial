@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:vibration/vibration.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../models/notification_model.dart';
 
 class NotificationService with ChangeNotifier {
   // In-app notification management
@@ -24,19 +24,21 @@ class NotificationService with ChangeNotifier {
   // Getters
   int get notificationCount => _notificationCount;
   List<NotificationItem> get notifications => _notifications;
-  Stream<NotificationItem> get notificationStream =>
-      _notificationStreamController.stream;
+  Stream<NotificationItem> get notificationStream => _notificationStreamController.stream;
   Stream<int> get selectNotificationStream => _selectNotificationStream.stream;
 
+  // Constructor
   NotificationService() {
-    _loadSavedNotifications();
+    _loadNotifications();
   }
 
-  Future<void> _loadSavedNotifications() async {
+  // Load notifications from storage
+  Future<void> _loadNotifications() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final notificationsJson = prefs.getStringList('notifications') ?? [];
 
+      _notifications.clear();
       for (final json in notificationsJson) {
         try {
           final Map<String, dynamic> data = jsonDecode(json);
@@ -66,6 +68,7 @@ class NotificationService with ChangeNotifier {
     }
   }
 
+  // Save notifications to storage
   Future<void> _saveNotifications() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -87,6 +90,7 @@ class NotificationService with ChangeNotifier {
     }
   }
 
+  // Show a notification
   void showNotification({
     required String title,
     required String body,
@@ -100,8 +104,7 @@ class NotificationService with ChangeNotifier {
     bool showPopup = true,
   }) {
     // Add to internal list and notify listeners
-    final notification =
-        _addNotification(title, body, type, imageUrl, adminInfo);
+    final notification = _addNotification(title, body, type, imageUrl, adminInfo);
 
     // Add to stream for reactive UI updates
     _notificationStreamController.add(notification);
@@ -120,21 +123,21 @@ class NotificationService with ChangeNotifier {
     _saveNotifications();
   }
 
-  // Method to mark a notification as read
+  // Mark a notification as read
   void markAsRead(int id) {
-    final index =
-        _notifications.indexWhere((notification) => notification.id == id);
+    final index = _notifications.indexWhere((notification) => notification.id == id);
     if (index != -1) {
       final notification = _notifications[index];
       if (!notification.isRead) {
         _notifications[index] = notification.copyWith(isRead: true);
         _notificationCount = _notifications.where((n) => !n.isRead).length;
         notifyListeners();
+        _saveNotifications();
       }
     }
   }
 
-  // Method to mark all notifications as read
+  // Mark all notifications as read
   void markAllAsRead() {
     bool hasUnread = false;
     for (int i = 0; i < _notifications.length; i++) {
@@ -147,13 +150,13 @@ class NotificationService with ChangeNotifier {
     if (hasUnread) {
       _notificationCount = 0;
       notifyListeners();
+      _saveNotifications();
     }
   }
 
-  // Method to remove a notification
+  // Remove a notification
   void removeNotification(int id) {
-    final index =
-        _notifications.indexWhere((notification) => notification.id == id);
+    final index = _notifications.indexWhere((notification) => notification.id == id);
     if (index != -1) {
       final wasUnread = !_notifications[index].isRead;
       _notifications.removeAt(index);
@@ -161,29 +164,28 @@ class NotificationService with ChangeNotifier {
         _notificationCount--;
       }
       notifyListeners();
+      _saveNotifications();
     }
   }
 
-  // Method to clear all notifications
+  // Clear all notifications
   void clearNotifications() {
     if (_notifications.isNotEmpty) {
       _notifications.clear();
       _notificationCount = 0;
       notifyListeners();
+      _saveNotifications();
     }
   }
 
-  @override
-  void dispose() {
-    _notificationStreamController.close();
-    _selectNotificationStream.close();
-    _audioPlayer.dispose();
-    super.dispose();
-  }
-
+  // Add a notification to the list
   NotificationItem _addNotification(
-      String title, String body, NotificationType type, String? imageUrl,
-      [String? adminInfo]) {
+    String title,
+    String body,
+    NotificationType type,
+    String? imageUrl,
+    [String? adminInfo]
+  ) {
     final notification = NotificationItem(
       id: DateTime.now().millisecondsSinceEpoch,
       title: title,
@@ -201,11 +203,10 @@ class NotificationService with ChangeNotifier {
     return notification;
   }
 
-  void _playNotificationSound(NotificationType type) {
+  // Play notification sound based on type
+  Future<void> _playNotificationSound(NotificationType type) async {
     try {
       String soundAsset;
-
-      // Select sound based on notification type
       switch (type) {
         case NotificationType.success:
           soundAsset = 'assets/sounds/success.mp3';
@@ -217,22 +218,18 @@ class NotificationService with ChangeNotifier {
           soundAsset = 'assets/sounds/error.mp3';
           break;
         case NotificationType.info:
+        default:
           soundAsset = 'assets/sounds/notification.mp3';
           break;
       }
-
-      // Play the sound
-      _audioPlayer.play(AssetSource(soundAsset));
+      await _audioPlayer.play(AssetSource(soundAsset));
     } catch (e) {
-      // Fallback to default system sound if asset not found
-      try {
-        _audioPlayer.play(AssetSource('assets/sounds/notification.mp3'));
-      } catch (e) {
-        // Ignore if sound file not found
-      }
+      // Ignore sound errors
+      debugPrint('Error playing notification sound: $e');
     }
   }
 
+  // Vibrate device if supported
   void _vibrate() {
     try {
       Vibration.hasVibrator().then((hasVibrator) {
@@ -250,57 +247,15 @@ class NotificationService with ChangeNotifier {
       });
     } catch (e) {
       // Ignore vibration errors
+      debugPrint('Error vibrating device: $e');
     }
   }
-}
 
-class NotificationItem {
-  final int id;
-  final String title;
-  final String body;
-  final DateTime timestamp;
-  final NotificationType type;
-  final bool isRead;
-  final String? imageUrl;
-  final String? adminInfo; // Added admin info field
-
-  NotificationItem({
-    required this.id,
-    required this.title,
-    required this.body,
-    required this.timestamp,
-    required this.type,
-    required this.isRead,
-    this.imageUrl,
-    this.adminInfo,
-  });
-
-  NotificationItem copyWith({
-    int? id,
-    String? title,
-    String? body,
-    DateTime? timestamp,
-    NotificationType? type,
-    bool? isRead,
-    String? imageUrl,
-    String? adminInfo,
-  }) {
-    return NotificationItem(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      body: body ?? this.body,
-      timestamp: timestamp ?? this.timestamp,
-      type: type ?? this.type,
-      isRead: isRead ?? this.isRead,
-      imageUrl: imageUrl ?? this.imageUrl,
-      adminInfo: adminInfo ?? this.adminInfo,
-    );
+  @override
+  void dispose() {
+    _notificationStreamController.close();
+    _selectNotificationStream.close();
+    _audioPlayer.dispose();
+    super.dispose();
   }
-}
-
-enum NotificationType {
-  info,
-  success,
-  warning,
-  error,
 }

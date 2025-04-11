@@ -1,11 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../config/design_system.dart';
 import '../models/biometric_device.dart';
 import '../services/biometric_service.dart';
-import '../utils/platform_utils.dart';
-import '../widgets/app_bar_with_back_button.dart';
 
 class BiometricManagementScreen extends StatefulWidget {
   static const String routeName = '/biometric-management';
@@ -74,9 +71,15 @@ class _BiometricManagementScreenState extends State<BiometricManagementScreen> {
         MediaQuery.of(context).size.width < 1100;
 
     return Scaffold(
-      appBar: AppBarWithBackButton(
-        title: 'Biometric Management',
-        onBackPressed: () => Navigator.of(context).pop(),
+      appBar: AppBar(
+        title: const Text('Biometric Management'),
+        backgroundColor: isDarkMode
+            ? DesignSystem.darkAppBarColor
+            : DesignSystem.lightAppBarColor,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: _buildBody(context, isDarkMode, isDesktop, isTablet),
     );
@@ -369,16 +372,16 @@ class _BiometricManagementScreenState extends State<BiometricManagementScreen> {
                       : Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: currentDevice.isConnected
-                        ? Colors.green
-                        : Colors.red,
+                    color:
+                        currentDevice.isConnected ? Colors.green : Colors.red,
                     width: 1,
                   ),
                 ),
                 child: Text(
                   currentDevice.isConnected ? 'Connected' : 'Disconnected',
                   style: TextStyle(
-                    color: currentDevice.isConnected ? Colors.green : Colors.red,
+                    color:
+                        currentDevice.isConnected ? Colors.green : Colors.red,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -403,8 +406,7 @@ class _BiometricManagementScreenState extends State<BiometricManagementScreen> {
               _buildInfoRow('Device ID', currentDevice.id),
               _buildInfoRow('Connection Type',
                   currentDevice.connectionType ?? 'Internal'),
-              _buildInfoRow('Built-in',
-                  currentDevice.isBuiltIn ? 'Yes' : 'No'),
+              _buildInfoRow('Built-in', currentDevice.isBuiltIn ? 'Yes' : 'No'),
             ],
           ),
           const SizedBox(height: 32),

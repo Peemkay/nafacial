@@ -71,21 +71,32 @@ class AppShortcutsService {
 
   /// Handle shortcut action when app is launched from a shortcut
   void _handleShortcut(BuildContext context, String shortcutType) {
+    // Import the global navigator key
+    final GlobalKey<NavigatorState> navigatorKey =
+        Provider.of<GlobalKey<NavigatorState>>(context, listen: false);
+
     // Use a post-frame callback to ensure the widget tree is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Check if the context is still valid
-      if (context.mounted) {
-        final quickActionsProvider =
-            Provider.of<QuickActionsProvider>(context, listen: false);
+      try {
+        // Check if the context is still valid and navigator key is available
+        if (navigatorKey.currentState != null) {
+          final quickActionsProvider =
+              Provider.of<QuickActionsProvider>(context, listen: false);
 
-        // Find the action with the matching ID
-        final action = quickActionsProvider.quickActions.firstWhere(
-          (action) => action.id == shortcutType,
-          orElse: () => quickActionsProvider.quickActions.first,
-        );
+          // Find the action with the matching ID
+          final action = quickActionsProvider.quickActions.firstWhere(
+            (action) => action.id == shortcutType,
+            orElse: () => quickActionsProvider.quickActions.first,
+          );
 
-        // Navigate to the appropriate route
-        Navigator.of(context).pushNamed(action.route);
+          // Navigate using the global navigator key
+          navigatorKey.currentState!.pushNamed(action.route);
+          debugPrint('Navigated to ${action.route} via app shortcut');
+        } else {
+          debugPrint('Navigator key not available for shortcut navigation');
+        }
+      } catch (e) {
+        debugPrint('Error handling app shortcut: $e');
       }
     });
   }

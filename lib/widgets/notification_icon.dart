@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter_animate/flutter_animate.dart';
 import '../config/design_system.dart';
-import '../services/notification_service.dart';
+import '../providers/notification_service.dart';
+import '../models/notification_model.dart';
 import '../utils/responsive_utils.dart';
 
 class NotificationIcon extends StatefulWidget {
@@ -142,6 +143,12 @@ class _NotificationIconState extends State<NotificationIcon>
   }
 
   void _showNotificationsPanel(BuildContext context) {
+    // Navigate to the notifications screen instead of showing a bottom sheet
+    Navigator.of(context).pushNamed('/notifications');
+  }
+
+  // This method is kept for reference but no longer used
+  void _showNotificationsPanelOld(BuildContext context) {
     final notificationService =
         Provider.of<NotificationService>(context, listen: false);
     final notifications = notificationService.notifications;

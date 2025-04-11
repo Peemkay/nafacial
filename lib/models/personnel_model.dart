@@ -315,6 +315,7 @@ class Personnel {
   final String id;
   final String armyNumber;
   final String fullName;
+  final String initials;
   final Rank rank;
   final String unit;
   final Corps corps;
@@ -348,6 +349,7 @@ class Personnel {
     required this.id,
     required this.armyNumber,
     required this.fullName,
+    required this.initials,
     required this.rank,
     required this.unit,
     required this.corps,
@@ -362,39 +364,38 @@ class Personnel {
     this.enlistmentDate,
   });
 
-  // Determine category from army number
+  // Determine category from army number - more flexible approach
   static PersonnelCategory getCategoryFromArmyNumber(String armyNumber) {
-    if (armyNumber.startsWith('N/') && armyNumber.endsWith('F')) {
-      return PersonnelCategory.officerFemale;
-    } else if (armyNumber.startsWith('N/')) {
-      return PersonnelCategory.officerMale;
-    } else if (armyNumber.contains('NA/') && armyNumber.endsWith('F')) {
-      return PersonnelCategory.soldierFemale;
-    } else if (armyNumber.contains('NA/')) {
-      return PersonnelCategory.soldierMale;
+    // Check if it's an officer (starts with N/)
+    final isOfficer = armyNumber.startsWith('N/');
+
+    // Check if it's female (ends with F)
+    final isFemale = armyNumber.endsWith('F');
+
+    if (isOfficer) {
+      return isFemale
+          ? PersonnelCategory.officerFemale
+          : PersonnelCategory.officerMale;
     } else {
-      throw Exception('Invalid army number format');
+      // Assume it's a soldier if not an officer
+      return isFemale
+          ? PersonnelCategory.soldierFemale
+          : PersonnelCategory.soldierMale;
     }
   }
 
-  // Validate army number format
+  // Validate army number format - more flexible validation
   static bool isValidArmyNumber(String armyNumber) {
-    // Officer Male: N/xxxxx
-    final officerMaleRegex = RegExp(r'^N/\d+$');
+    // Basic validation - just check for general patterns
+    // Officer: Starts with N/
+    final officerRegex = RegExp(r'^N/.*');
 
-    // Officer Female: N/xxxxxF
-    final officerFemaleRegex = RegExp(r'^N/\d+F$');
+    // Soldier: Contains NA/ somewhere in the string
+    final soldierRegex = RegExp(r'.*NA/.*');
 
-    // Soldier Male: xxNA/xx/xxxxx
-    final soldierMaleRegex = RegExp(r'^\d+NA/\d+/\d+$');
-
-    // Soldier Female: xxNA/xx/xxxxxF
-    final soldierFemaleRegex = RegExp(r'^\d+NA/\d+/\d+F$');
-
-    return officerMaleRegex.hasMatch(armyNumber) ||
-        officerFemaleRegex.hasMatch(armyNumber) ||
-        soldierMaleRegex.hasMatch(armyNumber) ||
-        soldierFemaleRegex.hasMatch(armyNumber);
+    // Accept any army number that follows the basic pattern
+    return officerRegex.hasMatch(armyNumber) ||
+        soldierRegex.hasMatch(armyNumber);
   }
 
   // Convert Personnel object to a Map
@@ -403,6 +404,7 @@ class Personnel {
       'id': id,
       'armyNumber': armyNumber,
       'fullName': fullName,
+      'initials': initials,
       'rank': rank.toString().split('.').last,
       'unit': unit,
       'corps': corps.toString().split('.').last,
@@ -424,6 +426,7 @@ class Personnel {
       id: map['id'],
       armyNumber: map['armyNumber'],
       fullName: map['fullName'],
+      initials: map['initials'] ?? '', // Default to empty string if not present
       rank: Rank.values.firstWhere(
         (e) => e.toString().split('.').last == map['rank'],
         orElse: () => Rank.private,
@@ -464,6 +467,7 @@ class Personnel {
     String? id,
     String? armyNumber,
     String? fullName,
+    String? initials,
     Rank? rank,
     String? unit,
     Corps? corps,
@@ -481,6 +485,7 @@ class Personnel {
       id: id ?? this.id,
       armyNumber: armyNumber ?? this.armyNumber,
       fullName: fullName ?? this.fullName,
+      initials: initials ?? this.initials,
       rank: rank ?? this.rank,
       unit: unit ?? this.unit,
       corps: corps ?? this.corps,
@@ -502,6 +507,7 @@ class Personnel {
       'id': id,
       'armyNumber': armyNumber,
       'fullName': fullName,
+      'initials': initials,
       'rank': rank.toString().split('.').last,
       'unit': unit,
       'corps': corps.toString().split('.').last,
@@ -524,6 +530,8 @@ class Personnel {
       id: json['id'],
       armyNumber: json['armyNumber'],
       fullName: json['fullName'],
+      initials:
+          json['initials'] ?? '', // Default to empty string if not present
       rank: _parseRank(json['rank']),
       unit: json['unit'],
       corps: _parseCorps(json['corps']),

@@ -22,6 +22,7 @@ class PersonnelEditScreen extends StatefulWidget {
 class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
+  final _initialsController = TextEditingController();
   final _unitController = TextEditingController();
   final _notesController = TextEditingController();
 
@@ -40,6 +41,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
 
     // Initialize controllers with existing data
     _fullNameController.text = widget.personnel.fullName;
+    _initialsController.text = widget.personnel.initials;
     _unitController.text = widget.personnel.unit;
     _notesController.text = widget.personnel.notes ?? '';
 
@@ -404,6 +406,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
         // Create updated personnel
         final updatedPersonnel = widget.personnel.copyWith(
           fullName: _fullNameController.text.trim(),
+          initials: _initialsController.text.trim(),
           rank: _selectedRank,
           unit: _unitController.text.trim(),
           corps: _selectedCorps,
@@ -591,6 +594,21 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter full name';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: DesignSystem.adjustedSpacingMedium),
+
+                  // Initials
+                  PlatformTextField(
+                    controller: _initialsController,
+                    label: 'Initials',
+                    prefixIcon: Icons.short_text,
+                    hint: 'e.g., IM Yunusa (Officer) or Ibrahim MY (Soldier)',
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter initials';
                       }
                       return null;
                     },

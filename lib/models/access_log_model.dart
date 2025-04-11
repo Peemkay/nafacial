@@ -1,3 +1,22 @@
+// Access log types
+enum AccessLogType {
+  login,
+  logout,
+  verification,
+  registration,
+  modification,
+  deletion,
+}
+
+// Access log status
+enum AccessLogStatus {
+  verified,
+  unverified,
+  denied,
+  notFound,
+  unknown,
+}
+
 class AccessLog {
   final String id;
   final String? personnelId;
@@ -5,6 +24,7 @@ class AccessLog {
   final String? personnelArmyNumber;
   final DateTime timestamp;
   final AccessLogStatus status;
+  final AccessLogType type;
   final double confidence;
   final String? imageUrl;
   final String? location;
@@ -13,6 +33,7 @@ class AccessLog {
   final String? adminName;
   final String? adminArmyNumber;
   final String? notes;
+  final String? details;
 
   AccessLog({
     required this.id,
@@ -21,6 +42,7 @@ class AccessLog {
     this.personnelArmyNumber,
     required this.timestamp,
     required this.status,
+    required this.type,
     required this.confidence,
     this.imageUrl,
     this.location,
@@ -29,6 +51,7 @@ class AccessLog {
     this.adminName,
     this.adminArmyNumber,
     this.notes,
+    this.details,
   });
 
   // Convert AccessLog to JSON
@@ -40,6 +63,7 @@ class AccessLog {
       'personnel_army_number': personnelArmyNumber,
       'timestamp': timestamp.toIso8601String(),
       'status': status.toString().split('.').last,
+      'type': type.toString().split('.').last,
       'confidence': confidence,
       'image_url': imageUrl,
       'location': location,
@@ -48,6 +72,7 @@ class AccessLog {
       'admin_name': adminName,
       'admin_army_number': adminArmyNumber,
       'notes': notes,
+      'details': details,
     };
   }
 
@@ -60,6 +85,7 @@ class AccessLog {
       personnelArmyNumber: json['personnel_army_number'],
       timestamp: DateTime.parse(json['timestamp']),
       status: _parseAccessLogStatus(json['status']),
+      type: _parseAccessLogType(json['type'] ?? 'verification'),
       confidence: json['confidence'] is int
           ? (json['confidence'] as int).toDouble()
           : json['confidence'],
@@ -70,6 +96,7 @@ class AccessLog {
       adminName: json['admin_name'],
       adminArmyNumber: json['admin_army_number'],
       notes: json['notes'],
+      details: json['details'],
     );
   }
 
@@ -81,6 +108,14 @@ class AccessLog {
     );
   }
 
+  // Parse access log type from string
+  static AccessLogType _parseAccessLogType(String typeStr) {
+    return AccessLogType.values.firstWhere(
+      (t) => t.toString().split('.').last == typeStr,
+      orElse: () => AccessLogType.verification,
+    );
+  }
+
   // Create a copy of the AccessLog with modified fields
   AccessLog copyWith({
     String? id,
@@ -89,6 +124,7 @@ class AccessLog {
     String? personnelArmyNumber,
     DateTime? timestamp,
     AccessLogStatus? status,
+    AccessLogType? type,
     double? confidence,
     String? imageUrl,
     String? location,
@@ -97,6 +133,7 @@ class AccessLog {
     String? adminName,
     String? adminArmyNumber,
     String? notes,
+    String? details,
   }) {
     return AccessLog(
       id: id ?? this.id,
@@ -105,6 +142,7 @@ class AccessLog {
       personnelArmyNumber: personnelArmyNumber ?? this.personnelArmyNumber,
       timestamp: timestamp ?? this.timestamp,
       status: status ?? this.status,
+      type: type ?? this.type,
       confidence: confidence ?? this.confidence,
       imageUrl: imageUrl ?? this.imageUrl,
       location: location ?? this.location,
@@ -113,14 +151,9 @@ class AccessLog {
       adminName: adminName ?? this.adminName,
       adminArmyNumber: adminArmyNumber ?? this.adminArmyNumber,
       notes: notes ?? this.notes,
+      details: details ?? this.details,
     );
   }
 }
 
-// Access log status enum
-enum AccessLogStatus {
-  verified,
-  unverified,
-  notFound,
-  unknown,
-}
+// This enum is now defined at the top of the file

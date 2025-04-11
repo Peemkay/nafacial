@@ -368,7 +368,7 @@ class _PersonnelIdentificationResultScreenState
             // Personnel name
             Center(
               child: Text(
-                personnel.fullName,
+                '${personnel.rank.shortName} ${personnel.initials}',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
@@ -378,7 +378,7 @@ class _PersonnelIdentificationResultScreenState
             ),
             Center(
               child: Text(
-                personnel.rank.displayName,
+                personnel.fullName,
                 style: TextStyle(
                   color: DesignSystem.textSecondaryColor,
                   fontSize: 16,
@@ -598,6 +598,7 @@ class _PersonnelIdentificationResultScreenState
               ),
               SizedBox(height: DesignSystem.adjustedSpacingMedium),
               _buildDetailRow('Name', widget.identifiedPersonnel!.fullName),
+              _buildDetailRow('Initials', widget.identifiedPersonnel!.initials),
               _buildDetailRow(
                   'Rank', widget.identifiedPersonnel!.rank.displayName),
               _buildDetailRow(

@@ -131,13 +131,19 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Register a new user
-  Future<bool> register(String username, String password, String fullName,
-      String rank, String department) async {
+  Future<bool> register(
+      String username,
+      String password,
+      String fullName,
+      String initials,
+      String rank,
+      String department,
+      String armyNumber) async {
     _setLoading(true);
 
     try {
       final user = await _authService.register(
-          username, password, fullName, rank, department);
+          username, password, fullName, initials, rank, department, armyNumber);
 
       _currentUser = user;
       _setError(null);

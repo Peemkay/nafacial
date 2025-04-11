@@ -38,8 +38,12 @@ class BiometricService {
     try {
       // Check if biometrics are available on the device
       final canCheckBiometrics = await _localAuth.canCheckBiometrics;
-      if (!canCheckBiometrics) {
+      final canAuthenticate = await _localAuth.isDeviceSupported();
+
+      if (!canCheckBiometrics || !canAuthenticate) {
         debugPrint('Biometrics not available on this device');
+        debugPrint('Can check biometrics: $canCheckBiometrics');
+        debugPrint('Device supported: $canAuthenticate');
         return;
       }
 
@@ -49,6 +53,12 @@ class BiometricService {
 
       // Initialize built-in biometric devices
       _initializeBuiltInDevices(availableBiometrics);
+
+      // Set default device if available
+      if (_availableDevices.isNotEmpty && _currentDevice == null) {
+        _currentDevice = _availableDevices.first;
+        debugPrint('Set default biometric device: ${_currentDevice!.name}');
+      }
 
       // Initialize external devices if on supported platforms
       if (!kIsWeb) {
@@ -193,21 +203,49 @@ class BiometricService {
     bool useErrorDialogs = true,
     bool stickyAuth = false,
   }) async {
-    if (_currentDevice == null) {
-      debugPrint('No biometric device selected');
-      return false;
-    }
-
     try {
+      // Re-initialize to ensure we have the latest device information
+      await initialize();
+
+      if (_availableDevices.isEmpty) {
+        debugPrint('No biometric devices available');
+        return false;
+      }
+
+      // If no device is selected, use the first available one
+      if (_currentDevice == null && _availableDevices.isNotEmpty) {
+        _currentDevice = _availableDevices.first;
+        debugPrint('Auto-selected biometric device: ${_currentDevice!.name}');
+      } else if (_currentDevice == null) {
+        debugPrint('No biometric device selected and none available');
+        return false;
+      }
+
       // For built-in devices, use the local_auth package
       if (_currentDevice!.isBuiltIn) {
-        return await _localAuth.authenticate(
+        // Check if device is supported again just to be sure
+        final isSupported = await _localAuth.isDeviceSupported();
+        if (!isSupported) {
+          debugPrint('Device is not supported for biometric authentication');
+          return false;
+        }
+
+        // Check available biometrics again
+        final availableBiometrics = await _localAuth.getAvailableBiometrics();
+        debugPrint('Available biometrics before auth: $availableBiometrics');
+
+        // Try to authenticate
+        final result = await _localAuth.authenticate(
           localizedReason: reason,
           options: AuthenticationOptions(
             stickyAuth: stickyAuth,
             useErrorDialogs: useErrorDialogs,
+            biometricOnly: true, // Only use biometrics, not PIN/pattern
           ),
         );
+
+        debugPrint('Authentication result: $result');
+        return result;
       } else {
         // For external devices, we would implement custom authentication logic
         // This is a placeholder for demonstration
@@ -284,10 +322,7 @@ class BiometricService {
 
     // Store in secure storage
     await _secureStorage.write(
-      key: 'biometric_template_' +
-          template.userId +
-          '_' +
-          template.type.toString(),
+      key: 'biometric_template_${template.userId}_${template.type}',
       value: templateJson,
     );
   }
@@ -300,7 +335,7 @@ class BiometricService {
     try {
       // Retrieve from secure storage
       final templateJson = await _secureStorage.read(
-        key: 'biometric_template_' + userId + '_' + templateType.toString(),
+        key: 'biometric_template_${userId}_${templateType}',
       );
 
       if (templateJson == null) {

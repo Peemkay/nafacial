@@ -27,8 +27,7 @@ class _WebHeaderState extends State<WebHeader> {
   bool _isHoveringMenu = false;
   bool _isMenuOpen = false;
 
-  // Controller for the dropdown menu overlay
-  final LayerLink _layerLink = LayerLink();
+  // Overlay entry for dropdown menu
   OverlayEntry? _overlayEntry;
 
   @override
@@ -84,6 +83,7 @@ class _WebHeaderState extends State<WebHeader> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Main Features
                 _buildMenuDropdownItem(
                     'Home', Icons.home, () => _navigateTo('/home')),
                 _buildMenuDropdownItem('Facial Verification', Icons.face,
@@ -92,11 +92,30 @@ class _WebHeaderState extends State<WebHeader> {
                     () => _navigateTo('/live_recognition')),
                 _buildMenuDropdownItem('Personnel Database', Icons.people,
                     () => _navigateTo('/personnel_database')),
+                _buildMenuDropdownItem('Access Logs', Icons.history,
+                    () => _navigateTo('/access_logs')),
+                _buildMenuDropdownItem('Access Control', Icons.security,
+                    () => _navigateTo('/access_control')),
+                _buildMenuDropdownItem('ID Management', Icons.badge,
+                    () => _navigateTo('/id_management')),
+                _buildMenuDropdownItem('Rank Management', Icons.military_tech,
+                    () => _navigateTo('/rank_management')),
+                _buildMenuDropdownItem('Analytics', Icons.analytics,
+                    () => _navigateTo('/analytics')),
+                _buildMenuDropdownItem('Statistics', Icons.bar_chart,
+                    () => _navigateTo('/statistics')),
+                _buildMenuDropdownItem('Activity Summary', Icons.summarize,
+                    () => _navigateTo('/activity_summary')),
                 _buildMenuDropdownItem('Registration', Icons.person_add,
                     () => _navigateTo('/personnel_registration')),
                 _buildMenuDropdownItem(
                     'Settings', Icons.settings, () => _navigateTo('/settings')),
+                _buildMenuDropdownItem('Check Updates', Icons.system_update,
+                    () => _navigateTo('/check_updates')),
+                _buildMenuDropdownItem('App Roadmap', Icons.map,
+                    () => _navigateTo('/app_roadmap')),
                 const Divider(),
+                // Info Pages
                 _buildMenuDropdownItem(
                     'About', Icons.info, () => _navigateTo('/about')),
                 _buildMenuDropdownItem(
@@ -298,19 +317,7 @@ class _WebHeaderState extends State<WebHeader> {
             _buildUserProfile(user, isDarkMode),
           ],
 
-          // Mobile menu button (replaced by our custom menu button above)
-          if (false) ...[
-            const SizedBox(width: 16),
-            IconButton(
-              icon: Icon(
-                Icons.menu,
-                color: isDarkMode
-                    ? Colors.white
-                    : DesignSystem.lightTextPrimaryColor,
-              ),
-              onPressed: widget.onMenuPressed,
-            ),
-          ],
+          // Mobile menu button removed
 
           // Theme Toggle
           const SizedBox(width: 16),

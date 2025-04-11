@@ -8,7 +8,7 @@ import 'providers/theme_provider.dart';
 import 'providers/quick_actions_provider.dart';
 import 'providers/access_log_provider.dart';
 import 'providers/version_provider.dart';
-import 'services/notification_service.dart';
+import 'providers/notification_service.dart';
 import 'services/app_shortcuts_service.dart';
 import 'services/button_service.dart';
 import 'widgets/banner_notification.dart';
@@ -20,10 +20,16 @@ import 'screens/facial_verification_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/live_facial_recognition_screen.dart';
 import 'screens/personnel_registration_screen.dart';
+import 'screens/personnel_edit_screen.dart';
 import 'screens/gallery_screen.dart';
 import 'screens/registration_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/biometric_management_screen.dart';
+import 'screens/app_roadmap_screen.dart';
+import 'screens/personnel_database_screen.dart';
+import 'screens/personnel_detail_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/access_logs_screen.dart';
 
 // Global navigator key for accessing navigator from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -107,6 +113,8 @@ class _NAFacialAppState extends State<NAFacialApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // Provide the navigator key to be accessible throughout the app
+        Provider<GlobalKey<NavigatorState>>.value(value: navigatorKey),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => QuickActionsProvider()),
@@ -149,6 +157,50 @@ class _NAFacialAppState extends State<NAFacialApp> {
             '/profile': (context) => const ProfileScreen(),
             '/biometric_management': (context) =>
                 const BiometricManagementScreen(),
+
+            // New routes for additional features
+            '/personnel_database': (context) => const PersonnelDatabaseScreen(),
+            '/personnel_detail': (context) => const PersonnelDetailScreen(),
+            '/edit_personnel': (context) {
+              final args = ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>;
+              final personnelId = args['personnelId'];
+              final personnelProvider =
+                  Provider.of<PersonnelProvider>(context, listen: false);
+              final personnel = personnelProvider.getPersonnelById(personnelId);
+              if (personnel == null) {
+                return const Scaffold(
+                    body: Center(child: Text('Personnel not found')));
+              }
+              return PersonnelEditScreen(personnel: personnel);
+            },
+            '/access_logs': (context) => const AccessLogsScreen(),
+            '/access_control': (context) =>
+                const Scaffold(body: Center(child: Text('Access Control'))),
+            '/id_management': (context) =>
+                const Scaffold(body: Center(child: Text('ID Management'))),
+            '/rank_management': (context) =>
+                const Scaffold(body: Center(child: Text('Rank Management'))),
+            '/analytics': (context) =>
+                const Scaffold(body: Center(child: Text('Analytics'))),
+            '/statistics': (context) =>
+                const Scaffold(body: Center(child: Text('Statistics'))),
+            '/activity_summary': (context) =>
+                const Scaffold(body: Center(child: Text('Activity Summary'))),
+            '/check_updates': (context) =>
+                const Scaffold(body: Center(child: Text('Check Updates'))),
+            '/app_roadmap': (context) => const AppRoadmapScreen(),
+            '/notifications': (context) => const NotificationsScreen(),
+
+            // Info pages
+            '/about': (context) =>
+                const Scaffold(body: Center(child: Text('About NAFacial'))),
+            '/contact': (context) =>
+                const Scaffold(body: Center(child: Text('Contact Us'))),
+            '/terms': (context) =>
+                const Scaffold(body: Center(child: Text('Terms & Conditions'))),
+            '/privacy': (context) =>
+                const Scaffold(body: Center(child: Text('Privacy Policy'))),
           },
           builder: (context, child) {
             // Apply a responsive layout wrapper to the entire app

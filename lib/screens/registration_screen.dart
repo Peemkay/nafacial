@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
 import '../widgets/grid_background.dart';
 import '../widgets/version_info.dart';
+import '../models/personnel_model.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({Key? key}) : super(key: key);
@@ -19,8 +20,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _fullNameController = TextEditingController();
+  final _initialsController = TextEditingController();
   final _rankController = TextEditingController();
   final _departmentController = TextEditingController();
+  final _armyNumberController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -33,6 +36,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     _fullNameController.dispose();
     _rankController.dispose();
     _departmentController.dispose();
+    _armyNumberController.dispose();
     super.dispose();
   }
 
@@ -45,8 +49,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         _usernameController.text.trim(),
         _passwordController.text,
         _fullNameController.text.trim(),
+        _initialsController.text.trim(),
         _rankController.text.trim(),
         _departmentController.text.trim(),
+        _armyNumberController.text.trim(),
       );
 
       if (success && mounted) {
@@ -223,6 +229,23 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               SizedBox(
                                   height: DesignSystem.adjustedSpacingMedium),
 
+                              // Initials field
+                              PlatformTextField(
+                                controller: _initialsController,
+                                label: 'Initials',
+                                prefixIcon: Icons.short_text,
+                                hint:
+                                    'e.g., IM Yunusa (Officer) or Ibrahim MY (Soldier)',
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your initials';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              SizedBox(
+                                  height: DesignSystem.adjustedSpacingMedium),
+
                               // Rank field
                               PlatformTextField(
                                 controller: _rankController,
@@ -246,6 +269,27 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Please enter your department';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              SizedBox(
+                                  height: DesignSystem.adjustedSpacingMedium),
+
+                              // Army Number field
+                              PlatformTextField(
+                                controller: _armyNumberController,
+                                label: 'Army Number',
+                                prefixIcon: Icons.badge,
+                                hint:
+                                    'Officer: N/... (e.g., N/123456)\nSoldier: ...NA/... (e.g., 12NA/34/567890)',
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your army number';
+                                  }
+                                  // Use the Personnel model's validation method
+                                  if (!Personnel.isValidArmyNumber(value)) {
+                                    return 'Invalid army number format. Officer numbers start with N/, soldier numbers contain NA/';
                                   }
                                   return null;
                                 },

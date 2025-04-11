@@ -26,6 +26,7 @@ class AuthService {
       id: '1',
       username: 'admin',
       fullName: 'Admin User',
+      initials: 'Admin',
       rank: 'Administrator',
       department: 'IT Department',
       passwordHash: _hashPassword('admin123'),
@@ -35,6 +36,7 @@ class AuthService {
       id: '2',
       username: 'officer1',
       fullName: 'John Doe',
+      initials: 'J Doe',
       rank: 'Captain',
       department: 'Security Division',
       passwordHash: _hashPassword('password123'),
@@ -43,6 +45,7 @@ class AuthService {
       id: '3',
       username: 'officer2',
       fullName: 'Jane Smith',
+      initials: 'J Smith',
       rank: 'Lieutenant',
       department: 'Intelligence Unit',
       passwordHash: _hashPassword('secure456'),
@@ -141,8 +144,14 @@ class AuthService {
   }
 
   // Register a new user
-  Future<User> register(String username, String password, String fullName,
-      String rank, String department) async {
+  Future<User> register(
+      String username,
+      String password,
+      String fullName,
+      String initials,
+      String rank,
+      String department,
+      String armyNumber) async {
     final users = await getUsers();
 
     // Check if username already exists
@@ -150,14 +159,21 @@ class AuthService {
       throw Exception('Username already exists');
     }
 
+    // Check if army number already exists
+    if (users.any((u) => u.armyNumber == armyNumber)) {
+      throw Exception('Army number already exists');
+    }
+
     // Create new user
     final newUser = User(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       username: username,
       fullName: fullName,
+      initials: initials,
       rank: rank,
       department: department,
       passwordHash: _hashPassword(password),
+      armyNumber: armyNumber,
     );
 
     // Add user to list and save

@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -41,14 +41,17 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
       enableContours: true,
       enableClassification: true,
       enableTracking: true,
-      performanceMode: FaceDetectorMode.accurate,
+      performanceMode: FaceDetectorMode.fast,
+      minFaceSize: 0.1, // More lenient minimum face size (0.0 to 1.0)
     ),
   );
   List<Face>? _detectedFaces;
   Size? _imageSize;
   Timer? _detectionTimer;
   int _framesWithFace = 0;
-  int _requiredFramesWithFace = 5; // Adjust based on sensitivity
+  int _errorCount = 0; // Counter for consecutive errors
+  int _requiredFramesWithFace =
+      2; // Reduced from 5 to make detection more responsive
 
   @override
   void initState() {
@@ -307,10 +310,10 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
 
       if (!mounted) return;
 
-      // Create new controller
+      // Create new controller with higher resolution for better face detection
       _cameraController = CameraController(
         camera,
-        ResolutionPreset.medium,
+        ResolutionPreset.high,
         enableAudio: false,
         imageFormatGroup: kIsWeb
             ? ImageFormatGroup.jpeg
@@ -321,9 +324,9 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
 
       if (!mounted) return;
 
-      // Initialize with timeout
+      // Initialize with longer timeout
       await _cameraController!.initialize().timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Camera initialization timed out');
         },
@@ -353,7 +356,7 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
   void _startFaceDetection() {
     _detectionTimer?.cancel();
     _detectionTimer =
-        Timer.periodic(const Duration(milliseconds: 300), (timer) {
+        Timer.periodic(const Duration(milliseconds: 200), (timer) {
       if (!_isProcessingFrame &&
           _cameraController != null &&
           _cameraController!.value.isInitialized) {
@@ -377,9 +380,9 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
     File? tempFile;
 
     try {
-      // Take picture with timeout
+      // Take picture with longer timeout
       final XFile imageFile = await _cameraController!.takePicture().timeout(
-        const Duration(seconds: 3),
+        const Duration(seconds: 5),
         onTimeout: () {
           throw TimeoutException('Taking picture timed out');
         },
@@ -400,28 +403,35 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
           _webImageBytes[tempPath] = bytes;
 
           // Process image for face detection - for web we need to use InputImage.fromBytes
+          // Get image size safely for better face detection
+          Size imageSize = const Size(640, 480); // Default size
+          Size? previewSize = _cameraController!.value.previewSize;
+          if (previewSize != null) {
+            imageSize = Size(previewSize.width, previewSize.height);
+          }
+
           final inputImage = InputImage.fromBytes(
             bytes: bytes,
             metadata: InputImageMetadata(
-              size: const Size(
-                  640, 480), // Default size, will be adjusted if possible
+              size: imageSize,
               rotation: InputImageRotation.rotation0deg,
-              format: InputImageFormat.yuv420,
-              bytesPerRow: 640 * 4, // Estimate for RGBA
+              format: InputImageFormat
+                  .bgra8888, // Try BGRA format for better compatibility
+              bytesPerRow:
+                  imageSize.width.toInt() * 4, // 4 bytes per pixel for RGBA
             ),
           );
 
+          debugPrint('Web image size: ${imageSize.width}x${imageSize.height}');
+
           debugPrint('Web image captured and processed for face detection');
 
-          // Get image size safely
-          Size? previewSize = _cameraController!.value.previewSize;
-          if (previewSize != null) {
-            _imageSize = Size(previewSize.height, previewSize.width);
-          }
+          // Store the image size for painting face overlay
+          _imageSize = imageSize;
 
-          // Process image with timeout
+          // Process image with longer timeout
           final faces = await _faceDetector.processImage(inputImage).timeout(
-            const Duration(seconds: 2),
+            const Duration(seconds: 5),
             onTimeout: () {
               throw TimeoutException('Face detection timed out');
             },
@@ -463,15 +473,35 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
         // Process image for face detection
         final inputImage = InputImage.fromFilePath(imageFile.path);
 
+        // Log file details for debugging
+        debugPrint(
+            'Native image captured: ${imageFile.path}, size: ${await tempFile.length()} bytes');
+
         // Get image size safely
         Size? previewSize = _cameraController!.value.previewSize;
         if (previewSize != null) {
-          _imageSize = Size(previewSize.height, previewSize.width);
+          // Store the correct orientation based on the platform
+          if (Platform.isAndroid) {
+            // On Android, we may need to swap dimensions based on the device orientation
+            final deviceOrientation =
+                _cameraController!.value.deviceOrientation;
+            if (deviceOrientation == DeviceOrientation.landscapeLeft ||
+                deviceOrientation == DeviceOrientation.landscapeRight) {
+              _imageSize = Size(previewSize.width, previewSize.height);
+            } else {
+              _imageSize = Size(previewSize.height, previewSize.width);
+            }
+          } else {
+            // For iOS and other platforms
+            _imageSize = Size(previewSize.height, previewSize.width);
+          }
+          debugPrint(
+              'Image size set to: ${_imageSize!.width}x${_imageSize!.height}');
         }
 
-        // Process image with timeout
+        // Process image with longer timeout
         final faces = await _faceDetector.processImage(inputImage).timeout(
-          const Duration(seconds: 2),
+          const Duration(seconds: 5),
           onTimeout: () {
             throw TimeoutException('Face detection timed out');
           },
@@ -496,6 +526,29 @@ class _FaceDetectionCameraState extends State<FaceDetectionCamera>
       }
     } catch (e) {
       debugPrint('Error processing image: $e');
+      // Log more detailed error information
+      if (e is TimeoutException) {
+        debugPrint(
+            'Face detection timed out. This could be due to device performance issues.');
+      } else if (e is PlatformException) {
+        debugPrint(
+            'Platform error during face detection: ${e.code}, ${e.message}');
+      }
+
+      // Show error to user if it persists
+      _errorCount++;
+      if (_errorCount > 5 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Face detection is having trouble. Please ensure good lighting and that your face is clearly visible.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        _errorCount = 0; // Reset after showing message
+      }
+
       // Don't reset frames with face on error to avoid losing progress
     } finally {
       if (mounted) {

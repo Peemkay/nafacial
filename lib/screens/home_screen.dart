@@ -22,6 +22,7 @@ import '../providers/theme_provider.dart';
 import 'facial_verification_screen.dart';
 import 'live_facial_recognition_screen.dart';
 import 'personnel_registration_screen.dart';
+import 'personnel_database_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -125,11 +126,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             PlatformText(
-                                              'Welcome, ${user?.fullName ?? 'User'}',
+                                              'Welcome, ${user?.rank ?? 'Rank'} ${user?.initials ?? 'User'}',
                                               isTitle: true,
                                             ),
                                             PlatformText(
-                                              '${user?.rank ?? 'Rank'} - ${user?.department ?? 'Department'}',
+                                              '${user?.fullName ?? 'User'} - ${user?.department ?? 'Department'}',
                                               style: TextStyle(
                                                 color: DesignSystem
                                                     .textSecondaryColor,
@@ -285,11 +286,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           PlatformText(
-                                            'Welcome, ${user?.fullName ?? 'User'}',
+                                            'Welcome, ${user?.rank ?? 'Rank'} ${user?.initials ?? 'User'}',
                                             isTitle: true,
                                           ),
                                           PlatformText(
-                                            '${user?.rank ?? 'Rank'} - ${user?.department ?? 'Department'}',
+                                            '${user?.fullName ?? 'User'} - ${user?.department ?? 'Department'}',
                                             style: TextStyle(
                                               color: DesignSystem
                                                   .textSecondaryColor,
@@ -442,12 +443,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       mainAxisSpacing: isDesktop || isTablet
-                          ? DesignSystem.adjustedSpacingLarge
-                          : DesignSystem.adjustedSpacingMedium,
+                          ? DesignSystem.adjustedSpacingMedium
+                          : DesignSystem.adjustedSpacingSmall,
                       crossAxisSpacing: isDesktop || isTablet
-                          ? DesignSystem.adjustedSpacingLarge
-                          : DesignSystem.adjustedSpacingMedium,
-                      childAspectRatio: isDesktop || isTablet ? 1.2 : 1.0,
+                          ? DesignSystem.adjustedSpacingMedium
+                          : DesignSystem.adjustedSpacingSmall,
+                      childAspectRatio: isDesktop ? 1.5 : isTablet ? 1.3 : 1.1,
                       children: visibleActions.map((action) {
                         // Map the action to the appropriate function
                         VoidCallback onTap;
@@ -460,8 +461,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             onTap = () => Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                        const FacialVerificationScreen(
-                                            initialTabIndex: 4),
+                                        const PersonnelDatabaseScreen(),
                                   ),
                                 );
                             break;
@@ -824,11 +824,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     final bool isDesktop = ResponsiveUtils.isDesktop(context);
     final bool isTablet = ResponsiveUtils.isTablet(context);
-    final double iconSize = isDesktop
-        ? 40
-        : isTablet
-            ? 36
-            : 32;
+    final bool isMobile = !isDesktop && !isTablet;
+    final double iconSize = isDesktop ? 36 : isTablet ? 32 : 28; // Smaller icons
     final double elevation = isDesktop || isTablet ? 4.0 : 2.0;
 
     return PlatformCard(
@@ -846,46 +843,51 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           borderRadius: BorderRadius.circular(DesignSystem.borderRadiusMedium),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: EdgeInsets.all(isDesktop || isTablet
-                  ? DesignSystem.adjustedSpacingMedium
-                  : DesignSystem.adjustedSpacingSmall),
-              decoration: BoxDecoration(
-                color: color.withAlpha(30),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withAlpha(40),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                icon,
-                color: color,
-                size: iconSize,
-              ),
-            ),
-            SizedBox(height: DesignSystem.adjustedSpacingSmall),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: PlatformText(
-                title,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontWeight: DesignSystem.fontWeightMedium,
-                  fontSize: isDesktop || isTablet
-                      ? DesignSystem.adjustedFontSizeMedium
-                      : DesignSystem.adjustedFontSizeSmall,
+        child: Padding(
+          padding: EdgeInsets.all(isMobile ? 8.0 : 12.0), // Reduced padding for mobile
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min, // Minimize height
+            children: [
+              // Icon container
+              Container(
+                padding: EdgeInsets.all(isMobile ? 8.0 : 12.0), // Smaller padding
+                decoration: BoxDecoration(
+                  color: color.withAlpha(30),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withAlpha(40),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: iconSize,
                 ),
               ),
-            ),
-          ],
+              SizedBox(height: isMobile ? 4.0 : 8.0), // Smaller spacing
+              // Text below icon
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0), // Reduced padding
+                  child: PlatformText(
+                    title,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2, // Allow up to 2 lines
+                    style: TextStyle(
+                      fontWeight: DesignSystem.fontWeightMedium,
+                      fontSize: isDesktop ? 14.0 : isTablet ? 12.0 : 10.0, // Smaller font
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1007,9 +1009,11 @@ class _HomeScreenState extends State<HomeScreen> {
             personnelArmyNumber: 'N/123456',
             timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
             status: AccessLogStatus.verified,
+            type: AccessLogType.verification,
             confidence: 0.92,
             adminName: 'Admin User',
             adminArmyNumber: 'ADMIN-1',
+            details: 'Verified at main entrance',
           ),
           AccessLog(
             id: '2',
@@ -1017,9 +1021,11 @@ class _HomeScreenState extends State<HomeScreen> {
             personnelArmyNumber: 'N/789012',
             timestamp: DateTime.now().subtract(const Duration(hours: 1)),
             status: AccessLogStatus.verified,
+            type: AccessLogType.verification,
             confidence: 0.85,
             adminName: 'Admin User',
             adminArmyNumber: 'ADMIN-1',
+            details: 'Verified at checkpoint 2',
           ),
           AccessLog(
             id: '3',
@@ -1027,9 +1033,11 @@ class _HomeScreenState extends State<HomeScreen> {
             personnelArmyNumber: 'N/345678',
             timestamp: DateTime.now().subtract(const Duration(hours: 2)),
             status: AccessLogStatus.unverified,
+            type: AccessLogType.verification,
             confidence: 0.62,
             adminName: 'Admin User',
             adminArmyNumber: 'ADMIN-1',
+            details: 'Failed verification - low confidence score',
           ),
           AccessLog(
             id: '4',
@@ -1037,9 +1045,11 @@ class _HomeScreenState extends State<HomeScreen> {
             personnelArmyNumber: null,
             timestamp: DateTime.now().subtract(const Duration(hours: 3)),
             status: AccessLogStatus.notFound,
+            type: AccessLogType.verification,
             confidence: 0.0,
             adminName: 'Admin User',
             adminArmyNumber: 'ADMIN-1',
+            details: 'No matching personnel record found',
           ),
         ];
 
@@ -1163,16 +1173,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(log.personnelArmyNumber ?? 'N/A'),
+                            Text(
+                              log.personnelArmyNumber ?? 'N/A',
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             Text(
                               formattedDate,
                               style: const TextStyle(fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
                             ),
                             if (log.adminName != null)
                               Text(
-                                'By: ${log.adminName} (${log.adminArmyNumber ?? 'N/A'})',
+                                'By: ${log.adminName} ${log.adminArmyNumber != null ? '(${log.adminArmyNumber})' : ''}',
                                 style: const TextStyle(
                                     fontSize: 10, fontStyle: FontStyle.italic),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            if (log.details != null && log.details!.isNotEmpty)
+                              Text(
+                                log.details!,
+                                style: const TextStyle(fontSize: 10),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                           ],
                         ),
@@ -1219,7 +1241,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () {
                       // View all logs
                       Navigator.pop(context);
-                      // TODO: Navigate to full logs screen
+                      Navigator.of(context).pushNamed('/access_logs');
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: DesignSystem.primaryColor,

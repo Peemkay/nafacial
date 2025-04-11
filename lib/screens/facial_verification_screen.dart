@@ -14,6 +14,8 @@ import '../widgets/camera_selection_dialog.dart';
 import '../widgets/camera_options_dialog.dart';
 import '../widgets/security_pattern_painter.dart';
 import '../services/facial_recognition_service.dart';
+import '../providers/auth_provider.dart';
+import '../models/user_model.dart';
 import 'personnel_registration_screen.dart';
 import 'personnel_edit_screen.dart';
 import 'live_facial_recognition_screen.dart';
@@ -270,24 +272,51 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
 
   // Identify personnel from image using facial recognition
   Future<void> _identifyPersonnelFromImage(File imageFile) async {
-    final personnelProvider =
-        Provider.of<PersonnelProvider>(context, listen: false);
-    final facialRecognitionService = FacialRecognitionService();
-
-    // Show loading indicator
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Processing facial recognition...'),
-        backgroundColor: Colors.blue,
-        duration: Duration(seconds: 1),
-      ),
-    );
+    // Cache the personnel list before processing to avoid disposal issues
+    List<Personnel> personnelList = [];
 
     try {
-      // Identify personnel from image
+      // Get the personnel list safely
+      if (mounted) {
+        final personnelProvider =
+            Provider.of<PersonnelProvider>(context, listen: false);
+        // Make sure the personnel list is loaded
+        if (personnelProvider.allPersonnel.isEmpty) {
+          await personnelProvider.loadAllPersonnel();
+        }
+        personnelList = List.from(personnelProvider.allPersonnel);
+      }
+
+      final facialRecognitionService = FacialRecognitionService();
+
+      // Show loading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Processing facial recognition...'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+
+      // Verify the image file exists and has content
+      if (!await imageFile.exists()) {
+        throw Exception('Image file does not exist: ${imageFile.path}');
+      }
+
+      final fileSize = await imageFile.length();
+      if (fileSize <= 0) {
+        throw Exception('Image file is empty (0 bytes): ${imageFile.path}');
+      }
+
+      // Log file details for debugging
+      debugPrint('Processing image: ${imageFile.path}, size: $fileSize bytes');
+
+      // Identify personnel from image using the cached personnel list
       final result = await facialRecognitionService.identifyPersonnel(
         imageFile,
-        personnelProvider.allPersonnel,
+        personnelList,
       );
 
       // Extract personnel and confidence from result
@@ -306,6 +335,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
           'captureTime': DateTime.now().toIso8601String(),
           'deviceInfo': 'NAFacial App',
           'confidence': confidence.toString(),
+          'adminInfo': await _getAdminInfo() ?? 'Unknown Admin',
         },
       );
 
@@ -318,16 +348,43 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
               capturedImage: imageFile,
               identifiedPersonnel: identifiedPersonnel,
               savedImagePath: savedImagePath,
+              confidence: confidence,
             ),
           ),
         );
       }
     } catch (e) {
+      debugPrint('Error in facial verification: $e');
+
       if (mounted) {
+        // Show user-friendly error message
+        String errorMessage = 'An error occurred during facial verification.';
+
+        if (e.toString().contains('not supported')) {
+          errorMessage =
+              'Image format not supported. Please try a different image.';
+        } else if (e.toString().contains('file does not exist')) {
+          errorMessage =
+              'Image file not found. Please try again with a different image.';
+        } else if (e.toString().contains('empty')) {
+          errorMessage =
+              'The selected image appears to be empty. Please try a different image.';
+        } else if (e.toString().contains('timed out')) {
+          errorMessage =
+              'Processing timed out. Please try again with a smaller image.';
+        }
+
+        // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () => _pickImage(),
+            ),
           ),
         );
       }
@@ -416,6 +473,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                 ),
               SizedBox(height: DesignSystem.adjustedSpacingMedium),
               _buildDetailRow('Name', personnel.fullName),
+              _buildDetailRow('Initials', personnel.initials),
               _buildDetailRow('Army Number', personnel.armyNumber),
               _buildDetailRow('Rank', personnel.rank.displayName),
               _buildDetailRow('Unit', personnel.unit),
@@ -610,6 +668,24 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
   // Format date
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  // Get current admin info for tracking changes
+  Future<String?> _getAdminInfo() async {
+    try {
+      if (!mounted) return null;
+
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final currentUser = await authProvider.getCurrentUser();
+
+      if (currentUser != null) {
+        return '${currentUser.rank} ${currentUser.fullName} (${currentUser.armyNumber ?? "Unknown"})';
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error getting admin info: $e');
+      return null;
+    }
   }
 
   // Build camera verification tab with face detection
@@ -1357,7 +1433,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    personnel.fullName,
+                    '${personnel.rank.shortName} ${personnel.initials}',
                     style: TextStyle(
                       fontWeight: DesignSystem.fontWeightBold,
                       fontSize: DesignSystem.adjustedFontSizeMedium,
@@ -1365,7 +1441,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                   ),
                   SizedBox(height: DesignSystem.adjustedSpacingSmall / 2),
                   Text(
-                    '${personnel.rank.displayName} - ${personnel.corps.shortName}',
+                    personnel.fullName,
                     style: TextStyle(
                       color: DesignSystem.textSecondaryColor,
                       fontSize: DesignSystem.adjustedFontSizeSmall,
@@ -1495,6 +1571,12 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
       bottomNavigationBar: FancyBottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
+          if (index == 5) {
+            // Database tab
+            // Navigate directly to personnel database screen
+            Navigator.of(context).pushNamed('/personnel_database');
+            return;
+          }
           setState(() {
             _currentIndex = index;
           });

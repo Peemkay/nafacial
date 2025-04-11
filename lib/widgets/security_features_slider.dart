@@ -131,7 +131,7 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
 
             // Slider
             SizedBox(
-              height: isMobile ? 180 : 200,
+              height: isMobile ? 150 : 180, // Reduced height
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: _securityFeatures.length,
@@ -184,7 +184,8 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding:
+            EdgeInsets.all(isMobile ? 8.0 : 12.0), // Reduced padding for mobile
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -192,7 +193,8 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(
+                      isMobile ? 6.0 : 8.0), // Smaller padding on mobile
                   decoration: BoxDecoration(
                     color: feature.color.withAlpha(isDarkMode ? 75 : 50),
                     borderRadius: BorderRadius.circular(8),
@@ -200,32 +202,39 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
                   child: Icon(
                     feature.icon,
                     color: feature.color,
-                    size: 24,
+                    size: isMobile ? 18 : 24, // Smaller icon on mobile
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(
+                    width: isMobile ? 8.0 : 12.0), // Smaller spacing on mobile
                 Expanded(
                   child: Text(
                     feature.title,
                     style: TextStyle(
-                      fontSize: isMobile ? 16 : 18,
+                      fontSize: isMobile ? 14 : 16, // Smaller font on mobile
                       fontWeight: FontWeight.bold,
                       color: isDarkMode
                           ? Colors.white
                           : DesignSystem.lightTextPrimaryColor,
                     ),
+                    maxLines: 1, // Limit to one line
+                    overflow:
+                        TextOverflow.ellipsis, // Add ellipsis for overflow
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(
+                height: isMobile ? 8.0 : 10.0), // Smaller spacing on mobile
 
             // Military image placeholder (would be replaced with actual images)
             if (feature.imagePath != null)
               Expanded(
                 flex: 2,
                 child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  margin: EdgeInsets.symmetric(
+                      vertical:
+                          isMobile ? 4.0 : 6.0), // Smaller margin on mobile
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
                     color: feature.color.withAlpha(15),
@@ -245,7 +254,8 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
                           child: Center(
                             child: Icon(
                               _getMilitaryIcon(feature.title),
-                              size: 48,
+                              size:
+                                  isMobile ? 36 : 48, // Smaller icon on mobile
                               color: feature.color.withAlpha(100),
                             ),
                           ),
@@ -269,7 +279,7 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
                 ),
               ),
 
-            const SizedBox(height: 12),
+            SizedBox(height: isMobile ? 6.0 : 8.0), // Smaller spacing on mobile
 
             // Description
             Expanded(
@@ -277,30 +287,35 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
               child: Text(
                 feature.description,
                 style: TextStyle(
-                  fontSize: isMobile ? 12 : 14,
+                  fontSize: isMobile ? 10 : 12, // Smaller font on mobile
                   color: isDarkMode
                       ? Colors.white.withAlpha(204) // 0.8 alpha
                       : Colors.black.withAlpha(178), // 0.7 alpha
                 ),
+                maxLines: isMobile ? 3 : 4, // Limit number of lines
+                overflow: TextOverflow.ellipsis, // Add ellipsis for overflow
               ),
             ),
 
-            const SizedBox(height: 8),
+            SizedBox(height: isMobile ? 4.0 : 6.0), // Smaller spacing on mobile
 
             // NAS badge
             Align(
               alignment: Alignment.bottomRight,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 8.0 : 12.0,
+                    vertical:
+                        isMobile ? 4.0 : 6.0), // Smaller padding on mobile
                 decoration: BoxDecoration(
                   color: feature.color.withAlpha(isDarkMode ? 75 : 50),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(
+                      isMobile ? 12.0 : 16.0), // Smaller radius on mobile
                 ),
                 child: Text(
                   'Powered by NAS',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: isMobile ? 8 : 10, // Smaller font on mobile
                     fontWeight: FontWeight.bold,
                     color: feature.color,
                   ),

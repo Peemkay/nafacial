@@ -2,6 +2,7 @@ class User {
   final String id;
   final String username;
   final String fullName;
+  final String initials;
   final String rank;
   final String department;
   final String passwordHash;
@@ -14,6 +15,7 @@ class User {
     required this.id,
     required this.username,
     required this.fullName,
+    required this.initials,
     required this.rank,
     required this.department,
     required this.passwordHash,
@@ -26,12 +28,16 @@ class User {
   // Get name (alias for fullName)
   String get name => fullName;
 
+  // Get display name (rank + initials)
+  String get displayName => '$rank $initials';
+
   // Convert User object to a Map
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'username': username,
       'fullName': fullName,
+      'initials': initials,
       'rank': rank,
       'department': department,
       'passwordHash': passwordHash,
@@ -48,6 +54,7 @@ class User {
       id: map['id'],
       username: map['username'],
       fullName: map['fullName'],
+      initials: map['initials'] ?? '', // Default to empty string if not present
       rank: map['rank'],
       department: map['department'],
       passwordHash: map['passwordHash'],
@@ -63,6 +70,7 @@ class User {
     String? id,
     String? username,
     String? fullName,
+    String? initials,
     String? rank,
     String? department,
     String? passwordHash,
@@ -75,6 +83,7 @@ class User {
       id: id ?? this.id,
       username: username ?? this.username,
       fullName: fullName ?? this.fullName,
+      initials: initials ?? this.initials,
       rank: rank ?? this.rank,
       department: department ?? this.department,
       passwordHash: passwordHash ?? this.passwordHash,
