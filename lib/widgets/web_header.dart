@@ -83,39 +83,57 @@ class _WebHeaderState extends State<WebHeader> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Main Features
+                // Main Navigation
                 _buildMenuDropdownItem(
                     'Home', Icons.home, () => _navigateTo('/home')),
+
+                // Verification
+                const Divider(),
                 _buildMenuDropdownItem('Facial Verification', Icons.face,
                     () => _navigateTo('/facial_verification')),
                 _buildMenuDropdownItem('Live Recognition', Icons.camera,
                     () => _navigateTo('/live_recognition')),
+
+                // Personnel Management
+                const Divider(),
                 _buildMenuDropdownItem('Personnel Database', Icons.people,
                     () => _navigateTo('/personnel_database')),
-                _buildMenuDropdownItem('Access Logs', Icons.history,
-                    () => _navigateTo('/access_logs')),
-                _buildMenuDropdownItem('Access Control', Icons.security,
-                    () => _navigateTo('/access_control')),
+                _buildMenuDropdownItem('Register Personnel', Icons.person_add,
+                    () => _navigateTo('/register_personnel')),
                 _buildMenuDropdownItem('ID Management', Icons.badge,
                     () => _navigateTo('/id_management')),
                 _buildMenuDropdownItem('Rank Management', Icons.military_tech,
                     () => _navigateTo('/rank_management')),
+
+                // Security
+                const Divider(),
+                _buildMenuDropdownItem('Access Logs', Icons.history,
+                    () => _navigateTo('/access_logs')),
+                _buildMenuDropdownItem('Access Control', Icons.security,
+                    () => _navigateTo('/access_control')),
+                _buildMenuDropdownItem(
+                    'Biometric Management',
+                    Icons.fingerprint,
+                    () => _navigateTo('/biometric_management')),
+
+                // Reports & Analytics
+                const Divider(),
                 _buildMenuDropdownItem('Analytics', Icons.analytics,
                     () => _navigateTo('/analytics')),
                 _buildMenuDropdownItem('Statistics', Icons.bar_chart,
                     () => _navigateTo('/statistics')),
                 _buildMenuDropdownItem('Activity Summary', Icons.summarize,
                     () => _navigateTo('/activity_summary')),
-                _buildMenuDropdownItem('Registration', Icons.person_add,
-                    () => _navigateTo('/personnel_registration')),
+
+                // Settings & Information
+                const Divider(),
                 _buildMenuDropdownItem(
                     'Settings', Icons.settings, () => _navigateTo('/settings')),
-                _buildMenuDropdownItem('Check Updates', Icons.system_update,
-                    () => _navigateTo('/check_updates')),
                 _buildMenuDropdownItem('App Roadmap', Icons.map,
                     () => _navigateTo('/app_roadmap')),
+
+                // Information
                 const Divider(),
-                // Info Pages
                 _buildMenuDropdownItem(
                     'About', Icons.info, () => _navigateTo('/about')),
                 _buildMenuDropdownItem(
@@ -174,7 +192,7 @@ class _WebHeaderState extends State<WebHeader> {
             : DesignSystem.lightAppBarColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 26),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -189,11 +207,11 @@ class _WebHeaderState extends State<WebHeader> {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: DesignSystem.primaryColor,
                   shape: BoxShape.circle,
                 ),
-                child: Center(
+                child: const Center(
                   child: Icon(
                     Icons.security,
                     color: DesignSystem.accentColor,
@@ -231,8 +249,8 @@ class _WebHeaderState extends State<WebHeader> {
               decoration: BoxDecoration(
                 color: _isMenuOpen
                     ? (isDarkMode
-                        ? Colors.white.withOpacity(0.1)
-                        : Colors.black.withOpacity(0.05))
+                        ? Colors.white.withValues(alpha: 26)
+                        : Colors.black.withValues(alpha: 13))
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(4),
                 border: _isMenuOpen
@@ -383,7 +401,7 @@ class _WebHeaderState extends State<WebHeader> {
       onTap: () => Navigator.pushNamed(context, '/profile'),
       child: Row(
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             radius: 16,
             backgroundColor: DesignSystem.primaryColor,
             child: Icon(

@@ -175,7 +175,7 @@ class _PersonnelIdentificationResultScreenState
                                   widget.isVideo
                                       ? 'Captured Video'
                                       : 'Captured Image',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                     color: DesignSystem.textSecondaryColor,
@@ -185,7 +185,7 @@ class _PersonnelIdentificationResultScreenState
                                     height: DesignSystem.adjustedSpacingSmall),
                                 Text(
                                   'Captured: ${DateFormat('MMM d, yyyy HH:mm').format(DateTime.now())}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 12,
                                     color: DesignSystem.textSecondaryColor,
                                   ),
@@ -194,7 +194,7 @@ class _PersonnelIdentificationResultScreenState
                                   Padding(
                                     padding: EdgeInsets.only(
                                         top: DesignSystem.adjustedSpacingSmall),
-                                    child: Text(
+                                    child: const Text(
                                       'Saved with metadata',
                                       style: TextStyle(
                                         fontSize: 12,
@@ -355,7 +355,7 @@ class _PersonnelIdentificationResultScreenState
                       : null,
                 ),
                 child: personnel.photoUrl == null
-                    ? Icon(
+                    ? const Icon(
                         Icons.person,
                         size: 50,
                         color: DesignSystem.primaryColor,
@@ -379,7 +379,7 @@ class _PersonnelIdentificationResultScreenState
             Center(
               child: Text(
                 personnel.fullName,
-                style: TextStyle(
+                style: const TextStyle(
                   color: DesignSystem.textSecondaryColor,
                   fontSize: 16,
                 ),
@@ -453,7 +453,7 @@ class _PersonnelIdentificationResultScreenState
               textAlign: TextAlign.center,
             ),
             SizedBox(height: DesignSystem.adjustedSpacingSmall),
-            Text(
+            const Text(
               'This person could not be identified in the personnel database.',
               style: TextStyle(
                 color: DesignSystem.textSecondaryColor,
@@ -469,7 +469,7 @@ class _PersonnelIdentificationResultScreenState
               buttonType: PlatformButtonType.secondary,
             ),
             SizedBox(height: DesignSystem.adjustedSpacingMedium),
-            Text(
+            const Text(
               'If this person should be in the database, you can register them as new personnel.',
               style: TextStyle(
                 fontSize: 12,
@@ -494,7 +494,7 @@ class _PersonnelIdentificationResultScreenState
             width: 100,
             child: Text(
               '$label:',
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
                 color: DesignSystem.textSecondaryColor,
@@ -588,7 +588,7 @@ class _PersonnelIdentificationResultScreenState
                         : null,
                   ),
                   child: widget.identifiedPersonnel!.photoUrl == null
-                      ? Icon(
+                      ? const Icon(
                           Icons.person,
                           size: 60,
                           color: DesignSystem.primaryColor,
@@ -618,9 +618,8 @@ class _PersonnelIdentificationResultScreenState
                     'Date of Birth',
                     DateFormat('MMM d, yyyy')
                         .format(widget.identifiedPersonnel!.dateOfBirth!)),
-              if (widget.identifiedPersonnel!.yearsOfService != null)
-                _buildDetailRow('Years of Service',
-                    widget.identifiedPersonnel!.yearsOfService.toString()),
+              _buildDetailRow('Years of Service',
+                  widget.identifiedPersonnel!.yearsOfService.toString()),
             ],
           ),
         ),

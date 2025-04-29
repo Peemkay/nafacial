@@ -30,6 +30,11 @@ import 'screens/personnel_database_screen.dart';
 import 'screens/personnel_detail_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/access_logs_screen.dart';
+import 'screens/about_screen.dart';
+import 'screens/contact_screen.dart';
+import 'screens/terms_screen.dart';
+import 'screens/privacy_screen.dart';
+import 'screens/device_management_screen.dart';
 
 // Global navigator key for accessing navigator from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -191,16 +196,13 @@ class _NAFacialAppState extends State<NAFacialApp> {
                 const Scaffold(body: Center(child: Text('Check Updates'))),
             '/app_roadmap': (context) => const AppRoadmapScreen(),
             '/notifications': (context) => const NotificationsScreen(),
+            '/device_management': (context) => const DeviceManagementScreen(),
 
             // Info pages
-            '/about': (context) =>
-                const Scaffold(body: Center(child: Text('About NAFacial'))),
-            '/contact': (context) =>
-                const Scaffold(body: Center(child: Text('Contact Us'))),
-            '/terms': (context) =>
-                const Scaffold(body: Center(child: Text('Terms & Conditions'))),
-            '/privacy': (context) =>
-                const Scaffold(body: Center(child: Text('Privacy Policy'))),
+            '/about': (context) => const AboutScreen(),
+            '/contact': (context) => const ContactScreen(),
+            '/terms': (context) => const TermsScreen(),
+            '/privacy': (context) => const PrivacyScreen(),
           },
           builder: (context, child) {
             // Apply a responsive layout wrapper to the entire app

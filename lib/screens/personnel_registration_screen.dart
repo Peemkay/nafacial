@@ -92,7 +92,7 @@ class _PersonnelRegistrationScreenState
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: DesignSystem.primaryColor,
               onPrimary: Colors.white,
               onSurface: DesignSystem.textPrimaryColor,
@@ -196,7 +196,7 @@ class _PersonnelRegistrationScreenState
 
     // Add divider
     items.add(
-      DropdownMenuItem<Corps>(
+      const DropdownMenuItem<Corps>(
         enabled: false,
         child: Divider(),
       ),
@@ -227,7 +227,7 @@ class _PersonnelRegistrationScreenState
 
     // Add divider
     items.add(
-      DropdownMenuItem<Corps>(
+      const DropdownMenuItem<Corps>(
         enabled: false,
         child: Divider(),
       ),
@@ -258,7 +258,7 @@ class _PersonnelRegistrationScreenState
 
     // Add divider
     items.add(
-      DropdownMenuItem<Corps>(
+      const DropdownMenuItem<Corps>(
         enabled: false,
         child: Divider(),
       ),
@@ -344,7 +344,7 @@ class _PersonnelRegistrationScreenState
 
     // Add divider
     items.add(
-      DropdownMenuItem<Rank>(
+      const DropdownMenuItem<Rank>(
         enabled: false,
         child: Divider(),
       ),
@@ -391,6 +391,10 @@ class _PersonnelRegistrationScreenState
         return 'Deserted';
       case ServiceStatus.dismissed:
         return 'Dismissed';
+      case ServiceStatus.discharged:
+        return 'Discharged';
+      case ServiceStatus.deceased:
+        return 'Deceased';
     }
   }
 
@@ -489,7 +493,7 @@ class _PersonnelRegistrationScreenState
                                   : null,
                             ),
                             child: _selectedImage == null
-                                ? Icon(
+                                ? const Icon(
                                     Icons.add_a_photo,
                                     size: 60,
                                     color: DesignSystem.primaryColor,
@@ -524,7 +528,7 @@ class _PersonnelRegistrationScreenState
                   SizedBox(height: DesignSystem.adjustedSpacingLarge),
 
                   // Form fields
-                  PlatformText(
+                  const PlatformText(
                     'Personnel Information',
                     isTitle: true,
                   ),
@@ -713,7 +717,7 @@ class _PersonnelRegistrationScreenState
                           ),
                           child: Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.calendar_today,
                                 color: DesignSystem.textSecondaryColor,
                                 size: 20,
@@ -727,8 +731,8 @@ class _PersonnelRegistrationScreenState
                                   fontSize: DesignSystem.adjustedFontSizeMedium,
                                 ),
                               ),
-                              Spacer(),
-                              Icon(
+                              const Spacer(),
+                              const Icon(
                                 Icons.arrow_drop_down,
                                 color: DesignSystem.textSecondaryColor,
                               ),
@@ -766,7 +770,7 @@ class _PersonnelRegistrationScreenState
                           ),
                           child: Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.calendar_today,
                                 color: DesignSystem.textSecondaryColor,
                                 size: 20,
@@ -780,8 +784,8 @@ class _PersonnelRegistrationScreenState
                                   fontSize: DesignSystem.adjustedFontSizeMedium,
                                 ),
                               ),
-                              Spacer(),
-                              Icon(
+                              const Spacer(),
+                              const Icon(
                                 Icons.arrow_drop_down,
                                 color: DesignSystem.textSecondaryColor,
                               ),
@@ -818,7 +822,7 @@ class _PersonnelRegistrationScreenState
                           ),
                           child: Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.military_tech,
                                 color: DesignSystem.primaryColor,
                                 size: 20,

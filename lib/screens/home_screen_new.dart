@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -15,9 +14,6 @@ import '../widgets/web_layout.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/security_features_slider.dart';
 import 'facial_verification_screen.dart';
-import 'live_facial_recognition_screen.dart';
-import 'personnel_registration_screen.dart';
-import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);

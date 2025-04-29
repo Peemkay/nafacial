@@ -98,7 +98,7 @@ class _BiometricManagementScreenState extends State<BiometricManagementScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.error_outline,
               color: Colors.red,
               size: 48,
@@ -263,19 +263,20 @@ class _BiometricManagementScreenState extends State<BiometricManagementScreen> {
                       (device.isBuiltIn ? ' (Built-in)' : ''),
                 ),
                 trailing: device.isConnected
-                    ? Icon(
+                    ? const Icon(
                         Icons.check_circle,
                         color: Colors.green,
                         size: 16,
                       )
-                    : Icon(
+                    : const Icon(
                         Icons.error_outline,
                         color: Colors.red,
                         size: 16,
                       ),
                 selected: isSelected,
-                selectedTileColor:
-                    isDarkMode ? Colors.white10 : Colors.blue.withOpacity(0.1),
+                selectedTileColor: isDarkMode
+                    ? Colors.white10
+                    : Colors.blue.withValues(alpha: 26),
                 onTap: () {
                   if (device.isConnected) {
                     _biometricService.selectDevice(device);
@@ -368,8 +369,8 @@ class _BiometricManagementScreenState extends State<BiometricManagementScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: currentDevice.isConnected
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.red.withOpacity(0.1),
+                      ? Colors.green.withValues(alpha: 26)
+                      : Colors.red.withValues(alpha: 26),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color:
@@ -459,7 +460,8 @@ class _BiometricManagementScreenState extends State<BiometricManagementScreen> {
   Widget _buildInfoCard(bool isDarkMode, List<Widget> children) {
     return Card(
       elevation: 0,
-      color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.shade50,
+      color:
+          isDarkMode ? Colors.white.withValues(alpha: 13) : Colors.grey.shade50,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
@@ -625,7 +627,6 @@ class _BiometricManagementScreenState extends State<BiometricManagementScreen> {
           color: Colors.orange,
         );
       case BiometricDeviceType.other:
-      default:
         return Icon(
           Icons.devices_other,
           size: size,
@@ -645,7 +646,6 @@ class _BiometricManagementScreenState extends State<BiometricManagementScreen> {
       case BiometricDeviceType.multimodal:
         return 'Multimodal Biometric';
       case BiometricDeviceType.other:
-      default:
         return 'Other Biometric Device';
     }
   }

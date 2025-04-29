@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../config/design_system.dart';
+import '../providers/theme_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
+import '../widgets/custom_drawer.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+
     return PlatformScaffold(
       appBar: AppBar(
         title: const Text('About NAFacial'),
-        backgroundColor: DesignSystem.primaryColor,
+        backgroundColor: isDarkMode
+            ? DesignSystem.darkAppBarColor
+            : DesignSystem.lightAppBarColor,
       ),
+      drawer: const CustomDrawer(),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -25,10 +34,10 @@ class AboutScreen extends StatelessWidget {
                   height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: DesignSystem.primaryColor.withOpacity(0.1),
+                    color: DesignSystem.primaryColor.withValues(alpha: 26),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 26),
                         blurRadius: 10,
                         spreadRadius: 1,
                       ),
@@ -115,7 +124,7 @@ class AboutScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: DesignSystem.primaryColor.withOpacity(0.05),
+                    color: DesignSystem.primaryColor.withValues(alpha: 13),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -169,7 +178,7 @@ class AboutScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: DesignSystem.primaryColor.withOpacity(0.1),
+              color: DesignSystem.primaryColor.withValues(alpha: 26),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(

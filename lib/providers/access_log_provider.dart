@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/access_log_model.dart';
-import '../models/personnel_model.dart';
 import '../services/database_sync_service.dart';
 import '../providers/auth_provider.dart';
 

@@ -5,7 +5,6 @@ import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
 // import 'package:gallery_saver/gallery_saver.dart';
 import '../config/design_system.dart';
-import '../widgets/platform_aware_widgets.dart';
 
 class VideoCaptureScreen extends StatefulWidget {
   final List<CameraDescription> cameras;

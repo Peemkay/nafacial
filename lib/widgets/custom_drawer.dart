@@ -2,13 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/design_system.dart';
 import '../providers/auth_provider.dart';
-import '../screens/about_screen.dart';
-import '../screens/contact_screen.dart';
-import '../screens/privacy_policy_screen.dart';
-import '../screens/terms_conditions_screen.dart';
-import '../screens/facial_verification_screen.dart';
-import '../screens/live_facial_recognition_screen.dart';
-import '../screens/personnel_registration_screen.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({Key? key}) : super(key: key);
@@ -116,7 +109,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             color: Colors.white,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withAlpha(50),
+                                color: Colors.black.withValues(alpha: 50),
                                 blurRadius: 5,
                                 spreadRadius: 1,
                               ),
@@ -175,20 +168,12 @@ class _CustomDrawerState extends State<CustomDrawer>
                               Navigator.pushReplacementNamed(context, '/home');
                             },
                           ),
-                          _buildDrawerItem(
-                            icon: Icons.dashboard,
-                            title: 'Dashboard',
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.pushReplacementNamed(context, '/home');
-                            },
-                          ),
 
                           // Verification Section
                           _buildDrawerHeader('Verification'),
                           _buildDrawerItem(
                             icon: Icons.camera_alt,
-                            title: 'Verification',
+                            title: 'Facial Verification',
                             onTap: () {
                               Navigator.pop(context);
                               Navigator.pushNamed(
@@ -200,27 +185,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Live Recognition',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const LiveFacialRecognitionScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          _buildDrawerItem(
-                            icon: Icons.camera_enhance,
-                            title: 'Quick Scan',
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const LiveFacialRecognitionScreen(),
-                                ),
-                              );
+                              Navigator.pushNamed(context, '/live_recognition');
                             },
                           ),
 
@@ -228,18 +193,11 @@ class _CustomDrawerState extends State<CustomDrawer>
                           _buildDrawerHeader('Personnel Management'),
                           _buildDrawerItem(
                             icon: Icons.people,
-                            title: 'Database',
+                            title: 'Personnel Database',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const FacialVerificationScreen(
-                                    initialTabIndex: 4,
-                                  ),
-                                ),
-                              );
+                              Navigator.pushNamed(
+                                  context, '/personnel_database');
                             },
                           ),
                           _buildDrawerItem(
@@ -247,13 +205,8 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Register',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const PersonnelRegistrationScreen(),
-                                ),
-                              );
+                              Navigator.pushNamed(
+                                  context, '/register_personnel');
                             },
                           ),
                           _buildDrawerItem(
@@ -288,15 +241,25 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Access Logs',
                             onTap: () {
                               Navigator.pop(context);
-                              _showFeatureComingSoon(context);
+                              Navigator.pushNamed(context, '/access_logs');
                             },
                           ),
                           _buildDrawerItem(
                             icon: Icons.fingerprint,
-                            title: 'Biometric Settings',
+                            title: 'Biometric Management',
                             onTap: () {
                               Navigator.pop(context);
-                              _showFeatureComingSoon(context);
+                              Navigator.pushNamed(
+                                  context, '/biometric_management');
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Icons.devices,
+                            title: 'Device Management',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.pushNamed(
+                                  context, '/device_management');
                             },
                           ),
 
@@ -380,12 +343,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'About',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AboutScreen(),
-                                ),
-                              );
+                              Navigator.pushNamed(context, '/about');
                             },
                           ),
                           _buildDrawerItem(
@@ -393,12 +351,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Contact Us',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ContactScreen(),
-                                ),
-                              );
+                              Navigator.pushNamed(context, '/contact');
                             },
                           ),
                           _buildDrawerItem(
@@ -406,13 +359,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Terms & Conditions',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const TermsConditionsScreen(),
-                                ),
-                              );
+                              Navigator.pushNamed(context, '/terms');
                             },
                           ),
                           _buildDrawerItem(
@@ -420,13 +367,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Privacy Policy',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const PrivacyPolicyScreen(),
-                                ),
-                              );
+                              Navigator.pushNamed(context, '/privacy');
                             },
                           ),
                           _buildDrawerItem(
@@ -434,7 +375,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'App Roadmap',
                             onTap: () {
                               Navigator.pop(context);
-                              _showFeatureComingSoon(context);
+                              Navigator.pushNamed(context, '/app_roadmap');
                             },
                           ),
                           _buildDrawerItem(
@@ -447,71 +388,6 @@ class _CustomDrawerState extends State<CustomDrawer>
                           ),
                           // Add a spacer at the bottom
                           const SizedBox(height: 16),
-
-                          _buildDrawerItem(
-                            icon: Icons.info_outline,
-                            title: 'About',
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AboutScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          _buildDrawerItem(
-                            icon: Icons.contact_mail,
-                            title: 'Contact Us',
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        const ContactScreen()),
-                              );
-                            },
-                          ),
-                          _buildDrawerItem(
-                            icon: Icons.description,
-                            title: 'Terms & Conditions',
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        const TermsConditionsScreen()),
-                              );
-                            },
-                          ),
-                          _buildDrawerItem(
-                            icon: Icons.privacy_tip,
-                            title: 'Privacy Policy',
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        const PrivacyPolicyScreen()),
-                              );
-                            },
-                          ),
-                          const Divider(),
-                          _buildDrawerItem(
-                            icon: Icons.logout,
-                            title: 'Logout',
-                            onTap: () async {
-                              await authProvider.logout();
-                              if (context.mounted) {
-                                Navigator.of(context)
-                                    .pushReplacementNamed('/login');
-                              }
-                            },
-                          ),
                         ],
                       ),
                     ),
@@ -527,7 +403,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
                       child: Text(
                         '© ${DateTime.now().year} Nigerian Army',
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: DesignSystem.textSecondaryColor,
                           fontSize: 12,
                         ),
@@ -555,7 +431,7 @@ class _CustomDrawerState extends State<CustomDrawer>
           Text(
             title.toUpperCase(),
             style: TextStyle(
-              color: DesignSystem.primaryColor.withAlpha(180),
+              color: DesignSystem.primaryColor.withValues(alpha: 180),
               fontSize: 12,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
@@ -587,15 +463,14 @@ class _CustomDrawerState extends State<CustomDrawer>
             child: const Text('CANCEL'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
               final authProvider =
                   Provider.of<AuthProvider>(context, listen: false);
-              // Store the context reference
-              final contextRef = context;
-              authProvider.logout().then((_) {
-                Navigator.pushReplacementNamed(contextRef, '/login');
-              });
+              await authProvider.logout();
+              if (context.mounted) {
+                Navigator.pushReplacementNamed(context, '/login');
+              }
             },
             child: const Text('LOGOUT'),
           ),
@@ -631,8 +506,8 @@ class _CustomDrawerState extends State<CustomDrawer>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
       ),
-      hoverColor: DesignSystem.primaryColor.withAlpha(20),
-      selectedTileColor: DesignSystem.primaryColor.withAlpha(30),
+      hoverColor: DesignSystem.primaryColor.withValues(alpha: 20),
+      selectedTileColor: DesignSystem.primaryColor.withValues(alpha: 30),
     );
   }
 }

@@ -14,11 +14,9 @@ class AppThemes {
       tertiary: DesignSystem.lightAccentColor,
       error: DesignSystem.lightErrorColor,
       surface: DesignSystem.lightSurfaceColor,
-      background: DesignSystem.lightBackgroundColor,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
       onSurface: DesignSystem.lightTextPrimaryColor,
-      onBackground: DesignSystem.lightTextPrimaryColor,
       onError: Colors.white,
     ),
     scaffoldBackgroundColor: DesignSystem.lightBackgroundColor,
@@ -132,31 +130,31 @@ class AppThemes {
       color: DesignSystem.lightIconColor,
     ),
     switchTheme: SwitchThemeData(
-      thumbColor: MaterialStateProperty.resolveWith<Color>((states) {
-        if (states.contains(MaterialState.selected)) {
+      thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
+        if (states.contains(WidgetState.selected)) {
           return DesignSystem.lightPrimaryColor;
         }
         return Colors.grey;
       }),
-      trackColor: MaterialStateProperty.resolveWith<Color>((states) {
-        if (states.contains(MaterialState.selected)) {
+      trackColor: WidgetStateProperty.resolveWith<Color>((states) {
+        if (states.contains(WidgetState.selected)) {
           return DesignSystem.lightPrimaryColor.withAlpha(150);
         }
         return Colors.grey.withAlpha(150);
       }),
     ),
     checkboxTheme: CheckboxThemeData(
-      fillColor: MaterialStateProperty.resolveWith<Color>((states) {
-        if (states.contains(MaterialState.selected)) {
+      fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+        if (states.contains(WidgetState.selected)) {
           return DesignSystem.lightPrimaryColor;
         }
         return Colors.transparent;
       }),
-      checkColor: MaterialStateProperty.all(Colors.white),
+      checkColor: WidgetStateProperty.all(Colors.white),
     ),
     radioTheme: RadioThemeData(
-      fillColor: MaterialStateProperty.resolveWith<Color>((states) {
-        if (states.contains(MaterialState.selected)) {
+      fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+        if (states.contains(WidgetState.selected)) {
           return DesignSystem.lightPrimaryColor;
         }
         return DesignSystem.lightTextSecondaryColor;
@@ -184,14 +182,14 @@ class AppThemes {
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: DesignSystem.lightNavBarColor,
       indicatorColor: DesignSystem.lightPrimaryColor.withAlpha(50),
-      iconTheme: MaterialStateProperty.resolveWith((states) {
-        if (states.contains(MaterialState.selected)) {
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
           return const IconThemeData(color: DesignSystem.lightPrimaryColor);
         }
         return const IconThemeData(color: DesignSystem.lightTextSecondaryColor);
       }),
-      labelTextStyle: MaterialStateProperty.resolveWith((states) {
-        if (states.contains(MaterialState.selected)) {
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
           return const TextStyle(color: DesignSystem.lightPrimaryColor);
         }
         return const TextStyle(color: DesignSystem.lightTextSecondaryColor);
@@ -329,18 +327,18 @@ class AppThemes {
       color: DesignSystem.darkIconColor,
     ),
     switchTheme: SwitchThemeData(
-      thumbColor: MaterialStateProperty.all(DesignSystem.darkCyan),
-      trackColor: MaterialStateProperty.all(DesignSystem.darkGrey5),
+      thumbColor: WidgetStateProperty.all(DesignSystem.darkCyan),
+      trackColor: WidgetStateProperty.all(DesignSystem.darkGrey5),
     ),
     checkboxTheme: CheckboxThemeData(
-      fillColor: MaterialStateProperty.all(DesignSystem.darkCyan),
-      checkColor: MaterialStateProperty.all(Colors.white),
+      fillColor: WidgetStateProperty.all(DesignSystem.darkCyan),
+      checkColor: WidgetStateProperty.all(Colors.white),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall / 2),
       ),
     ),
     radioTheme: RadioThemeData(
-      fillColor: MaterialStateProperty.all(DesignSystem.darkCyan),
+      fillColor: WidgetStateProperty.all(DesignSystem.darkCyan),
     ),
     dialogTheme: DialogTheme(
       backgroundColor: DesignSystem.darkSurfaceColor,

@@ -18,6 +18,8 @@ enum ServiceStatus {
   awol, // Absent Without Leave
   deserted,
   dismissed,
+  discharged,
+  deceased,
 }
 
 extension ServiceStatusExtension on ServiceStatus {
@@ -35,6 +37,10 @@ extension ServiceStatusExtension on ServiceStatus {
         return 'Deserted';
       case ServiceStatus.dismissed:
         return 'Dismissed';
+      case ServiceStatus.discharged:
+        return 'Discharged';
+      case ServiceStatus.deceased:
+        return 'Deceased';
     }
   }
 }

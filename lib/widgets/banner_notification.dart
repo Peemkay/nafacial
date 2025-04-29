@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../config/design_system.dart';
 import '../services/notification_service.dart';
@@ -118,7 +118,7 @@ class _BannerNotificationState extends State<BannerNotification>
             child: Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: color.withOpacity(0.1),
+                  backgroundColor: color.withValues(alpha: 26),
                   child: Icon(
                     icon,
                     color: color,
@@ -183,16 +183,32 @@ class _BannerNotificationManagerState extends State<BannerNotificationManager> {
   NotificationItem? _currentNotification;
   final List<NotificationItem> _notificationQueue = [];
 
+  late NotificationService _notificationService;
+  StreamSubscription? _notificationSubscription;
+
   @override
   void initState() {
     super.initState();
 
     // Listen for new notifications
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final notificationService =
-          Provider.of<NotificationService>(context, listen: false);
-      notificationService.notificationStream.listen(_handleNewNotification);
+      if (mounted) {
+        try {
+          _notificationService =
+              Provider.of<NotificationService>(context, listen: false);
+          _notificationSubscription = _notificationService.notificationStream
+              .listen(_handleNewNotification);
+        } catch (e) {
+          debugPrint('Error initializing notification service: $e');
+        }
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    super.dispose();
   }
 
   void _handleNewNotification(NotificationItem notification) {
@@ -426,7 +442,7 @@ class _BannerNotificationManagerState extends State<BannerNotificationManager> {
         margin: const EdgeInsets.symmetric(vertical: 4),
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: color.withValues(alpha: 26),
             child: Icon(
               icon,
               color: color,

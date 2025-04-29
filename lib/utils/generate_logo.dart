@@ -26,7 +26,7 @@ void main() async {
     final filePath = await LogoGenerator.generateLogo();
 
     // Copy to assets directory
-    final assetPath = 'assets/favicon/nafacial_logo.png';
+    const assetPath = 'assets/favicon/nafacial_logo.png';
     final assetFile = File(assetPath);
     await File(filePath).copy(assetPath);
 

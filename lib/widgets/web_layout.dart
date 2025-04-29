@@ -112,7 +112,7 @@ class _WebHeaderState extends State<WebHeader> {
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(10),
+                  color: Colors.black.withValues(alpha: 10),
                   blurRadius: 10,
                   spreadRadius: 1,
                 ),
@@ -121,18 +121,39 @@ class _WebHeaderState extends State<WebHeader> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Main Navigation
                 _buildMenuDropdownItem(
                     'Home', Icons.home, () => _navigateTo('/home')),
+
+                // Verification
+                const Divider(),
                 _buildMenuDropdownItem('Facial Verification', Icons.face,
                     () => _navigateTo('/facial_verification')),
                 _buildMenuDropdownItem('Live Recognition', Icons.camera,
                     () => _navigateTo('/live_recognition')),
+
+                // Personnel Management
+                const Divider(),
                 _buildMenuDropdownItem('Personnel Database', Icons.people,
                     () => _navigateTo('/personnel_database')),
-                _buildMenuDropdownItem('Registration', Icons.person_add,
-                    () => _navigateTo('/personnel_registration')),
+                _buildMenuDropdownItem('Register Personnel', Icons.person_add,
+                    () => _navigateTo('/register_personnel')),
+
+                // Security
+                const Divider(),
+                _buildMenuDropdownItem('Access Logs', Icons.history,
+                    () => _navigateTo('/access_logs')),
+                _buildMenuDropdownItem(
+                    'Biometric Management',
+                    Icons.fingerprint,
+                    () => _navigateTo('/biometric_management')),
+
+                // Settings & Information
+                const Divider(),
                 _buildMenuDropdownItem(
                     'Settings', Icons.settings, () => _navigateTo('/settings')),
+
+                // Information
                 const Divider(),
                 _buildMenuDropdownItem(
                     'About', Icons.info, () => _navigateTo('/about')),
@@ -190,7 +211,7 @@ class _WebHeaderState extends State<WebHeader> {
             : DesignSystem.lightAppBarColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(10),
+            color: Colors.black.withValues(alpha: 10),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -205,11 +226,11 @@ class _WebHeaderState extends State<WebHeader> {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: DesignSystem.primaryColor,
                   shape: BoxShape.circle,
                 ),
-                child: Center(
+                child: const Center(
                   child: Icon(
                     Icons.security,
                     color: DesignSystem.accentColor,
@@ -218,9 +239,9 @@ class _WebHeaderState extends State<WebHeader> {
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
+              const Text(
                 'NAFacial',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white, // Always white
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -245,8 +266,8 @@ class _WebHeaderState extends State<WebHeader> {
               decoration: BoxDecoration(
                 color: _isMenuOpen
                     ? (isDarkMode
-                        ? Colors.white.withAlpha(10)
-                        : Colors.black.withAlpha(5))
+                        ? Colors.white.withValues(alpha: 10)
+                        : Colors.black.withValues(alpha: 5))
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(4),
                 border: _isMenuOpen
@@ -412,7 +433,7 @@ class WebFooter extends StatelessWidget {
           Container(
             height: 1,
             width: double.infinity,
-            color: Colors.white.withAlpha(30), // Subtle white divider
+            color: Colors.white.withValues(alpha: 30), // Subtle white divider
           ),
 
           const SizedBox(height: 20),
@@ -439,11 +460,11 @@ class WebFooter extends StatelessWidget {
                   Container(
                     width: 40,
                     height: 40,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: DesignSystem.primaryColor,
                       shape: BoxShape.circle,
                     ),
-                    child: Center(
+                    child: const Center(
                       child: Icon(
                         Icons.security,
                         color: DesignSystem.accentColor,
@@ -468,7 +489,8 @@ class WebFooter extends StatelessWidget {
               Text(
                 'NAFacial is a facial recognition system designed for the Nigerian Army to enhance security and personnel management.',
                 style: TextStyle(
-                  color: Colors.white.withAlpha(240), // More visible text
+                  color:
+                      Colors.white.withValues(alpha: 240), // More visible text
                 ),
               ),
             ],
@@ -558,11 +580,11 @@ class WebFooter extends StatelessWidget {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: DesignSystem.primaryColor,
                 shape: BoxShape.circle,
               ),
-              child: Center(
+              child: const Center(
                 child: Icon(
                   Icons.security,
                   color: DesignSystem.accentColor,

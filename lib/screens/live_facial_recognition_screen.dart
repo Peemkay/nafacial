@@ -144,7 +144,7 @@ class _LiveFacialRecognitionScreenState
                     : null,
               ),
               child: _matchedPersonnel!.photoUrl == null
-                  ? Icon(
+                  ? const Icon(
                       Icons.person,
                       size: 30,
                       color: DesignSystem.primaryColor,
@@ -167,14 +167,14 @@ class _LiveFacialRecognitionScreenState
                   ),
                   Text(
                     _matchedPersonnel!.fullName,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: DesignSystem.textSecondaryColor,
                       fontSize: 14,
                     ),
                   ),
                   Text(
                     'Army Number: ${_matchedPersonnel!.armyNumber}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: DesignSystem.textSecondaryColor,
                       fontSize: 14,
                     ),
@@ -196,7 +196,7 @@ class _LiveFacialRecognitionScreenState
             color: Colors.green.withAlpha(25),
             borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall),
           ),
-          child: Row(
+          child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
@@ -505,7 +505,7 @@ class _LiveFacialRecognitionScreenState
             ),
             Text(
               _getSensitivityDescription(),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 color: DesignSystem.textSecondaryColor,
               ),
@@ -533,7 +533,7 @@ class _LiveFacialRecognitionScreenState
                 ),
               ],
             ),
-            Text(
+            const Text(
               'Display visual indicators for detected facial features',
               style: TextStyle(
                 fontSize: 12,

@@ -24,11 +24,11 @@ class WebFooter extends StatelessWidget {
           colors: isDarkMode
               ? [
                   DesignSystem.darkAppBarColor,
-                  Color(0xFF001428), // Darker shade for gradient effect
+                  const Color(0xFF001428), // Darker shade for gradient effect
                 ]
               : [
                   DesignSystem.lightNavBarColor,
-                  Color(0xFFE0E8F0), // Lighter shade for gradient effect
+                  const Color(0xFFE0E8F0), // Lighter shade for gradient effect
                 ],
         ),
         boxShadow: [
@@ -85,11 +85,11 @@ class WebFooter extends StatelessWidget {
                   Container(
                     width: 40,
                     height: 40,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: DesignSystem.primaryColor,
                       shape: BoxShape.circle,
                     ),
-                    child: Center(
+                    child: const Center(
                       child: Icon(
                         Icons.security,
                         color: DesignSystem.accentColor,
@@ -206,11 +206,11 @@ class WebFooter extends StatelessWidget {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: DesignSystem.primaryColor,
                 shape: BoxShape.circle,
               ),
-              child: Center(
+              child: const Center(
                 child: Icon(
                   Icons.security,
                   color: DesignSystem.accentColor,

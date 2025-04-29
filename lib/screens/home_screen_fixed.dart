@@ -41,7 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Initialize version provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final versionProvider = Provider.of<VersionProvider>(context, listen: false);
+      final versionProvider =
+          Provider.of<VersionProvider>(context, listen: false);
       versionProvider.initialize();
     });
   }
@@ -53,11 +54,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       // Load personnel data
-      final personnelProvider = Provider.of<PersonnelProvider>(context, listen: false);
+      final personnelProvider =
+          Provider.of<PersonnelProvider>(context, listen: false);
       await personnelProvider.loadPersonnel();
 
       // Load access logs
-      final accessLogProvider = Provider.of<AccessLogProvider>(context, listen: false);
+      final accessLogProvider =
+          Provider.of<AccessLogProvider>(context, listen: false);
       await accessLogProvider.loadLogs();
     } catch (e) {
       // Handle errors
@@ -81,9 +84,11 @@ class _HomeScreenState extends State<HomeScreen> {
       key: _scaffoldKey,
       appBar: AppBar(
         title: const Text('NAFacial Dashboard'),
-        backgroundColor: isDarkMode ? DesignSystem.darkAppBarColor : DesignSystem.lightAppBarColor,
-        actions: [
-          const NotificationIcon(),
+        backgroundColor: isDarkMode
+            ? DesignSystem.darkAppBarColor
+            : DesignSystem.lightAppBarColor,
+        actions: const [
+          NotificationIcon(),
         ],
       ),
       drawer: const CustomDrawer(),
@@ -116,7 +121,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       : Column(
                           children: [
                             _buildAdminCard(context),
-                            SizedBox(height: DesignSystem.adjustedSpacingMedium),
+                            SizedBox(
+                                height: DesignSystem.adjustedSpacingMedium),
                             _buildBiometricCard(context),
                           ],
                         ),
@@ -196,15 +202,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: LinearProgressIndicator(
                                   value: versionProvider.downloadProgress,
                                   backgroundColor: Colors.grey[300],
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      DesignSystem.primaryColor),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                          DesignSystem.primaryColor),
                                 ),
                               ),
                               const SizedBox(height: 2),
                               GestureDetector(
                                 onTap: () {
-                                  Navigator.of(context)
-                                      .pushNamed('/settings');
+                                  Navigator.of(context).pushNamed('/settings');
                                 },
                                 child: PlatformText(
                                   'Cancel',
@@ -225,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             onTap: () {
                               Navigator.of(context).pushNamed('/settings');
                             },
-                            child: PlatformText(
+                            child: const PlatformText(
                               ' • Update Available',
                               style: TextStyle(
                                 fontSize: 12,
@@ -236,14 +242,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         )
                       else if (!versionProvider.hasInternetConnection)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
+                        const Padding(
+                          padding: EdgeInsets.only(top: 4.0),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.signal_wifi_off,
+                              Icon(Icons.signal_wifi_off,
                                   color: Colors.orange, size: 12),
-                              const SizedBox(width: 4),
+                              SizedBox(width: 4),
                               PlatformText(
                                 'No internet connection',
                                 style: TextStyle(
@@ -259,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Bottom padding
                   const SizedBox(height: 16),
-                  
+
                   // Version info at the bottom
                   const SizedBox(height: 24),
                   const VersionInfo(),
@@ -449,7 +455,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             children: [
-              CircleAvatar(
+              const CircleAvatar(
                 backgroundColor: DesignSystem.primaryColor,
                 radius: 30,
                 child: Icon(
@@ -472,7 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     PlatformText(
                       user?.role ?? 'Administrator',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: DesignSystem.accentColor,
                         fontWeight: DesignSystem.fontWeightMedium,
                       ),
@@ -494,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: DesignSystem.adjustedSpacingSmall),
           PlatformText(
             'Last Login: ${DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now())}',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               color: DesignSystem.textSecondaryColor,
             ),
@@ -696,12 +702,12 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, index) {
               final log = logs[index];
               return Card(
-                margin: EdgeInsets.only(
-                    bottom: DesignSystem.adjustedSpacingSmall),
+                margin:
+                    EdgeInsets.only(bottom: DesignSystem.adjustedSpacingSmall),
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor:
-                        DesignSystem.primaryColor.withOpacity(0.1),
+                        DesignSystem.primaryColor.withValues(alpha: 26),
                     child: Icon(
                       log.status == AccessLogStatus.verified
                           ? Icons.check_circle
@@ -715,7 +721,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   subtitle: PlatformText(
                     '${log.status == AccessLogStatus.verified ? 'Verified' : 'Failed'} • ${DateFormat('MMM dd, HH:mm').format(log.timestamp)}',
                   ),
-                  trailing: Icon(
+                  trailing: const Icon(
                     Icons.chevron_right,
                     color: DesignSystem.textSecondaryColor,
                   ),
@@ -732,12 +738,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showRecentActivityModal(BuildContext context) {
-    final accessLogProvider = Provider.of<AccessLogProvider>(context, listen: false);
+    final accessLogProvider =
+        Provider.of<AccessLogProvider>(context, listen: false);
     final logs = accessLogProvider.logs;
 
     showModalBottomSheet(
       context: context,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(DesignSystem.borderRadiusMedium),
         ),
@@ -778,10 +785,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         final log = logs[index];
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: log.status ==
-                                    AccessLogStatus.verified
-                                ? Colors.green.withOpacity(0.1)
-                                : Colors.red.withOpacity(0.1),
+                            backgroundColor:
+                                log.status == AccessLogStatus.verified
+                                    ? Colors.green.withValues(alpha: 26)
+                                    : Colors.red.withValues(alpha: 26),
                             child: Icon(
                               log.status == AccessLogStatus.verified
                                   ? Icons.check_circle

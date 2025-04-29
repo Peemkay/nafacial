@@ -109,7 +109,7 @@ class _SecurityFeaturesSliderState extends State<SecurityFeaturesSlider> {
             // Header
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.shield_outlined,
                   color: DesignSystem.accentColor,
                   size: 24,

@@ -335,7 +335,7 @@ class BiometricService {
     try {
       // Retrieve from secure storage
       final templateJson = await _secureStorage.read(
-        key: 'biometric_template_${userId}_${templateType}',
+        key: 'biometric_template_${userId}_$templateType',
       );
 
       if (templateJson == null) {

@@ -144,7 +144,7 @@ class AppRoadmapScreen extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(
+            const Icon(
               Icons.folder,
               color: DesignSystem.primaryColor,
               size: 20,
@@ -171,7 +171,7 @@ class AppRoadmapScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 8),
                       child: Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.insert_drive_file,
                             color: DesignSystem.accentColor,
                             size: 16,
@@ -260,7 +260,7 @@ class AppRoadmapScreen extends StatelessWidget {
               color: DesignSystem.primaryColor.withAlpha(50),
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            child: const Icon(
               Icons.upcoming,
               color: DesignSystem.primaryColor,
               size: 20,
@@ -407,7 +407,7 @@ class AppRoadmapScreen extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           '• ',
                           style: TextStyle(
                             color: DesignSystem.accentColor,

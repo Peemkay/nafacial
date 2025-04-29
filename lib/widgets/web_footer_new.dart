@@ -85,11 +85,11 @@ class WebFooter extends StatelessWidget {
                   Container(
                     width: 40,
                     height: 40,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: DesignSystem.primaryColor,
                       shape: BoxShape.circle,
                     ),
-                    child: Center(
+                    child: const Center(
                       child: Icon(
                         Icons.security,
                         color: DesignSystem.accentColor,
@@ -206,11 +206,11 @@ class WebFooter extends StatelessWidget {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: DesignSystem.primaryColor,
                 shape: BoxShape.circle,
               ),
-              child: Center(
+              child: const Center(
                 child: Icon(
                   Icons.security,
                   color: DesignSystem.accentColor,

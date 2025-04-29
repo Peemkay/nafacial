@@ -299,10 +299,10 @@ class _AdvancedCameraWidgetState extends State<AdvancedCameraWidget>
     // Check if camera controller is initialized
     if (_cameraService.cameraController == null ||
         !_cameraService.isInitialized) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
             Text('Initializing camera...'),

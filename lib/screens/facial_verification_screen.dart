@@ -15,7 +15,7 @@ import '../widgets/camera_options_dialog.dart';
 import '../widgets/security_pattern_painter.dart';
 import '../services/facial_recognition_service.dart';
 import '../providers/auth_provider.dart';
-import '../models/user_model.dart';
+
 import 'personnel_registration_screen.dart';
 import 'personnel_edit_screen.dart';
 import 'live_facial_recognition_screen.dart';
@@ -439,7 +439,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Personnel Details'),
+        title: const Text('Personnel Details'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -463,9 +463,9 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                   height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: DesignSystem.primaryColor.withOpacity(0.1),
+                    color: DesignSystem.primaryColor.withValues(alpha: 26),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.person,
                     size: 60,
                     color: DesignSystem.primaryColor,
@@ -507,21 +507,21 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text('Close'),
+            child: const Text('Close'),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               _editPersonnel(personnel);
             },
-            child: Text('Edit'),
+            child: const Text('Edit'),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               _verifyPersonnel(personnel);
             },
-            child: Text('Verify'),
+            child: const Text('Verify'),
           ),
         ],
       ),
@@ -584,7 +584,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
             width: 100,
             child: Text(
               '$label:',
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: DesignSystem.fontWeightBold,
                 color: DesignSystem.textSecondaryColor,
               ),
@@ -593,7 +593,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: DesignSystem.fontWeightMedium,
               ),
             ),
@@ -644,6 +644,10 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
         return 'Deserted';
       case ServiceStatus.dismissed:
         return 'Dismissed';
+      case ServiceStatus.discharged:
+        return 'Discharged';
+      case ServiceStatus.deceased:
+        return 'Deceased';
     }
   }
 
@@ -662,12 +666,73 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
         return Colors.deepOrange;
       case ServiceStatus.dismissed:
         return Colors.red;
+      case ServiceStatus.discharged:
+        return Colors.teal;
+      case ServiceStatus.deceased:
+        return Colors.grey;
     }
   }
 
   // Format date
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  // Show error message safely
+  void _showErrorMessage(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Handle video capture
+  Future<void> _captureVideo() async {
+    try {
+      // Get available cameras
+      final cameras = await availableCameras();
+
+      if (!mounted) return;
+
+      if (cameras.isEmpty) {
+        _showErrorMessage('No cameras available');
+        return;
+      }
+
+      // Show camera selection dialog
+      await showCameraSelectionDialog(
+        context: context,
+        cameras: cameras,
+        onCameraSelected: (camera) async {
+          // Navigate to video capture screen
+          final result = await Navigator.push<File>(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VideoCaptureScreen(
+                cameras: cameras,
+                initialCamera: camera,
+              ),
+            ),
+          );
+
+          if (result != null && mounted) {
+            setState(() {
+              _selectedImage = result;
+            });
+
+            // Process the video for verification
+            _processVideoForVerification();
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('Error accessing camera: $e');
+      _showErrorMessage('Error accessing camera: ${e.toString()}');
+    }
   }
 
   // Get current admin info for tracking changes
@@ -712,7 +777,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 51),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -726,14 +791,14 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                   decoration: BoxDecoration(
                     borderRadius:
                         BorderRadius.circular(DesignSystem.borderRadiusMedium),
-                    color: DesignSystem.primaryColor.withOpacity(0.1),
+                    color: DesignSystem.primaryColor.withValues(alpha: 26),
                     border: Border.all(
-                      color: DesignSystem.primaryColor.withOpacity(0.3),
+                      color: DesignSystem.primaryColor.withValues(alpha: 77),
                       width: 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 26),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -749,7 +814,8 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                         child: CustomPaint(
                           painter: SecurityPatternPainter(
                             gridSpacing: 15,
-                            gridColor: DesignSystem.skyBlue.withOpacity(0.2),
+                            gridColor:
+                                DesignSystem.skyBlue.withValues(alpha: 51),
                           ),
                           size: Size(isLargeScreen ? 300 : 200,
                               isLargeScreen ? 300 : 200),
@@ -770,8 +836,8 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color:
-                                    DesignSystem.accentColor.withOpacity(0.5),
+                                color: DesignSystem.accentColor
+                                    .withValues(alpha: 128),
                                 width: 2,
                                 style: BorderStyle.solid,
                               ),
@@ -833,7 +899,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                   vertical: DesignSystem.adjustedSpacingSmall,
                 ),
                 decoration: BoxDecoration(
-                  color: DesignSystem.primaryColor.withOpacity(0.1),
+                  color: DesignSystem.primaryColor.withValues(alpha: 26),
                   borderRadius:
                       BorderRadius.circular(DesignSystem.borderRadiusSmall),
                 ),
@@ -879,9 +945,9 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
               decoration: BoxDecoration(
                 borderRadius:
                     BorderRadius.circular(DesignSystem.borderRadiusMedium),
-                color: DesignSystem.primaryColor.withOpacity(0.1),
+                color: DesignSystem.primaryColor.withValues(alpha: 26),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.photo,
                 size: 80,
                 color: DesignSystem.primaryColor,
@@ -934,7 +1000,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 51),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -946,7 +1012,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 128),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -964,14 +1030,14 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                   decoration: BoxDecoration(
                     borderRadius:
                         BorderRadius.circular(DesignSystem.borderRadiusMedium),
-                    color: DesignSystem.primaryColor.withOpacity(0.1),
+                    color: DesignSystem.primaryColor.withValues(alpha: 26),
                     border: Border.all(
-                      color: DesignSystem.primaryColor.withOpacity(0.3),
+                      color: DesignSystem.primaryColor.withValues(alpha: 77),
                       width: 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 26),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -987,7 +1053,8 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                         child: CustomPaint(
                           painter: SecurityPatternPainter(
                             gridSpacing: 15,
-                            gridColor: DesignSystem.skyBlue.withOpacity(0.2),
+                            gridColor:
+                                DesignSystem.skyBlue.withValues(alpha: 51),
                           ),
                           size: Size(isLargeScreen ? 300 : 200,
                               isLargeScreen ? 300 : 200),
@@ -1023,63 +1090,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                 children: [
                   PlatformButton(
                     text: 'RECORD VIDEO',
-                    onPressed: () async {
-                      try {
-                        // Get available cameras
-                        final cameras = await availableCameras();
-
-                        if (cameras.isEmpty) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('No cameras available'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                          return;
-                        }
-
-                        if (mounted) {
-                          await showCameraSelectionDialog(
-                            context: context,
-                            cameras: cameras,
-                            onCameraSelected: (camera) async {
-                              // Navigate to video capture screen
-                              final result = await Navigator.push<File>(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => VideoCaptureScreen(
-                                    cameras: cameras,
-                                    initialCamera: camera,
-                                  ),
-                                ),
-                              );
-
-                              if (result != null && mounted) {
-                                setState(() {
-                                  _selectedImage = result;
-                                });
-
-                                // Process the video for verification
-                                _processVideoForVerification();
-                              }
-                            },
-                          );
-                        }
-                      } catch (e) {
-                        debugPrint('Error accessing camera: $e');
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  'Error accessing camera: ${e.toString()}'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      }
-                    },
+                    onPressed: _captureVideo,
                     icon: Icons.videocam,
                     isFullWidth: false,
                   ),
@@ -1099,7 +1110,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                   vertical: DesignSystem.adjustedSpacingSmall,
                 ),
                 decoration: BoxDecoration(
-                  color: DesignSystem.primaryColor.withOpacity(0.1),
+                  color: DesignSystem.primaryColor.withValues(alpha: 26),
                   borderRadius:
                       BorderRadius.circular(DesignSystem.borderRadiusSmall),
                 ),
@@ -1131,13 +1142,13 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
               padding: EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
               child: Column(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.numbers,
                     size: 60,
                     color: DesignSystem.primaryColor,
                   ),
                   SizedBox(height: DesignSystem.adjustedSpacingMedium),
-                  PlatformText(
+                  const PlatformText(
                     'Verify by Army Number',
                     isTitle: true,
                   ),
@@ -1194,9 +1205,9 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
               decoration: BoxDecoration(
                 borderRadius:
                     BorderRadius.circular(DesignSystem.borderRadiusMedium),
-                color: DesignSystem.primaryColor.withOpacity(0.1),
+                color: DesignSystem.primaryColor.withValues(alpha: 26),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.face_retouching_natural,
                 size: 80,
                 color: DesignSystem.primaryColor,
@@ -1217,7 +1228,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
               isFullWidth: false,
             ),
             SizedBox(height: DesignSystem.adjustedSpacingMedium),
-            PlatformText(
+            const PlatformText(
               'Real-time facial recognition with advanced sensitivity controls',
               textAlign: TextAlign.center,
             ),
@@ -1316,7 +1327,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.person_off,
                             size: 60,
                             color: DesignSystem.textSecondaryColor,
@@ -1371,7 +1382,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
       selected: isSelected,
       onSelected: onSelected,
       backgroundColor: Colors.white,
-      selectedColor: DesignSystem.primaryColor.withOpacity(0.2),
+      selectedColor: DesignSystem.primaryColor.withValues(alpha: 51),
       checkmarkColor: DesignSystem.primaryColor,
       labelStyle: TextStyle(
         color: isSelected
@@ -1419,9 +1430,9 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                 height: 60,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: DesignSystem.primaryColor.withOpacity(0.1),
+                  color: DesignSystem.primaryColor.withValues(alpha: 26),
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.person,
                   size: 30,
                   color: DesignSystem.primaryColor,
@@ -1464,7 +1475,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: _getServiceStatusColor(personnel.serviceStatus)
-                              .withOpacity(0.1),
+                              .withValues(alpha: 26),
                           borderRadius: BorderRadius.circular(
                               DesignSystem.borderRadiusSmall),
                         ),
@@ -1530,7 +1541,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
         padding: EdgeInsets.all(DesignSystem.adjustedSpacingSmall),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 26),
         ),
         child: Icon(
           icon,

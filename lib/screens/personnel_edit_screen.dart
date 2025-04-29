@@ -108,7 +108,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: DesignSystem.primaryColor,
               onPrimary: Colors.white,
               onSurface: DesignSystem.textPrimaryColor,
@@ -198,7 +198,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
 
     // Add divider
     items.add(
-      DropdownMenuItem<Corps>(
+      const DropdownMenuItem<Corps>(
         enabled: false,
         child: Divider(),
       ),
@@ -229,7 +229,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
 
     // Add divider
     items.add(
-      DropdownMenuItem<Corps>(
+      const DropdownMenuItem<Corps>(
         enabled: false,
         child: Divider(),
       ),
@@ -260,7 +260,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
 
     // Add divider
     items.add(
-      DropdownMenuItem<Corps>(
+      const DropdownMenuItem<Corps>(
         enabled: false,
         child: Divider(),
       ),
@@ -346,7 +346,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
 
     // Add divider
     items.add(
-      DropdownMenuItem<Rank>(
+      const DropdownMenuItem<Rank>(
         enabled: false,
         child: Divider(),
       ),
@@ -393,6 +393,10 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
         return 'Deserted';
       case ServiceStatus.dismissed:
         return 'Dismissed';
+      case ServiceStatus.discharged:
+        return 'Discharged';
+      case ServiceStatus.deceased:
+        return 'Deceased';
     }
   }
 
@@ -500,7 +504,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
                             ),
                             child: _selectedImage == null &&
                                     widget.personnel.photoUrl == null
-                                ? Icon(
+                                ? const Icon(
                                     Icons.add_a_photo,
                                     size: 60,
                                     color: DesignSystem.primaryColor,
@@ -535,7 +539,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
                   SizedBox(height: DesignSystem.adjustedSpacingLarge),
 
                   // Personnel Information
-                  PlatformText(
+                  const PlatformText(
                     'Personnel Information',
                     isTitle: true,
                   ),
@@ -566,7 +570,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.badge,
                               color: DesignSystem.textSecondaryColor,
                               size: 20,
@@ -806,7 +810,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
                           ),
                           child: Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.calendar_today,
                                 color: DesignSystem.textSecondaryColor,
                                 size: 20,
@@ -820,8 +824,8 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
                                   fontSize: DesignSystem.adjustedFontSizeMedium,
                                 ),
                               ),
-                              Spacer(),
-                              Icon(
+                              const Spacer(),
+                              const Icon(
                                 Icons.arrow_drop_down,
                                 color: DesignSystem.textSecondaryColor,
                               ),
@@ -859,7 +863,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
                           ),
                           child: Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.calendar_today,
                                 color: DesignSystem.textSecondaryColor,
                                 size: 20,
@@ -873,8 +877,8 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
                                   fontSize: DesignSystem.adjustedFontSizeMedium,
                                 ),
                               ),
-                              Spacer(),
-                              Icon(
+                              const Spacer(),
+                              const Icon(
                                 Icons.arrow_drop_down,
                                 color: DesignSystem.textSecondaryColor,
                               ),
@@ -911,7 +915,7 @@ class _PersonnelEditScreenState extends State<PersonnelEditScreen> {
                           ),
                           child: Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.military_tech,
                                 color: DesignSystem.primaryColor,
                                 size: 20,

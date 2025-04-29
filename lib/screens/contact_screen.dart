@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../config/design_system.dart';
+import '../providers/theme_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
+import '../widgets/custom_drawer.dart';
 
 class ContactScreen extends StatefulWidget {
   const ContactScreen({Key? key}) : super(key: key);
@@ -56,11 +59,17 @@ class _ContactScreenState extends State<ContactScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+
     return PlatformScaffold(
       appBar: AppBar(
         title: const Text('Contact Us'),
-        backgroundColor: DesignSystem.primaryColor,
+        backgroundColor: isDarkMode
+            ? DesignSystem.darkAppBarColor
+            : DesignSystem.lightAppBarColor,
       ),
+      drawer: const CustomDrawer(),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -88,7 +97,7 @@ class _ContactScreenState extends State<ContactScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: DesignSystem.primaryColor.withAlpha(15),
+                    color: DesignSystem.primaryColor.withValues(alpha: 15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -211,7 +220,7 @@ class _ContactScreenState extends State<ContactScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: DesignSystem.primaryColor.withAlpha(25),
+            color: DesignSystem.primaryColor.withValues(alpha: 25),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(

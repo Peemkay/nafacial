@@ -8,6 +8,7 @@ class QuickAction {
   final Color color;
   final String route;
   bool isVisible;
+  final bool isFontAwesome;
 
   QuickAction({
     required this.id,
@@ -16,6 +17,7 @@ class QuickAction {
     required this.color,
     required this.route,
     this.isVisible = true,
+    this.isFontAwesome = false,
   });
 }
 

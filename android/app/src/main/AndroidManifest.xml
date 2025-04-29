@@ -24,7 +24,8 @@
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
         android:resizeableActivity="true"
-        android:allowBackup="true">
+        android:allowBackup="true"
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

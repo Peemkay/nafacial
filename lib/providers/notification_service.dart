@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:vibration/vibration.dart';
@@ -24,7 +23,8 @@ class NotificationService with ChangeNotifier {
   // Getters
   int get notificationCount => _notificationCount;
   List<NotificationItem> get notifications => _notifications;
-  Stream<NotificationItem> get notificationStream => _notificationStreamController.stream;
+  Stream<NotificationItem> get notificationStream =>
+      _notificationStreamController.stream;
   Stream<int> get selectNotificationStream => _selectNotificationStream.stream;
 
   // Constructor
@@ -104,7 +104,8 @@ class NotificationService with ChangeNotifier {
     bool showPopup = true,
   }) {
     // Add to internal list and notify listeners
-    final notification = _addNotification(title, body, type, imageUrl, adminInfo);
+    final notification =
+        _addNotification(title, body, type, imageUrl, adminInfo);
 
     // Add to stream for reactive UI updates
     _notificationStreamController.add(notification);
@@ -125,7 +126,8 @@ class NotificationService with ChangeNotifier {
 
   // Mark a notification as read
   void markAsRead(int id) {
-    final index = _notifications.indexWhere((notification) => notification.id == id);
+    final index =
+        _notifications.indexWhere((notification) => notification.id == id);
     if (index != -1) {
       final notification = _notifications[index];
       if (!notification.isRead) {
@@ -156,7 +158,8 @@ class NotificationService with ChangeNotifier {
 
   // Remove a notification
   void removeNotification(int id) {
-    final index = _notifications.indexWhere((notification) => notification.id == id);
+    final index =
+        _notifications.indexWhere((notification) => notification.id == id);
     if (index != -1) {
       final wasUnread = !_notifications[index].isRead;
       _notifications.removeAt(index);
@@ -180,12 +183,8 @@ class NotificationService with ChangeNotifier {
 
   // Add a notification to the list
   NotificationItem _addNotification(
-    String title,
-    String body,
-    NotificationType type,
-    String? imageUrl,
-    [String? adminInfo]
-  ) {
+      String title, String body, NotificationType type, String? imageUrl,
+      [String? adminInfo]) {
     final notification = NotificationItem(
       id: DateTime.now().millisecondsSinceEpoch,
       title: title,

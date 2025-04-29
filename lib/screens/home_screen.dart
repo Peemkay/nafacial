@@ -78,8 +78,8 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('NAFacial Dashboard'),
         backgroundColor: isDarkMode ? DesignSystem.darkAppBarColor : DesignSystem.lightAppBarColor,
-        actions: [
-          const NotificationIcon(),
+        actions: const [
+          NotificationIcon(),
         ],
       ),
       drawer: const CustomDrawer(),
@@ -107,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 children: [
                                   Row(
                                     children: [
-                                      CircleAvatar(
+                                      const CircleAvatar(
                                         backgroundColor:
                                             DesignSystem.primaryColor,
                                         radius: 30,
@@ -150,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   SizedBox(
                                       height:
                                           DesignSystem.adjustedSpacingSmall),
-                                  PlatformText(
+                                  const PlatformText(
                                     'System Status: ACTIVE',
                                     style: TextStyle(
                                       color: Colors.green,
@@ -181,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 children: [
                                   Row(
                                     children: [
-                                      Icon(
+                                      const Icon(
                                         Icons.fingerprint,
                                         color: DesignSystem.primaryColor,
                                         size: 24,
@@ -189,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       SizedBox(
                                           width: DesignSystem
                                               .adjustedSpacingSmall),
-                                      Expanded(
+                                      const Expanded(
                                         child: PlatformText(
                                           'Biometric Authentication',
                                           isTitle: true,
@@ -202,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       height:
                                           DesignSystem.adjustedSpacingMedium),
                                   if (!authProvider.isBiometricAvailable) ...[
-                                    PlatformText(
+                                    const PlatformText(
                                       'Biometric authentication is not available on this device.',
                                       style: TextStyle(
                                         color: Colors.red,
@@ -267,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    CircleAvatar(
+                                    const CircleAvatar(
                                       backgroundColor:
                                           DesignSystem.primaryColor,
                                       radius: 30,
@@ -308,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const Divider(),
                                 SizedBox(
                                     height: DesignSystem.adjustedSpacingSmall),
-                                PlatformText(
+                                const PlatformText(
                                   'System Status: ACTIVE',
                                   style: TextStyle(
                                     color: Colors.green,
@@ -335,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    Icon(
+                                    const Icon(
                                       Icons.fingerprint,
                                       color: DesignSystem.primaryColor,
                                       size: 24,
@@ -343,7 +343,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     SizedBox(
                                         width:
                                             DesignSystem.adjustedSpacingSmall),
-                                    Expanded(
+                                    const Expanded(
                                       child: PlatformText(
                                         'Biometric Authentication',
                                         isTitle: true,
@@ -355,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 SizedBox(
                                     height: DesignSystem.adjustedSpacingMedium),
                                 if (!authProvider.isBiometricAvailable) ...[
-                                  PlatformText(
+                                  const PlatformText(
                                     'Biometric authentication is not available on this device.',
                                     style: TextStyle(
                                       color: Colors.red,
@@ -418,7 +418,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(height: DesignSystem.adjustedSpacingLarge),
 
                 // Quick actions
-                PlatformText(
+                const PlatformText(
                   'Quick Actions',
                   isTitle: true,
                 ),
@@ -547,7 +547,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           if (versionProvider.isDownloading)
                             Padding(
-                              padding: EdgeInsets.only(top: 4.0),
+                              padding: const EdgeInsets.only(top: 4.0),
                               child: Column(
                                 children: [
                                   PlatformText(
@@ -559,17 +559,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  SizedBox(height: 2),
+                                  const SizedBox(height: 2),
                                   SizedBox(
                                     width: 100,
                                     child: LinearProgressIndicator(
                                       value: versionProvider.downloadProgress,
                                       backgroundColor: Colors.grey[300],
-                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                      valueColor: const AlwaysStoppedAnimation<Color>(
                                           DesignSystem.primaryColor),
                                     ),
                                   ),
-                                  SizedBox(height: 2),
+                                  const SizedBox(height: 2),
                                   GestureDetector(
                                     onTap: () {
                                       Navigator.of(context)
@@ -590,7 +590,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             )
                           else if (versionProvider.updateAvailable)
                             Padding(
-                              padding: EdgeInsets.only(top: 4.0),
+                              padding: const EdgeInsets.only(top: 4.0),
                               child: GestureDetector(
                                 onTap: () {
                                   Navigator.of(context).pushNamed('/settings');
@@ -608,13 +608,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             )
                           else if (!versionProvider.hasInternetConnection)
                             Padding(
-                              padding: EdgeInsets.only(top: 4.0),
+                              padding: const EdgeInsets.only(top: 4.0),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.signal_wifi_off,
+                                  const Icon(Icons.signal_wifi_off,
                                       color: Colors.orange, size: 12),
-                                  SizedBox(width: 4),
+                                  const SizedBox(width: 4),
                                   PlatformText(
                                     'No internet connection',
                                     style: TextStyle(
@@ -684,13 +684,13 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.people,
                 color: DesignSystem.primaryColor,
                 size: 24,
               ),
               SizedBox(width: DesignSystem.adjustedSpacingSmall),
-              Expanded(
+              const Expanded(
                 child: PlatformText(
                   'Personnel Database',
                   isTitle: true,
@@ -899,7 +899,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     showModalBottomSheet(
       context: context,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(DesignSystem.borderRadiusMedium),
         ),
@@ -1159,7 +1159,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor:
-                              DesignSystem.primaryColor.withOpacity(0.1),
+                              DesignSystem.primaryColor.withValues(alpha: 26),
                           child: Icon(
                             log.status == AccessLogStatus.verified
                                 ? Icons.check_circle

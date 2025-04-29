@@ -58,7 +58,7 @@ class LogoGenerator {
             width: 4,
           ),
         ),
-        child: Center(
+        child: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -67,8 +67,8 @@ class LogoGenerator {
                 color: AppTheme.yellow,
                 size: 150,
               ),
-              const SizedBox(height: 30),
-              const Text(
+              SizedBox(height: 30),
+              Text(
                 "NAFacial",
                 style: TextStyle(
                   color: Colors.white,

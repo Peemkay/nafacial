@@ -98,16 +98,16 @@ class PlatformButton extends StatelessWidget {
         icon: Icon(icon, size: DesignSystem.iconSizeSmall),
         label: Text(text),
         style: buttonStyle.copyWith(
-          minimumSize: MaterialStateProperty.all(buttonSize),
+          minimumSize: WidgetStateProperty.all(buttonSize),
         ),
       );
     } else {
       button = ElevatedButton(
         onPressed: onPressed,
-        child: Text(text),
         style: buttonStyle.copyWith(
-          minimumSize: MaterialStateProperty.all(buttonSize),
+          minimumSize: WidgetStateProperty.all(buttonSize),
         ),
+        child: Text(text),
       );
     }
 
@@ -250,19 +250,19 @@ class PlatformTextField extends StatelessWidget {
         enabledBorder: OutlineInputBorder(
           borderRadius: borderRadius,
           borderSide: BorderSide(
-            color: DesignSystem.primaryColor.withOpacity(0.5),
+            color: DesignSystem.primaryColor.withValues(alpha: 128),
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: borderRadius,
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: DesignSystem.primaryColor,
             width: 2,
           ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: borderRadius,
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: DesignSystem.errorColor,
           ),
         ),
@@ -407,6 +407,7 @@ class PlatformScaffold extends StatelessWidget {
   final Color? backgroundColor;
   final bool resizeToAvoidBottomInset;
   final PreferredSizeWidget? appBar;
+  final GlobalKey<ScaffoldState>? scaffoldKey;
 
   const PlatformScaffold({
     Key? key,
@@ -419,6 +420,7 @@ class PlatformScaffold extends StatelessWidget {
     this.backgroundColor,
     this.resizeToAvoidBottomInset = true,
     this.appBar,
+    this.scaffoldKey,
   }) : super(key: key);
 
   @override
@@ -436,6 +438,7 @@ class PlatformScaffold extends StatelessWidget {
 
     // Create scaffold with platform-specific adjustments
     return Scaffold(
+      key: scaffoldKey,
       appBar: effectiveAppBar,
       body: body,
       floatingActionButton: floatingActionButton,

@@ -27,10 +27,10 @@ class PlatformThemeExtension extends ThemeExtension<PlatformThemeExtension> {
 
   /// Factory method to create Android-specific theme extension
   factory PlatformThemeExtension.android() {
-    return PlatformThemeExtension(
+    return const PlatformThemeExtension(
       platformAccentColor: DesignSystem.secondaryColor,
       platformBorderRadius: DesignSystem.borderRadiusMedium,
-      platformContentPadding: const EdgeInsets.symmetric(
+      platformContentPadding: EdgeInsets.symmetric(
         horizontal: 16.0,
         vertical: 12.0,
       ),
@@ -45,10 +45,10 @@ class PlatformThemeExtension extends ThemeExtension<PlatformThemeExtension> {
 
   /// Factory method to create Windows-specific theme extension
   factory PlatformThemeExtension.windows() {
-    return PlatformThemeExtension(
+    return const PlatformThemeExtension(
       platformAccentColor: DesignSystem.primaryColor,
       platformBorderRadius: DesignSystem.borderRadiusLarge,
-      platformContentPadding: const EdgeInsets.symmetric(
+      platformContentPadding: EdgeInsets.symmetric(
         horizontal: 24.0,
         vertical: 16.0,
       ),
@@ -63,10 +63,10 @@ class PlatformThemeExtension extends ThemeExtension<PlatformThemeExtension> {
 
   /// Factory method to create web-specific theme extension
   factory PlatformThemeExtension.web() {
-    return PlatformThemeExtension(
+    return const PlatformThemeExtension(
       platformAccentColor: DesignSystem.accentColor,
       platformBorderRadius: DesignSystem.borderRadiusMedium,
-      platformContentPadding: const EdgeInsets.symmetric(
+      platformContentPadding: EdgeInsets.symmetric(
         horizontal: 20.0,
         vertical: 14.0,
       ),
@@ -108,13 +108,17 @@ class PlatformThemeExtension extends ThemeExtension<PlatformThemeExtension> {
     return PlatformThemeExtension(
       platformAccentColor: platformAccentColor ?? this.platformAccentColor,
       platformBorderRadius: platformBorderRadius ?? this.platformBorderRadius,
-      platformContentPadding: platformContentPadding ?? this.platformContentPadding,
+      platformContentPadding:
+          platformContentPadding ?? this.platformContentPadding,
       platformElevation: platformElevation ?? this.platformElevation,
-      platformAnimationDuration: platformAnimationDuration ?? this.platformAnimationDuration,
-      platformAnimationCurve: platformAnimationCurve ?? this.platformAnimationCurve,
+      platformAnimationDuration:
+          platformAnimationDuration ?? this.platformAnimationDuration,
+      platformAnimationCurve:
+          platformAnimationCurve ?? this.platformAnimationCurve,
       platformIconSize: platformIconSize ?? this.platformIconSize,
       platformButtonHeight: platformButtonHeight ?? this.platformButtonHeight,
-      platformCardElevation: platformCardElevation ?? this.platformCardElevation,
+      platformCardElevation:
+          platformCardElevation ?? this.platformCardElevation,
     );
   }
 
@@ -128,15 +132,23 @@ class PlatformThemeExtension extends ThemeExtension<PlatformThemeExtension> {
     }
 
     return PlatformThemeExtension(
-      platformAccentColor: Color.lerp(platformAccentColor, other.platformAccentColor, t)!,
-      platformBorderRadius: lerpDouble(platformBorderRadius, other.platformBorderRadius, t),
-      platformContentPadding: EdgeInsets.lerp(platformContentPadding, other.platformContentPadding, t)!,
-      platformElevation: lerpDouble(platformElevation, other.platformElevation, t),
-      platformAnimationDuration: lerpDuration(platformAnimationDuration, other.platformAnimationDuration, t),
-      platformAnimationCurve: t < 0.5 ? platformAnimationCurve : other.platformAnimationCurve,
+      platformAccentColor:
+          Color.lerp(platformAccentColor, other.platformAccentColor, t)!,
+      platformBorderRadius:
+          lerpDouble(platformBorderRadius, other.platformBorderRadius, t),
+      platformContentPadding: EdgeInsets.lerp(
+          platformContentPadding, other.platformContentPadding, t)!,
+      platformElevation:
+          lerpDouble(platformElevation, other.platformElevation, t),
+      platformAnimationDuration: lerpDuration(
+          platformAnimationDuration, other.platformAnimationDuration, t),
+      platformAnimationCurve:
+          t < 0.5 ? platformAnimationCurve : other.platformAnimationCurve,
       platformIconSize: lerpDouble(platformIconSize, other.platformIconSize, t),
-      platformButtonHeight: lerpDouble(platformButtonHeight, other.platformButtonHeight, t),
-      platformCardElevation: lerpDouble(platformCardElevation, other.platformCardElevation, t),
+      platformButtonHeight:
+          lerpDouble(platformButtonHeight, other.platformButtonHeight, t),
+      platformCardElevation:
+          lerpDouble(platformCardElevation, other.platformCardElevation, t),
     );
   }
 
@@ -148,7 +160,9 @@ class PlatformThemeExtension extends ThemeExtension<PlatformThemeExtension> {
   // Helper method to lerp durations
   Duration lerpDuration(Duration a, Duration b, double t) {
     return Duration(
-      milliseconds: lerpDouble(a.inMilliseconds.toDouble(), b.inMilliseconds.toDouble(), t).round(),
+      milliseconds: lerpDouble(
+              a.inMilliseconds.toDouble(), b.inMilliseconds.toDouble(), t)
+          .round(),
     );
   }
 }

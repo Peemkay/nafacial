@@ -237,6 +237,12 @@ class PersonnelDetailScreen extends StatelessWidget {
       case ServiceStatus.dismissed:
         chipColor = Colors.purple;
         break;
+      case ServiceStatus.discharged:
+        chipColor = Colors.teal;
+        break;
+      case ServiceStatus.deceased:
+        chipColor = Colors.black54;
+        break;
     }
 
     return Chip(
@@ -642,6 +648,10 @@ class PersonnelDetailScreen extends StatelessWidget {
         return Colors.grey;
       case ServiceStatus.dismissed:
         return Colors.purple;
+      case ServiceStatus.discharged:
+        return Colors.teal;
+      case ServiceStatus.deceased:
+        return Colors.black54;
     }
   }
 }

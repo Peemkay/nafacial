@@ -111,7 +111,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.security,
                               color: DesignSystem.accentColor,
                               size: 24,

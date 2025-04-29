@@ -1,6 +1,11 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../config/design_system.dart';
 import '../providers/personnel_provider.dart';
 import '../providers/access_log_provider.dart';
@@ -10,7 +15,277 @@ import '../models/personnel_model.dart';
 import '../models/access_log_model.dart';
 
 // Enum for sorting personnel
-enum SortField { name, rank, armyNumber, unit, corps, serviceStatus }
+enum SortField {
+  name,
+  rank,
+  armyNumber,
+  unit,
+  corps,
+  serviceStatus,
+  dateRegistered,
+  lastVerified,
+  yearsOfService,
+  dateOfBirth,
+  enlistmentDate
+}
+
+// Enum for sort direction
+enum SortDirection { ascending, descending }
+
+// Enum for view modes
+enum ViewMode { list, grid, details, cards, table, compact }
+
+// Class to represent a sort configuration
+class SortConfig {
+  final SortField field;
+  final SortDirection direction;
+
+  SortConfig(this.field, this.direction);
+
+  SortConfig copyWith({SortField? field, SortDirection? direction}) {
+    return SortConfig(
+      field ?? this.field,
+      direction ?? this.direction,
+    );
+  }
+
+  // For serialization
+  Map<String, dynamic> toJson() {
+    return {
+      'field': field.toString().split('.').last,
+      'direction': direction.toString().split('.').last,
+    };
+  }
+
+  // For deserialization
+  factory SortConfig.fromJson(Map<String, dynamic> json) {
+    return SortConfig(
+      SortField.values.firstWhere(
+        (e) => e.toString().split('.').last == json['field'],
+        orElse: () => SortField.name,
+      ),
+      SortDirection.values.firstWhere(
+        (e) => e.toString().split('.').last == json['direction'],
+        orElse: () => SortDirection.ascending,
+      ),
+    );
+  }
+}
+
+// Class to represent a filter configuration
+class FilterConfig {
+  final String? searchQuery;
+  final PersonnelCategory? category;
+  final Rank? rank;
+  final Corps? corps;
+  final ServiceStatus? serviceStatus;
+  final VerificationStatus? verificationStatus;
+  final DateTime? enlistmentDateStart;
+  final DateTime? enlistmentDateEnd;
+  final int? yearsOfServiceMin;
+  final int? yearsOfServiceMax;
+  final String? unit;
+
+  FilterConfig({
+    this.searchQuery,
+    this.category,
+    this.rank,
+    this.corps,
+    this.serviceStatus,
+    this.verificationStatus,
+    this.enlistmentDateStart,
+    this.enlistmentDateEnd,
+    this.yearsOfServiceMin,
+    this.yearsOfServiceMax,
+    this.unit,
+  });
+
+  FilterConfig copyWith({
+    String? searchQuery,
+    PersonnelCategory? category,
+    Rank? rank,
+    Corps? corps,
+    ServiceStatus? serviceStatus,
+    VerificationStatus? verificationStatus,
+    DateTime? enlistmentDateStart,
+    DateTime? enlistmentDateEnd,
+    int? yearsOfServiceMin,
+    int? yearsOfServiceMax,
+    String? unit,
+    bool clearSearchQuery = false,
+    bool clearCategory = false,
+    bool clearRank = false,
+    bool clearCorps = false,
+    bool clearServiceStatus = false,
+    bool clearVerificationStatus = false,
+    bool clearEnlistmentDateStart = false,
+    bool clearEnlistmentDateEnd = false,
+    bool clearYearsOfServiceMin = false,
+    bool clearYearsOfServiceMax = false,
+    bool clearUnit = false,
+  }) {
+    return FilterConfig(
+      searchQuery: clearSearchQuery ? null : searchQuery ?? this.searchQuery,
+      category: clearCategory ? null : category ?? this.category,
+      rank: clearRank ? null : rank ?? this.rank,
+      corps: clearCorps ? null : corps ?? this.corps,
+      serviceStatus:
+          clearServiceStatus ? null : serviceStatus ?? this.serviceStatus,
+      verificationStatus: clearVerificationStatus
+          ? null
+          : verificationStatus ?? this.verificationStatus,
+      enlistmentDateStart: clearEnlistmentDateStart
+          ? null
+          : enlistmentDateStart ?? this.enlistmentDateStart,
+      enlistmentDateEnd: clearEnlistmentDateEnd
+          ? null
+          : enlistmentDateEnd ?? this.enlistmentDateEnd,
+      yearsOfServiceMin: clearYearsOfServiceMin
+          ? null
+          : yearsOfServiceMin ?? this.yearsOfServiceMin,
+      yearsOfServiceMax: clearYearsOfServiceMax
+          ? null
+          : yearsOfServiceMax ?? this.yearsOfServiceMax,
+      unit: clearUnit ? null : unit ?? this.unit,
+    );
+  }
+
+  bool get isEmpty =>
+      searchQuery == null &&
+      category == null &&
+      rank == null &&
+      corps == null &&
+      serviceStatus == null &&
+      verificationStatus == null &&
+      enlistmentDateStart == null &&
+      enlistmentDateEnd == null &&
+      yearsOfServiceMin == null &&
+      yearsOfServiceMax == null &&
+      unit == null;
+
+  int get activeFilterCount {
+    int count = 0;
+    if (searchQuery != null && searchQuery!.isNotEmpty) count++;
+    if (category != null) count++;
+    if (rank != null) count++;
+    if (corps != null) count++;
+    if (serviceStatus != null) count++;
+    if (verificationStatus != null) count++;
+    if (enlistmentDateStart != null) count++;
+    if (enlistmentDateEnd != null) count++;
+    if (yearsOfServiceMin != null) count++;
+    if (yearsOfServiceMax != null) count++;
+    if (unit != null && unit!.isNotEmpty) count++;
+    return count;
+  }
+
+  // For serialization
+  Map<String, dynamic> toJson() {
+    return {
+      'searchQuery': searchQuery,
+      'category': category?.toString().split('.').last,
+      'rank': rank?.toString().split('.').last,
+      'corps': corps?.toString().split('.').last,
+      'serviceStatus': serviceStatus?.toString().split('.').last,
+      'verificationStatus': verificationStatus?.toString().split('.').last,
+      'enlistmentDateStart': enlistmentDateStart?.toIso8601String(),
+      'enlistmentDateEnd': enlistmentDateEnd?.toIso8601String(),
+      'yearsOfServiceMin': yearsOfServiceMin,
+      'yearsOfServiceMax': yearsOfServiceMax,
+      'unit': unit,
+    };
+  }
+
+  // For deserialization
+  factory FilterConfig.fromJson(Map<String, dynamic> json) {
+    PersonnelCategory? category;
+    if (json['category'] != null) {
+      try {
+        category = PersonnelCategory.values.firstWhere(
+          (e) => e.toString().split('.').last == json['category'],
+        );
+      } catch (_) {}
+    }
+
+    Rank? rank;
+    if (json['rank'] != null) {
+      try {
+        rank = Rank.values.firstWhere(
+          (e) => e.toString().split('.').last == json['rank'],
+        );
+      } catch (_) {}
+    }
+
+    Corps? corps;
+    if (json['corps'] != null) {
+      try {
+        corps = Corps.values.firstWhere(
+          (e) => e.toString().split('.').last == json['corps'],
+        );
+      } catch (_) {}
+    }
+
+    ServiceStatus? serviceStatus;
+    if (json['serviceStatus'] != null) {
+      try {
+        serviceStatus = ServiceStatus.values.firstWhere(
+          (e) => e.toString().split('.').last == json['serviceStatus'],
+        );
+      } catch (_) {}
+    }
+
+    VerificationStatus? verificationStatus;
+    if (json['verificationStatus'] != null) {
+      try {
+        verificationStatus = VerificationStatus.values.firstWhere(
+          (e) => e.toString().split('.').last == json['verificationStatus'],
+        );
+      } catch (_) {}
+    }
+
+    return FilterConfig(
+      searchQuery: json['searchQuery'],
+      category: category,
+      rank: rank,
+      corps: corps,
+      serviceStatus: serviceStatus,
+      verificationStatus: verificationStatus,
+      enlistmentDateStart: json['enlistmentDateStart'] != null
+          ? DateTime.parse(json['enlistmentDateStart'])
+          : null,
+      enlistmentDateEnd: json['enlistmentDateEnd'] != null
+          ? DateTime.parse(json['enlistmentDateEnd'])
+          : null,
+      yearsOfServiceMin: json['yearsOfServiceMin'],
+      yearsOfServiceMax: json['yearsOfServiceMax'],
+      unit: json['unit'],
+    );
+  }
+}
+
+// Class to represent a saved filter preset
+class FilterPreset {
+  final String name;
+  final FilterConfig filterConfig;
+
+  FilterPreset(this.name, this.filterConfig);
+
+  // For serialization
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'filterConfig': filterConfig.toJson(),
+    };
+  }
+
+  // For deserialization
+  factory FilterPreset.fromJson(Map<String, dynamic> json) {
+    return FilterPreset(
+      json['name'],
+      FilterConfig.fromJson(json['filterConfig']),
+    );
+  }
+}
 
 class PersonnelDatabaseScreen extends StatefulWidget {
   const PersonnelDatabaseScreen({Key? key}) : super(key: key);
@@ -21,18 +296,131 @@ class PersonnelDatabaseScreen extends StatefulWidget {
 }
 
 class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
-  // Search query
-  String _searchQuery = '';
+  // Filter configuration
+  FilterConfig _filterConfig = FilterConfig();
 
-  // Filtering options
-  PersonnelCategory? _selectedCategory;
-  Rank? _selectedRank;
-  Corps? _selectedCorps;
-  ServiceStatus? _selectedServiceStatus;
+  // List of saved filter presets
+  List<FilterPreset> _filterPresets = [];
 
-  // Sorting options
-  SortField _sortField = SortField.name;
-  bool _sortAscending = true;
+  // Primary sort configuration
+  SortConfig _primarySort = SortConfig(SortField.name, SortDirection.ascending);
+
+  // Secondary sort configuration (optional)
+  SortConfig? _secondarySort;
+
+  // View mode
+  ViewMode _viewMode = ViewMode.list;
+
+  // Show filter panel
+  bool _showFilterPanel = false;
+
+  // Show advanced options
+  bool _showAdvancedOptions = false;
+
+  // For backward compatibility
+  String get _searchQuery => _filterConfig.searchQuery ?? '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  // Load all saved preferences
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Load view mode
+    final viewModeIndex = prefs.getInt('personnel_view_mode');
+    if (viewModeIndex != null &&
+        viewModeIndex >= 0 &&
+        viewModeIndex < ViewMode.values.length) {
+      setState(() {
+        _viewMode = ViewMode.values[viewModeIndex];
+      });
+    }
+
+    // Load sort configuration
+    final sortFieldString = prefs.getString('personnel_sort_field');
+    final sortDirection = prefs.getBool('personnel_sort_ascending');
+
+    if (sortFieldString != null) {
+      try {
+        final sortField = SortField.values.firstWhere(
+          (field) => field.toString().split('.').last == sortFieldString,
+          orElse: () => SortField.name,
+        );
+
+        setState(() {
+          _primarySort = SortConfig(
+            sortField,
+            sortDirection == false
+                ? SortDirection.descending
+                : SortDirection.ascending,
+          );
+        });
+      } catch (e) {
+        // Ignore errors and use default
+      }
+    }
+
+    // Load filter presets
+    final presetsJson = prefs.getString('personnel_filter_presets');
+    if (presetsJson != null) {
+      try {
+        final List<dynamic> presetsList = jsonDecode(presetsJson);
+        setState(() {
+          _filterPresets =
+              presetsList.map((json) => FilterPreset.fromJson(json)).toList();
+        });
+      } catch (e) {
+        // Ignore errors and use empty list
+      }
+    }
+
+    // Load last used filter
+    final lastFilterJson = prefs.getString('personnel_last_filter');
+    if (lastFilterJson != null) {
+      try {
+        setState(() {
+          _filterConfig = FilterConfig.fromJson(jsonDecode(lastFilterJson));
+        });
+      } catch (e) {
+        // Ignore errors and use default
+      }
+    }
+  }
+
+  // Save all preferences
+  Future<void> _savePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Save view mode
+    await prefs.setInt('personnel_view_mode', _viewMode.index);
+
+    // Save sort configuration
+    await prefs.setString(
+        'personnel_sort_field', _primarySort.field.toString().split('.').last);
+    await prefs.setBool('personnel_sort_ascending',
+        _primarySort.direction == SortDirection.ascending);
+
+    // Save filter presets
+    final presetsJson =
+        jsonEncode(_filterPresets.map((preset) => preset.toJson()).toList());
+    await prefs.setString('personnel_filter_presets', presetsJson);
+
+    // Save last used filter
+    final lastFilterJson = jsonEncode(_filterConfig.toJson());
+    await prefs.setString('personnel_last_filter', lastFilterJson);
+  }
+
+  // Save the current view mode preference
+  Future<void> _saveViewModePreference(ViewMode mode) async {
+    setState(() {
+      _viewMode = mode;
+    });
+    await _savePreferences();
+  }
 
   // Helper method to get category text
   String _getCategoryText(PersonnelCategory category) {
@@ -45,6 +433,142 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
         return 'Soldier (Male)';
       case PersonnelCategory.soldierFemale:
         return 'Soldier (Female)';
+    }
+  }
+
+  // Helper method to get sort field text
+  String _getSortFieldText(SortField field) {
+    switch (field) {
+      case SortField.name:
+        return 'Name';
+      case SortField.rank:
+        return 'Rank';
+      case SortField.armyNumber:
+        return 'Army Number';
+      case SortField.unit:
+        return 'Unit';
+      case SortField.corps:
+        return 'Corps';
+      case SortField.serviceStatus:
+        return 'Service Status';
+      case SortField.dateRegistered:
+        return 'Date Registered';
+      case SortField.lastVerified:
+        return 'Last Verified';
+      case SortField.yearsOfService:
+        return 'Years of Service';
+      case SortField.dateOfBirth:
+        return 'Date of Birth';
+      case SortField.enlistmentDate:
+        return 'Enlistment Date';
+    }
+  }
+
+  // Helper method to compare personnel for sorting
+  int _comparePersonnel(
+      Personnel a, Personnel b, SortField field, SortDirection direction) {
+    int result;
+
+    switch (field) {
+      case SortField.name:
+        result = a.fullName.compareTo(b.fullName);
+        break;
+      case SortField.rank:
+        result = a.rank.index.compareTo(b.rank.index);
+        break;
+      case SortField.armyNumber:
+        result = a.armyNumber.compareTo(b.armyNumber);
+        break;
+      case SortField.unit:
+        result = a.unit.compareTo(b.unit);
+        break;
+      case SortField.corps:
+        result = a.corps.index.compareTo(b.corps.index);
+        break;
+      case SortField.serviceStatus:
+        result = a.serviceStatus.index.compareTo(b.serviceStatus.index);
+        break;
+      case SortField.dateRegistered:
+        result = a.dateRegistered.compareTo(b.dateRegistered);
+        break;
+      case SortField.lastVerified:
+        // Handle null values for lastVerified
+        if (a.lastVerified == null && b.lastVerified == null) {
+          result = 0;
+        } else if (a.lastVerified == null) {
+          result = -1;
+        } else if (b.lastVerified == null) {
+          result = 1;
+        } else {
+          result = a.lastVerified!.compareTo(b.lastVerified!);
+        }
+        break;
+      case SortField.yearsOfService:
+        result = a.yearsOfService.compareTo(b.yearsOfService);
+        break;
+      case SortField.dateOfBirth:
+        // Handle null values for dateOfBirth
+        if (a.dateOfBirth == null && b.dateOfBirth == null) {
+          result = 0;
+        } else if (a.dateOfBirth == null) {
+          result = -1;
+        } else if (b.dateOfBirth == null) {
+          result = 1;
+        } else {
+          result = a.dateOfBirth!.compareTo(b.dateOfBirth!);
+        }
+        break;
+      case SortField.enlistmentDate:
+        // Handle null values for enlistmentDate
+        if (a.enlistmentDate == null && b.enlistmentDate == null) {
+          result = 0;
+        } else if (a.enlistmentDate == null) {
+          result = -1;
+        } else if (b.enlistmentDate == null) {
+          result = 1;
+        } else {
+          result = a.enlistmentDate!.compareTo(b.enlistmentDate!);
+        }
+        break;
+    }
+
+    // Apply sort direction
+    return direction == SortDirection.ascending ? result : -result;
+  }
+
+  // Helper method to get view mode text
+  String _getViewModeText(ViewMode mode) {
+    switch (mode) {
+      case ViewMode.list:
+        return 'List View';
+      case ViewMode.grid:
+        return 'Grid View';
+      case ViewMode.details:
+        return 'Details View';
+      case ViewMode.cards:
+        return 'Cards View';
+      case ViewMode.table:
+        return 'Table View';
+      case ViewMode.compact:
+        return 'Compact View';
+    }
+  }
+
+  // Helper method to get view mode icon
+  IconData _getViewModeIcon(ViewMode mode) {
+    switch (mode) {
+      case ViewMode.list:
+        return Icons.view_list;
+      case ViewMode.grid:
+        return Icons.grid_view;
+      case ViewMode.details:
+        return Icons.view_agenda;
+      case ViewMode.cards:
+        return Icons.view_module;
+      case ViewMode.table:
+        return Icons.table_chart;
+      case ViewMode.compact:
+        return Icons.view_compact;
     }
   }
 
@@ -103,11 +627,8 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
 
   // Show filter dialog
   void _showFilterDialog(BuildContext context) {
-    // Create temporary variables to hold filter values
-    PersonnelCategory? tempCategory = _selectedCategory;
-    Rank? tempRank = _selectedRank;
-    Corps? tempCorps = _selectedCorps;
-    ServiceStatus? tempServiceStatus = _selectedServiceStatus;
+    // Create a temporary filter config to hold values during editing
+    FilterConfig tempFilterConfig = _filterConfig;
 
     showDialog(
       context: context,
@@ -120,6 +641,32 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Search filter
+                  TextFormField(
+                    decoration: InputDecoration(
+                      hintText: 'Search by name, army number, or unit',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                    ),
+                    initialValue: tempFilterConfig.searchQuery,
+                    onChanged: (value) {
+                      // Update dialog state
+                      setDialogState(() {
+                        tempFilterConfig = tempFilterConfig.copyWith(
+                          searchQuery: value.trim(),
+                          clearSearchQuery: value.trim().isEmpty,
+                        );
+                      });
+                      // Apply filter immediately to parent state
+                      setState(() {
+                        _filterConfig = tempFilterConfig;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
                   // Category filter
                   const Text(
                     'Category:',
@@ -132,15 +679,18 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
                     children: PersonnelCategory.values.map((category) {
                       return FilterChip(
                         label: Text(_getCategoryText(category)),
-                        selected: tempCategory == category,
+                        selected: tempFilterConfig.category == category,
                         onSelected: (selected) {
                           // Update dialog state
                           setDialogState(() {
-                            tempCategory = selected ? category : null;
+                            tempFilterConfig = tempFilterConfig.copyWith(
+                              category: selected ? category : null,
+                              clearCategory: !selected,
+                            );
                           });
                           // Apply filter immediately to parent state
                           setState(() {
-                            _selectedCategory = tempCategory;
+                            _filterConfig = tempFilterConfig;
                           });
                         },
                       );
@@ -160,15 +710,18 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
                     children: Rank.values.map((rank) {
                       return FilterChip(
                         label: Text(rank.shortName),
-                        selected: tempRank == rank,
+                        selected: tempFilterConfig.rank == rank,
                         onSelected: (selected) {
                           // Update dialog state
                           setDialogState(() {
-                            tempRank = selected ? rank : null;
+                            tempFilterConfig = tempFilterConfig.copyWith(
+                              rank: selected ? rank : null,
+                              clearRank: !selected,
+                            );
                           });
                           // Apply filter immediately to parent state
                           setState(() {
-                            _selectedRank = tempRank;
+                            _filterConfig = tempFilterConfig;
                           });
                         },
                       );
@@ -188,15 +741,18 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
                     children: Corps.values.map((corps) {
                       return FilterChip(
                         label: Text(_getCorpsText(corps)),
-                        selected: tempCorps == corps,
+                        selected: tempFilterConfig.corps == corps,
                         onSelected: (selected) {
                           // Update dialog state
                           setDialogState(() {
-                            tempCorps = selected ? corps : null;
+                            tempFilterConfig = tempFilterConfig.copyWith(
+                              corps: selected ? corps : null,
+                              clearCorps: !selected,
+                            );
                           });
                           // Apply filter immediately to parent state
                           setState(() {
-                            _selectedCorps = tempCorps;
+                            _filterConfig = tempFilterConfig;
                           });
                         },
                       );
@@ -216,19 +772,157 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
                     children: ServiceStatus.values.map((status) {
                       return FilterChip(
                         label: Text(status.displayName),
-                        selected: tempServiceStatus == status,
+                        selected: tempFilterConfig.serviceStatus == status,
                         onSelected: (selected) {
                           // Update dialog state
                           setDialogState(() {
-                            tempServiceStatus = selected ? status : null;
+                            tempFilterConfig = tempFilterConfig.copyWith(
+                              serviceStatus: selected ? status : null,
+                              clearServiceStatus: !selected,
+                            );
                           });
                           // Apply filter immediately to parent state
                           setState(() {
-                            _selectedServiceStatus = tempServiceStatus;
+                            _filterConfig = tempFilterConfig;
                           });
                         },
                       );
                     }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Verification status filter
+                  const Text(
+                    'Verification Status:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Wrap(
+                    spacing: 8,
+                    children: VerificationStatus.values.map((status) {
+                      return FilterChip(
+                        label: Text(_getVerificationStatusText(status)),
+                        selected: tempFilterConfig.verificationStatus == status,
+                        onSelected: (selected) {
+                          // Update dialog state
+                          setDialogState(() {
+                            tempFilterConfig = tempFilterConfig.copyWith(
+                              verificationStatus: selected ? status : null,
+                              clearVerificationStatus: !selected,
+                            );
+                          });
+                          // Apply filter immediately to parent state
+                          setState(() {
+                            _filterConfig = tempFilterConfig;
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+
+                  // Advanced filters section
+                  ExpansionTile(
+                    title: const Text('Advanced Filters'),
+                    initiallyExpanded: _showAdvancedOptions,
+                    onExpansionChanged: (expanded) {
+                      setState(() {
+                        _showAdvancedOptions = expanded;
+                      });
+                    },
+                    children: [
+                      // Unit filter
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: TextFormField(
+                          decoration: InputDecoration(
+                            labelText: 'Unit',
+                            hintText: 'Filter by unit',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                          ),
+                          initialValue: tempFilterConfig.unit,
+                          onChanged: (value) {
+                            // Update dialog state
+                            setDialogState(() {
+                              tempFilterConfig = tempFilterConfig.copyWith(
+                                unit: value.trim(),
+                                clearUnit: value.trim().isEmpty,
+                              );
+                            });
+                            // Apply filter immediately to parent state
+                            setState(() {
+                              _filterConfig = tempFilterConfig;
+                            });
+                          },
+                        ),
+                      ),
+
+                      // Years of service range
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                decoration: const InputDecoration(
+                                  labelText: 'Min Years',
+                                  hintText: 'Min',
+                                ),
+                                keyboardType: TextInputType.number,
+                                initialValue: tempFilterConfig.yearsOfServiceMin
+                                    ?.toString(),
+                                onChanged: (value) {
+                                  // Update dialog state
+                                  setDialogState(() {
+                                    tempFilterConfig =
+                                        tempFilterConfig.copyWith(
+                                      yearsOfServiceMin: value.isNotEmpty
+                                          ? int.tryParse(value)
+                                          : null,
+                                      clearYearsOfServiceMin: value.isEmpty,
+                                    );
+                                  });
+                                  // Apply filter immediately to parent state
+                                  setState(() {
+                                    _filterConfig = tempFilterConfig;
+                                  });
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextFormField(
+                                decoration: const InputDecoration(
+                                  labelText: 'Max Years',
+                                  hintText: 'Max',
+                                ),
+                                keyboardType: TextInputType.number,
+                                initialValue: tempFilterConfig.yearsOfServiceMax
+                                    ?.toString(),
+                                onChanged: (value) {
+                                  // Update dialog state
+                                  setDialogState(() {
+                                    tempFilterConfig =
+                                        tempFilterConfig.copyWith(
+                                      yearsOfServiceMax: value.isNotEmpty
+                                          ? int.tryParse(value)
+                                          : null,
+                                      clearYearsOfServiceMax: value.isEmpty,
+                                    );
+                                  });
+                                  // Apply filter immediately to parent state
+                                  setState(() {
+                                    _filterConfig = tempFilterConfig;
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -244,20 +938,31 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
                 onPressed: () {
                   // Clear all filters
                   setDialogState(() {
-                    tempCategory = null;
-                    tempRank = null;
-                    tempCorps = null;
-                    tempServiceStatus = null;
+                    tempFilterConfig = FilterConfig();
                   });
                   // Apply to parent state
                   setState(() {
-                    _selectedCategory = null;
-                    _selectedRank = null;
-                    _selectedCorps = null;
-                    _selectedServiceStatus = null;
+                    _filterConfig = FilterConfig();
                   });
+                  // Save preferences
+                  _savePreferences();
                 },
                 child: const Text('CLEAR ALL'),
+              ),
+              TextButton(
+                onPressed: () {
+                  // Save filter as preset
+                  if (tempFilterConfig.activeFilterCount > 0) {
+                    _showSaveFilterPresetDialog(context, tempFilterConfig);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Cannot save empty filter'),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('SAVE FILTER'),
               ),
             ],
           );
@@ -266,89 +971,338 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
     );
   }
 
-  // Show sort dialog
-  void _showSortDialog(BuildContext context) {
+  // Show dialog to save filter preset
+  void _showSaveFilterPresetDialog(
+      BuildContext context, FilterConfig filterConfig) {
+    String presetName = '';
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Sort Personnel'),
+        title: const Text('Save Filter Preset'),
+        content: TextField(
+          decoration: const InputDecoration(
+            labelText: 'Preset Name',
+            hintText: 'Enter a name for this filter preset',
+          ),
+          onChanged: (value) {
+            presetName = value;
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (presetName.isNotEmpty) {
+                setState(() {
+                  _filterPresets.add(FilterPreset(presetName, filterConfig));
+                });
+                _savePreferences();
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Filter preset "$presetName" saved'),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a name for the preset'),
+                  ),
+                );
+              }
+            },
+            child: const Text('SAVE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Show sort dialog
+  void _showSortDialog(BuildContext context) {
+    // Create temporary sort config
+    SortConfig tempPrimarySort = _primarySort;
+    SortConfig? tempSecondarySort = _secondarySort;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Sort Personnel'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Primary sort
+                  const Text(
+                    'Primary Sort:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Field selection
+                  DropdownButtonFormField<SortField>(
+                    decoration: const InputDecoration(
+                      labelText: 'Sort by',
+                      border: OutlineInputBorder(),
+                    ),
+                    value: tempPrimarySort.field,
+                    items: SortField.values.map((field) {
+                      return DropdownMenuItem<SortField>(
+                        value: field,
+                        child: Text(_getSortFieldText(field)),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() {
+                          tempPrimarySort =
+                              tempPrimarySort.copyWith(field: value);
+                        });
+                      }
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Direction selection
+                  Row(
+                    children: [
+                      Expanded(
+                        child: RadioListTile<SortDirection>(
+                          title: const Text('Ascending'),
+                          value: SortDirection.ascending,
+                          groupValue: tempPrimarySort.direction,
+                          onChanged: (value) {
+                            if (value != null) {
+                              setDialogState(() {
+                                tempPrimarySort =
+                                    tempPrimarySort.copyWith(direction: value);
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: RadioListTile<SortDirection>(
+                          title: const Text('Descending'),
+                          value: SortDirection.descending,
+                          groupValue: tempPrimarySort.direction,
+                          onChanged: (value) {
+                            if (value != null) {
+                              setDialogState(() {
+                                tempPrimarySort =
+                                    tempPrimarySort.copyWith(direction: value);
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const Divider(),
+
+                  // Secondary sort (optional)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Secondary Sort:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Switch(
+                        value: tempSecondarySort != null,
+                        onChanged: (value) {
+                          setDialogState(() {
+                            if (value) {
+                              // Enable secondary sort with a default that's different from primary
+                              final availableFields = SortField.values
+                                  .where(
+                                      (field) => field != tempPrimarySort.field)
+                                  .toList();
+
+                              tempSecondarySort = SortConfig(
+                                  availableFields.first,
+                                  SortDirection.ascending);
+                            } else {
+                              // Disable secondary sort
+                              tempSecondarySort = null;
+                            }
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+
+                  if (tempSecondarySort != null) ...[
+                    const SizedBox(height: 8),
+
+                    // Secondary field selection
+                    DropdownButtonFormField<SortField>(
+                      decoration: const InputDecoration(
+                        labelText: 'Sort by',
+                        border: OutlineInputBorder(),
+                      ),
+                      value: tempSecondarySort!.field,
+                      items: SortField.values
+                          .where((field) => field != tempPrimarySort.field)
+                          .map((field) {
+                        return DropdownMenuItem<SortField>(
+                          value: field,
+                          child: Text(_getSortFieldText(field)),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setDialogState(() {
+                            tempSecondarySort =
+                                tempSecondarySort!.copyWith(field: value);
+                          });
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Secondary direction selection
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<SortDirection>(
+                            title: const Text('Ascending'),
+                            value: SortDirection.ascending,
+                            groupValue: tempSecondarySort!.direction,
+                            onChanged: (value) {
+                              if (value != null) {
+                                setDialogState(() {
+                                  tempSecondarySort = tempSecondarySort!
+                                      .copyWith(direction: value);
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: RadioListTile<SortDirection>(
+                            title: const Text('Descending'),
+                            value: SortDirection.descending,
+                            groupValue: tempSecondarySort!.direction,
+                            onChanged: (value) {
+                              if (value != null) {
+                                setDialogState(() {
+                                  tempSecondarySort = tempSecondarySort!
+                                      .copyWith(direction: value);
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('CANCEL'),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _primarySort = tempPrimarySort;
+                    _secondarySort = tempSecondarySort;
+                  });
+                  _savePreferences();
+                  Navigator.of(context).pop();
+                },
+                child: const Text('APPLY'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // Show view mode dialog
+  void _showViewModeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select View Mode'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            RadioListTile<SortField>(
-              title: const Text('Name'),
-              value: SortField.name,
-              groupValue: _sortField,
+            RadioListTile<ViewMode>(
+              title: const Text('List View'),
+              subtitle: const Text('Compact list of personnel'),
+              value: ViewMode.list,
+              groupValue: _viewMode,
+              secondary: const Icon(Icons.view_list),
               onChanged: (value) {
                 setState(() {
-                  _sortField = value!;
+                  _viewMode = value!;
                 });
+                _saveViewModePreference(value!);
                 Navigator.of(context).pop();
               },
             ),
-            RadioListTile<SortField>(
-              title: const Text('Rank'),
-              value: SortField.rank,
-              groupValue: _sortField,
+            RadioListTile<ViewMode>(
+              title: const Text('Grid View'),
+              subtitle: const Text('Grid of personnel cards'),
+              value: ViewMode.grid,
+              groupValue: _viewMode,
+              secondary: const Icon(Icons.grid_view),
               onChanged: (value) {
                 setState(() {
-                  _sortField = value!;
+                  _viewMode = value!;
                 });
+                _saveViewModePreference(value!);
                 Navigator.of(context).pop();
               },
             ),
-            RadioListTile<SortField>(
-              title: const Text('Army Number'),
-              value: SortField.armyNumber,
-              groupValue: _sortField,
+            RadioListTile<ViewMode>(
+              title: const Text('Details View'),
+              subtitle: const Text('Detailed information'),
+              value: ViewMode.details,
+              groupValue: _viewMode,
+              secondary: const Icon(Icons.view_agenda),
               onChanged: (value) {
                 setState(() {
-                  _sortField = value!;
+                  _viewMode = value!;
                 });
+                _saveViewModePreference(value!);
                 Navigator.of(context).pop();
               },
             ),
-            RadioListTile<SortField>(
-              title: const Text('Unit'),
-              value: SortField.unit,
-              groupValue: _sortField,
+            RadioListTile<ViewMode>(
+              title: const Text('Cards View'),
+              subtitle: const Text('Visual card layout'),
+              value: ViewMode.cards,
+              groupValue: _viewMode,
+              secondary: const Icon(Icons.view_module),
               onChanged: (value) {
                 setState(() {
-                  _sortField = value!;
+                  _viewMode = value!;
                 });
-                Navigator.of(context).pop();
-              },
-            ),
-            RadioListTile<SortField>(
-              title: const Text('Corps'),
-              value: SortField.corps,
-              groupValue: _sortField,
-              onChanged: (value) {
-                setState(() {
-                  _sortField = value!;
-                });
-                Navigator.of(context).pop();
-              },
-            ),
-            RadioListTile<SortField>(
-              title: const Text('Service Status'),
-              value: SortField.serviceStatus,
-              groupValue: _sortField,
-              onChanged: (value) {
-                setState(() {
-                  _sortField = value!;
-                });
-                Navigator.of(context).pop();
-              },
-            ),
-            const Divider(),
-            SwitchListTile(
-              title: const Text('Ascending Order'),
-              value: _sortAscending,
-              onChanged: (value) {
-                setState(() {
-                  _sortAscending = value;
-                });
+                _saveViewModePreference(value!);
                 Navigator.of(context).pop();
               },
             ),
@@ -368,64 +1322,77 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
     // Apply filters to personnel list
     final filteredPersonnel = personnelProvider.allPersonnel.where((personnel) {
       // Apply search filter
-      final matchesSearch = _searchQuery.isEmpty ||
+      final matchesSearch = _filterConfig.searchQuery == null ||
+          _filterConfig.searchQuery!.isEmpty ||
           personnel.fullName
               .toLowerCase()
-              .contains(_searchQuery.toLowerCase()) ||
+              .contains(_filterConfig.searchQuery!.toLowerCase()) ||
           personnel.armyNumber
               .toLowerCase()
-              .contains(_searchQuery.toLowerCase()) ||
-          personnel.unit.toLowerCase().contains(_searchQuery.toLowerCase());
+              .contains(_filterConfig.searchQuery!.toLowerCase()) ||
+          personnel.unit
+              .toLowerCase()
+              .contains(_filterConfig.searchQuery!.toLowerCase());
 
       // Apply category filter
-      final matchesCategory =
-          _selectedCategory == null || personnel.category == _selectedCategory;
+      final matchesCategory = _filterConfig.category == null ||
+          personnel.category == _filterConfig.category;
 
       // Apply rank filter
       final matchesRank =
-          _selectedRank == null || personnel.rank == _selectedRank;
+          _filterConfig.rank == null || personnel.rank == _filterConfig.rank;
 
       // Apply corps filter
       final matchesCorps =
-          _selectedCorps == null || personnel.corps == _selectedCorps;
+          _filterConfig.corps == null || personnel.corps == _filterConfig.corps;
 
       // Apply service status filter
-      final matchesServiceStatus = _selectedServiceStatus == null ||
-          personnel.serviceStatus == _selectedServiceStatus;
+      final matchesServiceStatus = _filterConfig.serviceStatus == null ||
+          personnel.serviceStatus == _filterConfig.serviceStatus;
+
+      // Apply verification status filter
+      final matchesVerificationStatus =
+          _filterConfig.verificationStatus == null ||
+              personnel.status == _filterConfig.verificationStatus;
+
+      // Apply unit filter
+      final matchesUnit = _filterConfig.unit == null ||
+          _filterConfig.unit!.isEmpty ||
+          personnel.unit
+              .toLowerCase()
+              .contains(_filterConfig.unit!.toLowerCase());
+
+      // Apply years of service filter
+      final matchesYearsOfService = (_filterConfig.yearsOfServiceMin == null ||
+              personnel.yearsOfService >= _filterConfig.yearsOfServiceMin!) &&
+          (_filterConfig.yearsOfServiceMax == null ||
+              personnel.yearsOfService <= _filterConfig.yearsOfServiceMax!);
 
       return matchesSearch &&
           matchesCategory &&
           matchesRank &&
           matchesCorps &&
-          matchesServiceStatus;
+          matchesServiceStatus &&
+          matchesVerificationStatus &&
+          matchesUnit &&
+          matchesYearsOfService;
     }).toList();
 
     // Sort the filtered list
     filteredPersonnel.sort((a, b) {
       int result;
 
-      switch (_sortField) {
-        case SortField.name:
-          result = a.fullName.compareTo(b.fullName);
-          break;
-        case SortField.rank:
-          result = a.rank.index.compareTo(b.rank.index);
-          break;
-        case SortField.armyNumber:
-          result = a.armyNumber.compareTo(b.armyNumber);
-          break;
-        case SortField.unit:
-          result = a.unit.compareTo(b.unit);
-          break;
-        case SortField.corps:
-          result = a.corps.index.compareTo(b.corps.index);
-          break;
-        case SortField.serviceStatus:
-          result = a.serviceStatus.index.compareTo(b.serviceStatus.index);
-          break;
+      // Primary sort
+      result =
+          _comparePersonnel(a, b, _primarySort.field, _primarySort.direction);
+
+      // Secondary sort if needed
+      if (result == 0 && _secondarySort != null) {
+        result = _comparePersonnel(
+            a, b, _secondarySort!.field, _secondarySort!.direction);
       }
 
-      return _sortAscending ? result : -result;
+      return result;
     });
 
     return Scaffold(
@@ -464,16 +1431,20 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
                     borderRadius: BorderRadius.circular(8.0),
                   ),
                 ),
+                controller: TextEditingController(text: _searchQuery),
                 onChanged: (value) {
                   setState(() {
                     // Update search query
-                    _searchQuery = value.trim();
+                    _filterConfig = _filterConfig.copyWith(
+                      searchQuery: value.trim(),
+                      clearSearchQuery: value.trim().isEmpty,
+                    );
                   });
                 },
               ),
               const SizedBox(height: 16),
 
-              // Filter and sort controls
+              // Filter, sort, and view controls
               Row(
                 children: [
                   Expanded(
@@ -499,95 +1470,435 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: Icon(_getViewModeIcon(_viewMode)),
+                      label: const Text('View'),
+                      onPressed: () => _showViewModeDialog(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: DesignSystem.primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
                 ],
               ),
 
-              // Active filters display
-              if (_selectedCategory != null ||
-                  _selectedRank != null ||
-                  _selectedCorps != null ||
-                  _selectedServiceStatus != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
+              // Filter panel
+              if (_filterConfig.activeFilterCount > 0 || _showFilterPanel)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  height: _showFilterPanel ? null : 50,
+                  child: Card(
+                    margin: const EdgeInsets.only(bottom: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (_selectedCategory != null)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: Chip(
-                              label: Text(
-                                  'Category: ${_getCategoryText(_selectedCategory!)}'),
-                              onDeleted: () {
-                                setState(() {
-                                  _selectedCategory = null;
-                                });
-                              },
+                        // Header with filter count and toggle
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              _showFilterPanel = !_showFilterPanel;
+                            });
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0, vertical: 8.0),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Active Filters (${_filterConfig.activeFilterCount})',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const Spacer(),
+                                if (_filterConfig.activeFilterCount > 0)
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _filterConfig = FilterConfig();
+                                      });
+                                      _savePreferences();
+                                    },
+                                    child: const Text('Clear All'),
+                                  ),
+                                IconButton(
+                                  icon: Icon(_showFilterPanel
+                                      ? Icons.expand_less
+                                      : Icons.expand_more),
+                                  onPressed: () {
+                                    setState(() {
+                                      _showFilterPanel = !_showFilterPanel;
+                                    });
+                                  },
+                                ),
+                              ],
                             ),
                           ),
-                        if (_selectedRank != null)
+                        ),
+
+                        // Filter chips
+                        if (_showFilterPanel)
                           Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: Chip(
-                              label: Text('Rank: ${_selectedRank!.shortName}'),
-                              onDeleted: () {
-                                setState(() {
-                                  _selectedRank = null;
-                                });
-                              },
+                            padding: const EdgeInsets.only(
+                                left: 16.0, right: 16.0, bottom: 16.0),
+                            child: Wrap(
+                              spacing: 8.0,
+                              runSpacing: 8.0,
+                              children: [
+                                if (_filterConfig.searchQuery != null &&
+                                    _filterConfig.searchQuery!.isNotEmpty)
+                                  Chip(
+                                    avatar: const Icon(Icons.search, size: 16),
+                                    label: Text(
+                                        'Search: ${_filterConfig.searchQuery}'),
+                                    deleteIcon:
+                                        const Icon(Icons.close, size: 16),
+                                    backgroundColor:
+                                        DesignSystem.primaryColor.withAlpha(50),
+                                    deleteIconColor: DesignSystem.primaryColor,
+                                    onDeleted: () {
+                                      setState(() {
+                                        _filterConfig = _filterConfig.copyWith(
+                                          clearSearchQuery: true,
+                                        );
+                                      });
+                                    },
+                                  ),
+                                if (_filterConfig.category != null)
+                                  Chip(
+                                    avatar:
+                                        const Icon(Icons.category, size: 16),
+                                    label: Text(_getCategoryText(
+                                        _filterConfig.category!)),
+                                    deleteIcon:
+                                        const Icon(Icons.close, size: 16),
+                                    backgroundColor:
+                                        DesignSystem.primaryColor.withAlpha(50),
+                                    deleteIconColor: DesignSystem.primaryColor,
+                                    onDeleted: () {
+                                      setState(() {
+                                        _filterConfig = _filterConfig.copyWith(
+                                          clearCategory: true,
+                                        );
+                                      });
+                                    },
+                                  ),
+                                if (_filterConfig.rank != null)
+                                  Chip(
+                                    avatar: const Icon(Icons.military_tech,
+                                        size: 16),
+                                    label: Text(_filterConfig.rank!.shortName),
+                                    deleteIcon:
+                                        const Icon(Icons.close, size: 16),
+                                    backgroundColor:
+                                        DesignSystem.primaryColor.withAlpha(50),
+                                    deleteIconColor: DesignSystem.primaryColor,
+                                    onDeleted: () {
+                                      setState(() {
+                                        _filterConfig = _filterConfig.copyWith(
+                                          clearRank: true,
+                                        );
+                                      });
+                                    },
+                                  ),
+                                if (_filterConfig.corps != null)
+                                  Chip(
+                                    avatar: const Icon(Icons.group, size: 16),
+                                    label: Text(
+                                        _getCorpsText(_filterConfig.corps!)),
+                                    deleteIcon:
+                                        const Icon(Icons.close, size: 16),
+                                    backgroundColor:
+                                        DesignSystem.primaryColor.withAlpha(50),
+                                    deleteIconColor: DesignSystem.primaryColor,
+                                    onDeleted: () {
+                                      setState(() {
+                                        _filterConfig = _filterConfig.copyWith(
+                                          clearCorps: true,
+                                        );
+                                      });
+                                    },
+                                  ),
+                                if (_filterConfig.serviceStatus != null)
+                                  Chip(
+                                    avatar: const Icon(Icons.work, size: 16),
+                                    label: Text(_filterConfig
+                                        .serviceStatus!.displayName),
+                                    deleteIcon:
+                                        const Icon(Icons.close, size: 16),
+                                    backgroundColor:
+                                        DesignSystem.primaryColor.withAlpha(50),
+                                    deleteIconColor: DesignSystem.primaryColor,
+                                    onDeleted: () {
+                                      setState(() {
+                                        _filterConfig = _filterConfig.copyWith(
+                                          clearServiceStatus: true,
+                                        );
+                                      });
+                                    },
+                                  ),
+                                if (_filterConfig.verificationStatus != null)
+                                  Chip(
+                                    avatar: const Icon(Icons.verified_user,
+                                        size: 16),
+                                    label: Text(_getVerificationStatusText(
+                                        _filterConfig.verificationStatus!)),
+                                    deleteIcon:
+                                        const Icon(Icons.close, size: 16),
+                                    backgroundColor:
+                                        DesignSystem.primaryColor.withAlpha(50),
+                                    deleteIconColor: DesignSystem.primaryColor,
+                                    onDeleted: () {
+                                      setState(() {
+                                        _filterConfig = _filterConfig.copyWith(
+                                          clearVerificationStatus: true,
+                                        );
+                                      });
+                                    },
+                                  ),
+                                if (_filterConfig.unit != null &&
+                                    _filterConfig.unit!.isNotEmpty)
+                                  Chip(
+                                    avatar:
+                                        const Icon(Icons.business, size: 16),
+                                    label: Text('Unit: ${_filterConfig.unit}'),
+                                    deleteIcon:
+                                        const Icon(Icons.close, size: 16),
+                                    backgroundColor:
+                                        DesignSystem.primaryColor.withAlpha(50),
+                                    deleteIconColor: DesignSystem.primaryColor,
+                                    onDeleted: () {
+                                      setState(() {
+                                        _filterConfig = _filterConfig.copyWith(
+                                          clearUnit: true,
+                                        );
+                                      });
+                                    },
+                                  ),
+                                if (_filterConfig.yearsOfServiceMin != null)
+                                  Chip(
+                                    avatar: const Icon(Icons.timer, size: 16),
+                                    label: Text(
+                                        'Min Years: ${_filterConfig.yearsOfServiceMin}'),
+                                    deleteIcon:
+                                        const Icon(Icons.close, size: 16),
+                                    backgroundColor:
+                                        DesignSystem.primaryColor.withAlpha(50),
+                                    deleteIconColor: DesignSystem.primaryColor,
+                                    onDeleted: () {
+                                      setState(() {
+                                        _filterConfig = _filterConfig.copyWith(
+                                          clearYearsOfServiceMin: true,
+                                        );
+                                      });
+                                    },
+                                  ),
+                                if (_filterConfig.yearsOfServiceMax != null)
+                                  Chip(
+                                    avatar:
+                                        const Icon(Icons.timer_off, size: 16),
+                                    label: Text(
+                                        'Max Years: ${_filterConfig.yearsOfServiceMax}'),
+                                    deleteIcon:
+                                        const Icon(Icons.close, size: 16),
+                                    backgroundColor:
+                                        DesignSystem.primaryColor.withAlpha(50),
+                                    deleteIconColor: DesignSystem.primaryColor,
+                                    onDeleted: () {
+                                      setState(() {
+                                        _filterConfig = _filterConfig.copyWith(
+                                          clearYearsOfServiceMax: true,
+                                        );
+                                      });
+                                    },
+                                  ),
+                              ],
                             ),
                           ),
-                        if (_selectedCorps != null)
+
+                        // Filter presets
+                        if (_showFilterPanel && _filterPresets.isNotEmpty)
                           Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: Chip(
-                              label: Text(
-                                  'Corps: ${_getCorpsText(_selectedCorps!)}'),
-                              onDeleted: () {
-                                setState(() {
-                                  _selectedCorps = null;
-                                });
-                              },
+                            padding: const EdgeInsets.only(
+                                left: 16.0, right: 16.0, bottom: 16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Saved Filters:',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: _filterPresets.map((preset) {
+                                      return Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 8.0),
+                                        child: ActionChip(
+                                          label: Text(preset.name),
+                                          onPressed: () {
+                                            setState(() {
+                                              _filterConfig =
+                                                  preset.filterConfig;
+                                            });
+                                            _savePreferences();
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        if (_selectedServiceStatus != null)
-                          Chip(
-                            label: Text(
-                                'Status: ${_selectedServiceStatus!.displayName}'),
-                            onDeleted: () {
-                              setState(() {
-                                _selectedServiceStatus = null;
-                              });
-                            },
                           ),
                       ],
                     ),
                   ),
                 ),
 
+              // Active filters and sorting display
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Always display current sorting
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.sort, size: 16, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        const Text('Sorting:',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 8),
+                        Chip(
+                          backgroundColor:
+                              DesignSystem.secondaryColor.withAlpha(50),
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_getSortFieldText(_primarySort.field)),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _primarySort.direction ==
+                                        SortDirection.ascending
+                                    ? Icons.arrow_upward
+                                    : Icons.arrow_downward,
+                                size: 16,
+                                color: DesignSystem.secondaryColor,
+                              ),
+                            ],
+                          ),
+                          onDeleted: () => _showSortDialog(context),
+                          deleteIconColor: DesignSystem.secondaryColor,
+                        ),
+                        if (_secondarySort != null) ...[
+                          const SizedBox(width: 8),
+                          Chip(
+                            backgroundColor:
+                                DesignSystem.secondaryColor.withAlpha(30),
+                            label: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(_getSortFieldText(_secondarySort!.field)),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  _secondarySort!.direction ==
+                                          SortDirection.ascending
+                                      ? Icons.arrow_upward
+                                      : Icons.arrow_downward,
+                                  size: 16,
+                                  color: DesignSystem.secondaryColor,
+                                ),
+                              ],
+                            ),
+                            onDeleted: () => _showSortDialog(context),
+                            deleteIconColor: DesignSystem.secondaryColor,
+                          ),
+                        ],
+                      ],
+                    ),
+
+                    // Display current view mode
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(_getViewModeIcon(_viewMode),
+                            size: 16, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        const Text('View Mode:',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 8),
+                        Chip(
+                          backgroundColor:
+                              DesignSystem.accentColor.withAlpha(50),
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_getViewModeText(_viewMode)),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _getViewModeIcon(_viewMode),
+                                size: 16,
+                                color: DesignSystem.accentColor,
+                              ),
+                            ],
+                          ),
+                          onDeleted: () => _showViewModeDialog(context),
+                          deleteIconColor: DesignSystem.accentColor,
+                        ),
+                      ],
+                    ),
+
+                    // Export button
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.download,
+                            size: 16, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        const Text('Export:',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.file_download, size: 16),
+                          label: Text(
+                              'Export ${filteredPersonnel.length} Records'),
+                          onPressed: filteredPersonnel.isEmpty
+                              ? null
+                              : () => _exportToCSV(filteredPersonnel),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: DesignSystem.accentColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            textStyle: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 16),
 
               // Personnel list
               Expanded(
                 child: Builder(builder: (context) {
-                  // Filter personnel based on search query
-                  final filteredPersonnel = personnelProvider.allPersonnel
-                      .where((p) =>
-                          _searchQuery.isEmpty ||
-                          p.fullName
-                              .toLowerCase()
-                              .contains(_searchQuery.toLowerCase()) ||
-                          p.armyNumber
-                              .toLowerCase()
-                              .contains(_searchQuery.toLowerCase()))
-                      .toList();
-
+                  // Use the already filtered and sorted personnel list
                   if (filteredPersonnel.isEmpty) {
                     return Center(
                       child: PlatformText(
-                        _searchQuery.isNotEmpty
-                            ? 'No personnel found matching "$_searchQuery"'
+                        _filterConfig.activeFilterCount > 0
+                            ? 'No personnel found matching the current filters'
                             : 'No personnel records found',
                         style: const TextStyle(
                           fontSize: 16,
@@ -597,161 +1908,25 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
                     );
                   }
 
-                  return ListView.builder(
-                    itemCount: filteredPersonnel.length,
-                    itemBuilder: (context, index) {
-                      final personnel = filteredPersonnel[index];
-                      return PlatformCard(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor:
-                                DesignSystem.primaryColor.withAlpha(50),
-                            child: personnel.photoUrl != null
-                                ? ClipOval(
-                                    child: personnel.photoUrl!
-                                            .startsWith('http')
-                                        ? Image.network(
-                                            personnel.photoUrl!,
-                                            width: 40,
-                                            height: 40,
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                              return const Icon(Icons.person);
-                                            },
-                                          )
-                                        : Image.file(
-                                            File(personnel.photoUrl!
-                                                .replaceFirst('file://', '')),
-                                            width: 40,
-                                            height: 40,
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                              return const Icon(Icons.person);
-                                            },
-                                          ),
-                                  )
-                                : const Icon(Icons.person),
-                          ),
-                          title: PlatformText(
-                            '${personnel.rank.shortName} ${personnel.initials}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              PlatformText(
-                                personnel.fullName,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                ),
-                              ),
-                              PlatformText(
-                                personnel.armyNumber,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: DesignSystem.textSecondaryColor,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              _buildServiceStatusChip(personnel.serviceStatus),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Verification status indicator
-                              Tooltip(
-                                message: _getVerificationStatusText(
-                                    personnel.status),
-                                child: Icon(
-                                  personnel.status ==
-                                          VerificationStatus.verified
-                                      ? Icons.verified_user
-                                      : personnel.status ==
-                                              VerificationStatus.rejected
-                                          ? Icons.cancel
-                                          : Icons.pending,
-                                  color: personnel.status ==
-                                          VerificationStatus.verified
-                                      ? Colors.green
-                                      : personnel.status ==
-                                              VerificationStatus.rejected
-                                          ? Colors.red
-                                          : Colors.orange,
-                                  size: 16,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              // Popup menu for quick actions
-                              PopupMenuButton<String>(
-                                icon: const Icon(Icons.more_vert, size: 16),
-                                onSelected: (value) {
-                                  if (value == 'edit') {
-                                    // Navigate to edit personnel screen
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/edit_personnel',
-                                      arguments: {'personnelId': personnel.id},
-                                    );
-                                  } else if (value == 'verify') {
-                                    _showVerificationDialog(context, personnel);
-                                  } else if (value == 'status') {
-                                    _showServiceStatusDialog(
-                                        context, personnel);
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem<String>(
-                                    value: 'edit',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.edit, size: 16),
-                                        SizedBox(width: 8),
-                                        Text('Edit'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem<String>(
-                                    value: 'verify',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.verified_user, size: 16),
-                                        SizedBox(width: 8),
-                                        Text('Verify'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem<String>(
-                                    value: 'status',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.work, size: 16),
-                                        SizedBox(width: 8),
-                                        Text('Update Status'),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          onTap: () {
-                            // Navigate to personnel detail screen
-                            Navigator.pushNamed(
-                              context,
-                              '/personnel_detail',
-                              arguments: {'personnelId': personnel.id},
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  );
+                  // Choose the appropriate view based on the selected view mode
+                  switch (_viewMode) {
+                    case ViewMode.list:
+                      return _buildListView(filteredPersonnel, context);
+                    case ViewMode.grid:
+                      return _buildGridView(
+                          filteredPersonnel, context, isDesktop, isTablet);
+                    case ViewMode.details:
+                      return _buildDetailsView(filteredPersonnel, context);
+                    case ViewMode.cards:
+                      return _buildCardsView(
+                          filteredPersonnel, context, isDesktop, isTablet);
+                    case ViewMode.table:
+                      // Fallback to list view until table view is implemented
+                      return _buildListView(filteredPersonnel, context);
+                    case ViewMode.compact:
+                      // Fallback to list view until compact view is implemented
+                      return _buildListView(filteredPersonnel, context);
+                  }
                 }),
               ),
             ],
@@ -769,6 +1944,733 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
     );
   }
 
+  // Build list view (default view)
+  Widget _buildListView(List<Personnel> personnel, BuildContext context) {
+    return ListView.builder(
+      itemCount: personnel.length,
+      itemBuilder: (context, index) {
+        final person = personnel[index];
+        return PlatformCard(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: DesignSystem.primaryColor.withAlpha(50),
+              child: person.photoUrl != null
+                  ? ClipOval(
+                      child: person.photoUrl!.startsWith('http')
+                          ? Image.network(
+                              person.photoUrl!,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(Icons.person);
+                              },
+                            )
+                          : Image.file(
+                              File(
+                                  person.photoUrl!.replaceFirst('file://', '')),
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(Icons.person);
+                              },
+                            ),
+                    )
+                  : const Icon(Icons.person),
+            ),
+            title: PlatformText(
+              '${person.rank.shortName} ${person.initials}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                PlatformText(
+                  person.fullName,
+                  style: const TextStyle(
+                    fontSize: 12,
+                  ),
+                ),
+                PlatformText(
+                  person.armyNumber,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: DesignSystem.textSecondaryColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                _buildServiceStatusChip(person.serviceStatus),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Verification status indicator
+                Tooltip(
+                  message: _getVerificationStatusText(person.status),
+                  child: Icon(
+                    person.status == VerificationStatus.verified
+                        ? Icons.verified_user
+                        : person.status == VerificationStatus.rejected
+                            ? Icons.cancel
+                            : Icons.pending,
+                    color: person.status == VerificationStatus.verified
+                        ? Colors.green
+                        : person.status == VerificationStatus.rejected
+                            ? Colors.red
+                            : Colors.orange,
+                    size: 16,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Popup menu for quick actions
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, size: 16),
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      // Navigate to edit personnel screen
+                      Navigator.pushNamed(
+                        context,
+                        '/edit_personnel',
+                        arguments: {'personnelId': person.id},
+                      );
+                    } else if (value == 'verify') {
+                      _showVerificationDialog(context, person);
+                    } else if (value == 'status') {
+                      _showServiceStatusDialog(context, person);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem<String>(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit, size: 16),
+                          SizedBox(width: 8),
+                          Text('Edit'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'verify',
+                      child: Row(
+                        children: [
+                          Icon(Icons.verified_user, size: 16),
+                          SizedBox(width: 8),
+                          Text('Verify'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'status',
+                      child: Row(
+                        children: [
+                          Icon(Icons.work, size: 16),
+                          SizedBox(width: 8),
+                          Text('Update Status'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            onTap: () {
+              // Navigate to personnel detail screen
+              Navigator.pushNamed(
+                context,
+                '/personnel_detail',
+                arguments: {'personnelId': person.id},
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  // Build grid view
+  Widget _buildGridView(List<Personnel> personnel, BuildContext context,
+      bool isDesktop, bool isTablet) {
+    final crossAxisCount = isDesktop
+        ? 4
+        : isTablet
+            ? 3
+            : 2;
+
+    return GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: 0.75,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+      ),
+      itemCount: personnel.length,
+      itemBuilder: (context, index) {
+        final person = personnel[index];
+        return GestureDetector(
+          onTap: () {
+            Navigator.pushNamed(
+              context,
+              '/personnel_detail',
+              arguments: {'personnelId': person.id},
+            );
+          },
+          child: PlatformCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 12),
+                // Photo
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: DesignSystem.primaryColor.withAlpha(50),
+                  child: person.photoUrl != null
+                      ? ClipOval(
+                          child: person.photoUrl!.startsWith('http')
+                              ? Image.network(
+                                  person.photoUrl!,
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(Icons.person, size: 40);
+                                  },
+                                )
+                              : Image.file(
+                                  File(person.photoUrl!
+                                      .replaceFirst('file://', '')),
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(Icons.person, size: 40);
+                                  },
+                                ),
+                        )
+                      : const Icon(Icons.person, size: 40),
+                ),
+                const SizedBox(height: 12),
+                // Name and rank
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Column(
+                    children: [
+                      Text(
+                        '${person.rank.shortName} ${person.initials}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        person.fullName,
+                        style: const TextStyle(fontSize: 12),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        person.armyNumber,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: DesignSystem.textSecondaryColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildServiceStatusChip(person.serviceStatus),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                // Actions
+                Container(
+                  decoration: BoxDecoration(
+                    color: DesignSystem.primaryColor.withAlpha(20),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(12),
+                      bottomRight: Radius.circular(12),
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, size: 18),
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/edit_personnel',
+                            arguments: {'personnelId': person.id},
+                          );
+                        },
+                        tooltip: 'Edit',
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          person.status == VerificationStatus.verified
+                              ? Icons.verified_user
+                              : person.status == VerificationStatus.rejected
+                                  ? Icons.cancel
+                                  : Icons.pending,
+                          size: 18,
+                          color: person.status == VerificationStatus.verified
+                              ? Colors.green
+                              : person.status == VerificationStatus.rejected
+                                  ? Colors.red
+                                  : Colors.orange,
+                        ),
+                        onPressed: () =>
+                            _showVerificationDialog(context, person),
+                        tooltip: _getVerificationStatusText(person.status),
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.work, size: 18),
+                        onPressed: () =>
+                            _showServiceStatusDialog(context, person),
+                        tooltip: 'Update Status',
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Build details view
+  Widget _buildDetailsView(List<Personnel> personnel, BuildContext context) {
+    return ListView.builder(
+      itemCount: personnel.length,
+      itemBuilder: (context, index) {
+        final person = personnel[index];
+        return PlatformCard(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with photo and basic info
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Photo
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundColor: DesignSystem.primaryColor.withAlpha(50),
+                      child: person.photoUrl != null
+                          ? ClipOval(
+                              child: person.photoUrl!.startsWith('http')
+                                  ? Image.network(
+                                      person.photoUrl!,
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return const Icon(Icons.person,
+                                            size: 40);
+                                      },
+                                    )
+                                  : Image.file(
+                                      File(person.photoUrl!
+                                          .replaceFirst('file://', '')),
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return const Icon(Icons.person,
+                                            size: 40);
+                                      },
+                                    ),
+                            )
+                          : const Icon(Icons.person, size: 40),
+                    ),
+                    const SizedBox(width: 16),
+                    // Basic info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                '${person.rank.shortName} ${person.initials}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Tooltip(
+                                message:
+                                    _getVerificationStatusText(person.status),
+                                child: Icon(
+                                  person.status == VerificationStatus.verified
+                                      ? Icons.verified_user
+                                      : person.status ==
+                                              VerificationStatus.rejected
+                                          ? Icons.cancel
+                                          : Icons.pending,
+                                  color: person.status ==
+                                          VerificationStatus.verified
+                                      ? Colors.green
+                                      : person.status ==
+                                              VerificationStatus.rejected
+                                          ? Colors.red
+                                          : Colors.orange,
+                                  size: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            person.fullName,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Army Number: ${person.armyNumber}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: DesignSystem.textSecondaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildServiceStatusChip(person.serviceStatus),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 24),
+                // Detailed information
+                _buildDetailRow('Unit', person.unit),
+                _buildDetailRow('Corps', _getCorpsText(person.corps)),
+                _buildDetailRow('Category', _getCategoryText(person.category)),
+                if (person.enlistmentDate != null)
+                  _buildDetailRow('Enlistment Date',
+                      person.enlistmentDate!.toString().split(' ')[0]),
+                if (person.dateOfBirth != null)
+                  _buildDetailRow('Date of Birth',
+                      person.dateOfBirth!.toString().split(' ')[0]),
+                _buildDetailRow(
+                    'Years of Service', '${person.yearsOfService} years'),
+                // Actions
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      icon: const Icon(Icons.edit, size: 16),
+                      label: const Text('Edit'),
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/edit_personnel',
+                          arguments: {'personnelId': person.id},
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      icon: const Icon(Icons.verified_user, size: 16),
+                      label: const Text('Verify'),
+                      onPressed: () => _showVerificationDialog(context, person),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      icon: const Icon(Icons.work, size: 16),
+                      label: const Text('Status'),
+                      onPressed: () =>
+                          _showServiceStatusDialog(context, person),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Build cards view
+  Widget _buildCardsView(List<Personnel> personnel, BuildContext context,
+      bool isDesktop, bool isTablet) {
+    final crossAxisCount = isDesktop
+        ? 3
+        : isTablet
+            ? 2
+            : 1;
+
+    return LayoutBuilder(builder: (context, constraints) {
+      // Adjust grid parameters based on available width
+      final width = constraints.maxWidth;
+      final isNarrow = width < 600;
+
+      // Determine optimal crossAxisCount and childAspectRatio
+      final adjustedCrossAxisCount = isNarrow ? 1 : crossAxisCount;
+      final adjustedChildAspectRatio = isNarrow ? 2.0 : 1.5;
+
+      return GridView.builder(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: adjustedCrossAxisCount,
+          childAspectRatio: adjustedChildAspectRatio,
+          crossAxisSpacing: isNarrow ? 8 : 16,
+          mainAxisSpacing: isNarrow ? 8 : 16,
+        ),
+        itemCount: personnel.length,
+        itemBuilder: (context, index) {
+          final person = personnel[index];
+          final color = [
+            Colors.blue,
+            Colors.green,
+            Colors.orange,
+            Colors.purple,
+            Colors.teal
+          ][index % 5];
+
+          return GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                '/personnel_detail',
+                arguments: {'personnelId': person.id},
+              );
+            },
+            child: PlatformCard(
+              child: Stack(
+                children: [
+                  // Background design
+                  Positioned(
+                    right: -20,
+                    bottom: -20,
+                    child: Icon(
+                      Icons.shield,
+                      size: 120,
+                      color: color.withAlpha(30),
+                    ),
+                  ),
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: color.withAlpha(50),
+                              child: person.photoUrl != null
+                                  ? ClipOval(
+                                      child: person.photoUrl!.startsWith('http')
+                                          ? Image.network(
+                                              person.photoUrl!,
+                                              width: 40,
+                                              height: 40,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                return const Icon(Icons.person);
+                                              },
+                                            )
+                                          : Image.file(
+                                              File(person.photoUrl!
+                                                  .replaceFirst('file://', '')),
+                                              width: 40,
+                                              height: 40,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                return const Icon(Icons.person);
+                                              },
+                                            ),
+                                    )
+                                  : const Icon(Icons.person),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${person.rank.shortName} ${person.initials}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    person.fullName,
+                                    style: const TextStyle(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              person.status == VerificationStatus.verified
+                                  ? Icons.verified_user
+                                  : person.status == VerificationStatus.rejected
+                                      ? Icons.cancel
+                                      : Icons.pending,
+                              color: person.status ==
+                                      VerificationStatus.verified
+                                  ? Colors.green
+                                  : person.status == VerificationStatus.rejected
+                                      ? Colors.red
+                                      : Colors.orange,
+                              size: 16,
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 24),
+                        // Details
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Army Number',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: DesignSystem.textSecondaryColor,
+                                    ),
+                                  ),
+                                  Text(
+                                    person.armyNumber,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Unit',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: DesignSystem.textSecondaryColor,
+                                    ),
+                                  ),
+                                  Text(
+                                    person.unit,
+                                    style: const TextStyle(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Corps',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: DesignSystem.textSecondaryColor,
+                                    ),
+                                  ),
+                                  Text(
+                                    _getCorpsText(person.corps),
+                                    style: const TextStyle(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Status',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: DesignSystem.textSecondaryColor,
+                                    ),
+                                  ),
+                                  _buildServiceStatusChip(person.serviceStatus),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    });
+  }
+
+  // Helper method to build a detail row for the details view
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build service status chip
   Widget _buildServiceStatusChip(ServiceStatus status) {
     Color chipColor;
     Color textColor = Colors.white;
@@ -791,6 +2693,12 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
         break;
       case ServiceStatus.dismissed:
         chipColor = Colors.purple;
+        break;
+      case ServiceStatus.discharged:
+        chipColor = Colors.teal;
+        break;
+      case ServiceStatus.deceased:
+        chipColor = Colors.black;
         break;
     }
 
@@ -1046,6 +2954,101 @@ class _PersonnelDatabaseScreenState extends State<PersonnelDatabaseScreen> {
         return Colors.grey;
       case ServiceStatus.dismissed:
         return Colors.purple;
+      case ServiceStatus.discharged:
+        return Colors.teal;
+      case ServiceStatus.deceased:
+        return Colors.black;
+    }
+  }
+
+  // Export personnel data to CSV
+  Future<void> _exportToCSV(List<Personnel> personnel) async {
+    if (personnel.isEmpty) {
+      return;
+    }
+
+    // Create CSV header
+    final StringBuffer csvContent = StringBuffer();
+    csvContent.writeln(
+        'Army Number,Rank,Name,Initials,Category,Corps,Unit,Service Status,'
+        'Verification Status,Years of Service,Enlistment Date,Date of Birth,'
+        'Date Registered,Last Verified');
+
+    // Add personnel data
+    for (final person in personnel) {
+      final String enlistmentDate = person.enlistmentDate != null
+          ? '${person.enlistmentDate!.year}-${person.enlistmentDate!.month}-${person.enlistmentDate!.day}'
+          : '';
+
+      final String dateOfBirth = person.dateOfBirth != null
+          ? '${person.dateOfBirth!.year}-${person.dateOfBirth!.month}-${person.dateOfBirth!.day}'
+          : '';
+
+      final String lastVerified = person.lastVerified != null
+          ? '${person.lastVerified!.year}-${person.lastVerified!.month}-${person.lastVerified!.day}'
+          : '';
+
+      final String dateRegistered =
+          '${person.dateRegistered.year}-${person.dateRegistered.month}-${person.dateRegistered.day}';
+
+      csvContent.writeln(
+          '"${person.armyNumber}","${person.rank.displayName}","${person.fullName}",'
+          '"${person.initials}","${_getCategoryText(person.category)}",'
+          '"${_getCorpsText(person.corps)}","${person.unit}",'
+          '"${person.serviceStatus.displayName}","${_getVerificationStatusText(person.status)}",'
+          '"${person.yearsOfService}","$enlistmentDate","$dateOfBirth",'
+          '"$dateRegistered","$lastVerified"');
+    }
+
+    try {
+      // Get the downloads directory
+      final String downloadsPath = await _getDownloadsPath();
+      final String timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .replaceAll('.', '-');
+      final String filePath = '$downloadsPath/personnel_data_$timestamp.csv';
+
+      // Write the file
+      final File file = File(filePath);
+      await file.writeAsString(csvContent.toString());
+
+      // Show success message
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Exported ${personnel.length} records to $filePath'),
+          action: SnackBarAction(
+            label: 'Open Folder',
+            onPressed: () {
+              // Open the downloads folder
+              launchUrl(Uri.file(downloadsPath),
+                  mode: LaunchMode.platformDefault);
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to export data: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Get downloads path
+  Future<String> _getDownloadsPath() async {
+    if (Platform.isWindows) {
+      // On Windows, use the Downloads folder
+      final String home = Platform.environment['USERPROFILE'] ?? '';
+      return '$home\\Downloads';
+    } else {
+      // For other platforms, use the app's documents directory
+      final directory = await getApplicationDocumentsDirectory();
+      return directory.path;
     }
   }
 }

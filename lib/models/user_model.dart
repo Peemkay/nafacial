@@ -10,6 +10,7 @@ class User {
   final bool isBiometricEnabled;
   final String? token;
   final String? armyNumber;
+  final String? photoUrl;
 
   User({
     required this.id,
@@ -23,6 +24,7 @@ class User {
     this.isBiometricEnabled = false,
     this.token,
     this.armyNumber,
+    this.photoUrl,
   });
 
   // Get name (alias for fullName)
@@ -45,6 +47,7 @@ class User {
       'isBiometricEnabled': isBiometricEnabled,
       'token': token,
       'armyNumber': armyNumber,
+      'photoUrl': photoUrl,
     };
   }
 
@@ -62,6 +65,7 @@ class User {
       isBiometricEnabled: map['isBiometricEnabled'] ?? false,
       token: map['token'],
       armyNumber: map['armyNumber'],
+      photoUrl: map['photoUrl'],
     );
   }
 
@@ -78,6 +82,7 @@ class User {
     bool? isBiometricEnabled,
     String? token,
     String? armyNumber,
+    String? photoUrl,
   }) {
     return User(
       id: id ?? this.id,
@@ -91,6 +96,7 @@ class User {
       isBiometricEnabled: isBiometricEnabled ?? this.isBiometricEnabled,
       token: token ?? this.token,
       armyNumber: armyNumber ?? this.armyNumber,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 }

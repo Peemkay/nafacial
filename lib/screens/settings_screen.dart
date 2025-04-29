@@ -432,14 +432,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         applicationLegalese: '© 2025 Nigerian Army. All rights reserved.',
-        children: [
-          const SizedBox(height: 16),
-          const Text(
+        children: const [
+          SizedBox(height: 16),
+          Text(
             'NAFacial is a facial recognition application for the Nigerian Army personnel identification and verification.',
             style: TextStyle(fontSize: 12),
           ),
-          const SizedBox(height: 8),
-          const Text(
+          SizedBox(height: 8),
+          Text(
             'Contact: offrmbabubakar@gmail.com',
             style: TextStyle(fontSize: 12),
           ),

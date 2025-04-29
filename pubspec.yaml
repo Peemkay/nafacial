@@ -44,6 +44,8 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   # Removed biometric_storage due to Java 17 requirement
   flutter_webrtc: ^0.9.47
+  font_awesome_flutter: ^10.6.0
+  web_socket_channel: ^2.4.0
 
 dev_dependencies:
   flutter_test:
