@@ -268,6 +268,8 @@ class _NAFacialAppState extends State<NAFacialApp> {
                 // Android-specific screens
                 '/android_server_manager': (context) =>
                     const AndroidServerManagerScreen(),
+                '/enhanced_recognition': (context) =>
+                    const EnhancedRecognitionDemoScreen(),
 
                 // Info pages
                 '/about': (context) => const AboutScreen(),

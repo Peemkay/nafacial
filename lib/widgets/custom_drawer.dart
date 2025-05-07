@@ -186,11 +186,11 @@ class _CustomDrawerState extends State<CustomDrawer>
                           ),
                           _buildDrawerItem(
                             icon: Icons.face_retouching_natural,
-                            title: 'Live Recognition',
+                            title: 'Enhanced Recognition',
                             onTap: () {
                               Navigator.pop(context);
                               Navigator.pushNamed(
-                                  context, '/facial_verification');
+                                  context, '/enhanced_recognition');
                             },
                           ),
 
