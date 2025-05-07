@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../models/personnel_model.dart';
 import '../models/notification_model.dart';
 import '../services/personnel_service.dart';
 import '../services/database_sync_service.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_service.dart';
+import '../providers/trash_provider.dart';
 
 class PersonnelProvider with ChangeNotifier {
   final PersonnelService _personnelService = PersonnelService();
@@ -216,15 +218,28 @@ class PersonnelProvider with ChangeNotifier {
   // Update personnel
   Future<Personnel?> updatePersonnel(Personnel personnel) async {
     _setLoading(true);
+    debugPrint(
+        'PersonnelProvider: Updating personnel with ID: ${personnel.id}');
 
     try {
+      // Validate the personnel object has all required fields
+      if (personnel.id.isEmpty ||
+          personnel.armyNumber.isEmpty ||
+          personnel.fullName.isEmpty) {
+        throw Exception('Personnel is missing required fields');
+      }
+
+      debugPrint(
+          'PersonnelProvider: Personnel data valid, proceeding with update');
       final updatedPersonnel =
           await _personnelService.updatePersonnel(personnel);
+      debugPrint('PersonnelProvider: Personnel updated successfully');
 
       // Update selected personnel if it's the one being updated
       if (_selectedPersonnel != null &&
           _selectedPersonnel!.id == personnel.id) {
         _selectedPersonnel = updatedPersonnel;
+        debugPrint('PersonnelProvider: Updated selected personnel reference');
       }
 
       // Log the change with admin information
@@ -358,8 +373,65 @@ class PersonnelProvider with ChangeNotifier {
     }
   }
 
-  // Delete personnel
-  Future<bool> deletePersonnel(String personnelId) async {
+  // Delete personnel (moved to trash)
+  Future<bool> deletePersonnel(String personnelId,
+      {TrashProvider? trashProvider}) async {
+    _setLoading(true);
+
+    try {
+      // Get the personnel to be deleted
+      final personnel = getPersonnelById(personnelId);
+      if (personnel == null) {
+        throw Exception('Personnel not found');
+      }
+
+      // Get current admin
+      final currentAdmin = await _authProvider.getCurrentUser();
+      if (currentAdmin == null) {
+        throw Exception('Admin not authenticated');
+      }
+
+      // If trashProvider is provided, use it to move to trash
+      if (trashProvider != null) {
+        final success = await trashProvider.movePersonnelToTrash(personnel);
+
+        if (!success) {
+          throw Exception('Failed to move personnel to trash');
+        }
+      } else {
+        // Otherwise, directly delete the personnel and create a trash item
+        // This is a fallback in case the trashProvider is not available
+        await _personnelService.deletePersonnel(personnelId);
+
+        // Show notification about the deleted personnel with admin info
+        _notificationService.showNotification(
+          title: 'Personnel Deleted',
+          body:
+              '${personnel.fullName} (${personnel.armyNumber}) has been deleted by ${currentAdmin.fullName} (${currentAdmin.armyNumber}).',
+          type: NotificationType.warning,
+        );
+      }
+
+      // Clear selected personnel if it's the one being deleted
+      if (_selectedPersonnel != null && _selectedPersonnel!.id == personnelId) {
+        _selectedPersonnel = null;
+      }
+
+      // Reload personnel list
+      await loadAllPersonnel();
+
+      _setError(null);
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Hard delete personnel (bypassing trash)
+  Future<bool> hardDeletePersonnel(String personnelId) async {
     _setLoading(true);
 
     try {

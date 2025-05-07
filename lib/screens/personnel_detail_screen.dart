@@ -7,7 +7,9 @@ import '../models/access_log_model.dart';
 import '../providers/personnel_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/access_log_provider.dart';
+import '../providers/trash_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
+import '../widgets/confirmation_dialog.dart';
 import '../utils/date_utils.dart';
 
 class PersonnelDetailScreen extends StatelessWidget {
@@ -57,6 +59,13 @@ class PersonnelDetailScreen extends StatelessWidget {
             icon: const Icon(Icons.work),
             onPressed: () {
               _showServiceStatusDialog(context, personnelId);
+            },
+          ),
+          // Delete button
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () {
+              _showDeleteDialog(context, personnelId);
             },
           ),
         ],
@@ -510,6 +519,79 @@ class PersonnelDetailScreen extends StatelessWidget {
       case VerificationStatus.rejected:
         return 'Rejected';
     }
+  }
+
+  // Show delete confirmation dialog
+  void _showDeleteDialog(BuildContext context, String personnelId) {
+    final personnelProvider =
+        Provider.of<PersonnelProvider>(context, listen: false);
+    final trashProvider = Provider.of<TrashProvider>(context, listen: false);
+    final personnel = personnelProvider.getPersonnelById(personnelId);
+
+    if (personnel == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Personnel not found')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => ConfirmationDialog(
+        title: 'Delete Personnel',
+        content:
+            'Are you sure you want to delete ${personnel.rank.displayName} ${personnel.fullName} (${personnel.armyNumber})? This action can be undone from the trash.',
+        confirmText: 'Delete',
+        confirmColor: Colors.red,
+        onConfirm: () async {
+          // Store context references before async gap
+          final navigator = Navigator.of(context);
+          final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+          // Show loading indicator
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(content: Text('Deleting personnel...')),
+          );
+
+          // Delete personnel
+          final success = await personnelProvider.deletePersonnel(
+            personnelId,
+            trashProvider: trashProvider,
+          );
+
+          // Check if widget is still mounted before using context
+          if (!navigator.mounted) return;
+
+          if (success) {
+            // Navigate back to personnel list
+            navigator.pop();
+
+            // Show success message
+            scaffoldMessenger.showSnackBar(
+              SnackBar(
+                content: Text('${personnel.fullName} has been moved to trash'),
+                action: SnackBarAction(
+                  label: 'View Trash',
+                  onPressed: () {
+                    if (navigator.mounted) {
+                      Navigator.pushNamed(navigator.context, '/trash');
+                    }
+                  },
+                ),
+              ),
+            );
+          } else {
+            // Show error message
+            scaffoldMessenger.showSnackBar(
+              const SnackBar(
+                content: Text('Failed to delete personnel'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+      ),
+    );
   }
 
   // Show service status dialog

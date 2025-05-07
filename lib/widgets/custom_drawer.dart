@@ -240,6 +240,14 @@ class _CustomDrawerState extends State<CustomDrawer>
                                   context, '/rank_management');
                             },
                           ),
+                          _buildDrawerItem(
+                            icon: Icons.delete_outline,
+                            title: 'Trash',
+                            onTap: () {
+                              Navigator.pop(context);
+                              _secureNavigator.navigateTo(context, '/trash');
+                            },
+                          ),
 
                           // Security Section
                           _buildDrawerHeader('Security'),

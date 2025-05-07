@@ -11,6 +11,7 @@ import 'providers/version_provider.dart';
 import 'providers/notification_service.dart';
 import 'providers/rank_provider.dart';
 import 'providers/analytics_provider.dart';
+import 'providers/trash_provider.dart';
 import 'services/app_shortcuts_service.dart';
 import 'services/button_service.dart';
 import 'services/admin_auth_service.dart';
@@ -48,6 +49,7 @@ import 'screens/enhanced_recognition_demo_screen.dart';
 import 'screens/android_server_manager_screen.dart';
 import 'screens/enhanced_android_server_manager_screen.dart';
 import 'screens/theme_preview_screen.dart';
+import 'screens/trash_screen.dart';
 
 // Global navigator key for accessing navigator from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -166,6 +168,20 @@ class _NAFacialAppState extends State<NAFacialApp> {
         ChangeNotifierProvider(create: (_) => AccessLogProvider()),
         ChangeNotifierProvider(create: (_) => RankProvider()),
 
+        // Trash provider
+        ChangeNotifierProxyProvider<NotificationService, TrashProvider>(
+          create: (context) => TrashProvider(
+            Provider.of<NotificationService>(context, listen: false),
+          ),
+          update: (context, notificationService, previous) {
+            // Return previous instance if it exists to preserve state
+            if (previous != null) {
+              return previous;
+            }
+            return TrashProvider(notificationService);
+          },
+        ),
+
         // Dependent providers
         ChangeNotifierProxyProvider<NotificationService, PersonnelProvider>(
           create: (context) => PersonnelProvider(),
@@ -273,6 +289,9 @@ class _NAFacialAppState extends State<NAFacialApp> {
                     const AndroidServerManagerScreen(),
                 '/enhanced_recognition': (context) =>
                     const EnhancedRecognitionDemoScreen(),
+
+                // Trash management
+                '/trash': (context) => const TrashScreen(),
 
                 // Info pages
                 '/about': (context) => const AboutScreen(),
