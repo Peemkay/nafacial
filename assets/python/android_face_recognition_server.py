@@ -74,7 +74,7 @@ class EnhancedAndroidFaceDetector:
         except Exception as e:
             logger.error(f"Error loading face database: {e}")
 
-    def detect_faces(self, image: np.ndarray, min_confidence: float = 0.5) -> List[Dict[str, Any]]:
+    def detect_faces(self, image: np.ndarray, min_confidence: float = 0.3) -> List[Dict[str, Any]]:
         """
         Detect faces in an image
 
@@ -217,7 +217,7 @@ class EnhancedAndroidFaceDetector:
                 "error": str(e)
             }
 
-    def identify_face(self, image: np.ndarray, min_similarity: float = 0.6) -> Dict[str, Any]:
+    def identify_face(self, image: np.ndarray, min_similarity: float = 0.4) -> Dict[str, Any]:
         """
         Identify a face in the database
 
@@ -282,7 +282,7 @@ class EnhancedAndroidFaceDetector:
             processing_time = time.time() - start_time
             self.total_processing_time += processing_time
 
-            # Check if we have a good match
+            # Check if we have a good match - using reduced threshold
             if best_match and best_similarity >= min_similarity:
                 self.successful_requests += 1
                 return {
@@ -522,7 +522,7 @@ class EnhancedAndroidWebSocketServer:
                         image = self.detector.decode_base64_image(data.get("image", ""))
 
                         # Get parameters
-                        min_similarity = float(data.get("min_similarity", 0.6))
+                        min_similarity = float(data.get("min_similarity", 0.4))
 
                         # Identify face
                         result = self.detector.identify_face(image, min_similarity)

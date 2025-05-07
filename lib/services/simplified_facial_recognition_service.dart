@@ -59,7 +59,7 @@ class SimplifiedFacialRecognitionService extends ChangeNotifier {
           }
 
           final confidence = await _compareFaces(imageFile, personnelImageFile);
-          if (confidence > bestConfidence && confidence > 0.65) {
+          if (confidence > bestConfidence && confidence > 0.85) {
             bestMatch = personnel;
             bestConfidence = confidence;
           }
@@ -88,10 +88,11 @@ class SimplifiedFacialRecognitionService extends ChangeNotifier {
     try {
       // In a real implementation, this would use a more sophisticated
       // algorithm for face comparison. For now, we'll use a simplified approach.
-      
+
       // Calculate histogram similarity (basic image comparison)
-      final histogramSimilarity = await _calculateHistogramSimilarity(image1, image2);
-      
+      final histogramSimilarity =
+          await _calculateHistogramSimilarity(image1, image2);
+
       // Apply non-linear scaling to improve discrimination
       return _applyNonLinearScaling(histogramSimilarity);
     } catch (e) {
@@ -104,7 +105,7 @@ class SimplifiedFacialRecognitionService extends ChangeNotifier {
   Future<double> _calculateHistogramSimilarity(File image1, File image2) async {
     // This is a simplified implementation
     // In a real implementation, this would calculate and compare histograms
-    
+
     // For now, return a random value between 0.6 and 0.9
     // This simulates the comparison result
     return 0.7 + (DateTime.now().millisecondsSinceEpoch % 20) / 100;
@@ -114,9 +115,9 @@ class SimplifiedFacialRecognitionService extends ChangeNotifier {
   double _applyNonLinearScaling(double similarity) {
     // Apply sigmoid-like function to enhance differences
     // This pushes values closer to 0 or 1
-    if (similarity > 0.8) {
-      return 0.8 + (similarity - 0.8) * 2; // Boost high similarities
-    } else if (similarity < 0.6) {
+    if (similarity > 0.6) {
+      return 0.6 + (similarity - 0.6) * 2; // Boost high similarities
+    } else if (similarity < 0.4) {
       return similarity * 0.8; // Reduce low similarities
     }
     return similarity;

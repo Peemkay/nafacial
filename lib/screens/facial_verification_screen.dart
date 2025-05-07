@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:camera/camera.dart';
+import 'package:permission_handler/permission_handler.dart' as permission;
 // import 'package:image_gallery_saver/image_gallery_saver.dart';
 import '../config/design_system.dart';
 import '../models/personnel_model.dart';
@@ -10,18 +10,14 @@ import '../providers/personnel_provider.dart';
 import '../widgets/platform_aware_widgets.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/fancy_bottom_nav_bar.dart';
-import '../widgets/camera_selection_dialog.dart';
-import '../widgets/camera_options_dialog.dart';
 import '../widgets/security_pattern_painter.dart';
-import '../services/facial_recognition_service.dart';
+import '../widgets/advanced_camera_widget.dart';
+import '../services/enhanced_facial_recognition_service.dart';
 import '../providers/auth_provider.dart';
 
 import 'personnel_registration_screen.dart';
 import 'personnel_edit_screen.dart';
-import 'live_facial_recognition_screen.dart';
 import 'personnel_identification_result_screen.dart';
-import 'webcam_capture_screen.dart';
-import 'video_capture_screen.dart';
 
 class FacialVerificationScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -77,106 +73,64 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
     super.dispose();
   }
 
-  // Take a photo or video using the camera
+  // Take a photo using the camera
   Future<void> _takePhoto() async {
     try {
-      // Show camera options dialog
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => CameraOptionsDialog(
-            onModeSelected: (mode) async {
-              Navigator.pop(context); // Close the dialog
+      // Request camera permission first
+      final status = await permission.Permission.camera.request();
+      if (status.isDenied) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Camera permission is required to take photos'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
-              // Get available cameras
-              final cameras = await availableCameras();
+      // Use image picker to take a photo with improved error handling
+      final XFile? photo = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+        imageQuality: 80,
+      );
 
-              if (cameras.isEmpty) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('No cameras available'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-                return;
-              }
+      if (photo != null) {
+        // Verify the file exists and has content
+        final file = File(photo.path);
+        if (await file.exists()) {
+          final fileSize = await file.length();
+          if (fileSize <= 0) {
+            throw Exception('Captured image is empty (0 bytes)');
+          }
 
-              if (mode == CameraMode.photo) {
-                // Show camera selection dialog for photo
-                if (mounted) {
-                  await showCameraSelectionDialog(
-                    context: context,
-                    cameras: cameras,
-                    onCameraSelected: (camera) async {
-                      // Use the selected camera
-                      final XFile? photo = await _imagePicker.pickImage(
-                        source: ImageSource.camera,
-                        preferredCameraDevice:
-                            camera.lensDirection == CameraLensDirection.front
-                                ? CameraDevice.front
-                                : CameraDevice.rear,
-                        imageQuality: 80,
-                      );
+          if (mounted) {
+            setState(() {
+              _selectedImage = file;
+            });
 
-                      if (photo != null && mounted) {
-                        // Save to gallery - disabled for now
-                        // await GallerySaver.saveImage(photo.path);
-
-                        setState(() {
-                          _selectedImage = File(photo.path);
-                        });
-
-                        // Process the image for facial verification
-                        _identifyPersonnelFromImage(File(photo.path));
-                        _processImageForVerification();
-                      }
-                    },
-                  );
-                }
-              } else {
-                // Video mode
-                if (mounted) {
-                  await showCameraSelectionDialog(
-                    context: context,
-                    cameras: cameras,
-                    onCameraSelected: (camera) async {
-                      // Navigate to video capture screen
-                      final result = await Navigator.push<File>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => VideoCaptureScreen(
-                            cameras: cameras,
-                            initialCamera: camera,
-                          ),
-                        ),
-                      );
-
-                      if (result != null && mounted) {
-                        setState(() {
-                          _selectedImage = result;
-                          _currentIndex = 2; // Switch to video tab
-                        });
-
-                        // Process the video for verification
-                        _processVideoForVerification();
-                      }
-                    },
-                  );
-                }
-              }
-            },
-          ),
-        );
+            // Process the image for facial verification
+            _identifyPersonnelFromImage(file);
+            _processImageForVerification();
+          }
+        } else {
+          throw Exception('Captured image file does not exist');
+        }
       }
     } catch (e) {
-      debugPrint('Error taking photo/video: $e');
+      debugPrint('Error taking photo: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text('Camera error: ${e.toString()}'),
             backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: _takePhoto,
+              textColor: Colors.white,
+            ),
           ),
         );
       }
@@ -270,7 +224,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
     // The actual processing is now done in _identifyPersonnelFromImage
   }
 
-  // Identify personnel from image using facial recognition
+  // Identify personnel from image using enhanced facial recognition
   Future<void> _identifyPersonnelFromImage(File imageFile) async {
     // Cache the personnel list before processing to avoid disposal issues
     List<Personnel> personnelList = [];
@@ -287,15 +241,20 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
         personnelList = List.from(personnelProvider.allPersonnel);
       }
 
-      final facialRecognitionService = FacialRecognitionService();
+      // Use the enhanced facial recognition service for better accuracy
+      final enhancedFacialRecognitionService =
+          EnhancedFacialRecognitionService();
+
+      // Initialize the service if needed
+      await enhancedFacialRecognitionService.initialize();
 
       // Show loading indicator
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Processing facial recognition...'),
+            content: Text('Processing advanced facial recognition...'),
             backgroundColor: Colors.blue,
-            duration: Duration(seconds: 1),
+            duration: Duration(seconds: 2),
           ),
         );
       }
@@ -311,10 +270,11 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
       }
 
       // Log file details for debugging
-      debugPrint('Processing image: ${imageFile.path}, size: $fileSize bytes');
+      debugPrint(
+          'Processing image with enhanced recognition: ${imageFile.path}, size: $fileSize bytes');
 
-      // Identify personnel from image using the cached personnel list
-      final result = await facialRecognitionService.identifyPersonnel(
+      // Identify personnel from image using the cached personnel list and enhanced recognition
+      final result = await enhancedFacialRecognitionService.identifyPersonnel(
         imageFile,
         personnelList,
       );
@@ -327,7 +287,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
 
       // Save image with metadata
       final savedImagePath =
-          await facialRecognitionService.saveImageWithMetadata(
+          await enhancedFacialRecognitionService.saveImageWithMetadata(
         imageFile,
         identifiedPersonnel,
         {
@@ -335,6 +295,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
           'captureTime': DateTime.now().toIso8601String(),
           'deviceInfo': 'NAFacial App',
           'confidence': confidence.toString(),
+          'recognitionMethod': 'enhanced_python',
           'adminInfo': await _getAdminInfo() ?? 'Unknown Admin',
         },
       );
@@ -396,12 +357,14 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
     final armyNumber = _armyNumberController.text.trim();
 
     if (armyNumber.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter an army number'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter an army number'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
 
@@ -409,6 +372,8 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
         Provider.of<PersonnelProvider>(context, listen: false);
     final personnel =
         await personnelProvider.getPersonnelByArmyNumber(armyNumber);
+
+    if (!mounted) return;
 
     if (personnel != null) {
       personnelProvider.setSelectedPersonnel(personnel);
@@ -421,9 +386,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
       );
 
       // Show personnel details in a dialog
-      if (mounted) {
-        _showPersonnelDetailsDialog(personnel);
-      }
+      _showPersonnelDetailsDialog(personnel);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -537,7 +500,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
       ),
     )
         .then((updated) {
-      if (updated == true) {
+      if (updated == true && mounted) {
         // Refresh personnel list
         final personnelProvider =
             Provider.of<PersonnelProvider>(context, listen: false);
@@ -557,6 +520,8 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
         VerificationStatus.verified,
       );
 
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${personnel.fullName} has been verified'),
@@ -564,6 +529,8 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
@@ -690,48 +657,25 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
     }
   }
 
-  // Handle video capture
+  // Handle video capture - simplified version
   Future<void> _captureVideo() async {
     try {
-      // Get available cameras
-      final cameras = await availableCameras();
-
-      if (!mounted) return;
-
-      if (cameras.isEmpty) {
-        _showErrorMessage('No cameras available');
-        return;
-      }
-
-      // Show camera selection dialog
-      await showCameraSelectionDialog(
-        context: context,
-        cameras: cameras,
-        onCameraSelected: (camera) async {
-          // Navigate to video capture screen
-          final result = await Navigator.push<File>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => VideoCaptureScreen(
-                cameras: cameras,
-                initialCamera: camera,
-              ),
-            ),
-          );
-
-          if (result != null && mounted) {
-            setState(() {
-              _selectedImage = result;
-            });
-
-            // Process the video for verification
-            _processVideoForVerification();
-          }
-        },
+      // Use image picker to record a video
+      final XFile? video = await _imagePicker.pickVideo(
+        source: ImageSource.camera,
       );
+
+      if (video != null && mounted) {
+        setState(() {
+          _selectedImage = File(video.path);
+        });
+
+        // Process the video for verification
+        _processVideoForVerification();
+      }
     } catch (e) {
-      debugPrint('Error accessing camera: $e');
-      _showErrorMessage('Error accessing camera: ${e.toString()}');
+      debugPrint('Error recording video: $e');
+      _showErrorMessage('Error recording video: ${e.toString()}');
     }
   }
 
@@ -815,7 +759,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                           painter: SecurityPatternPainter(
                             gridSpacing: 15,
                             gridColor:
-                                DesignSystem.skyBlue.withValues(alpha: 51),
+                                DesignSystem.lightBlue.withValues(alpha: 51),
                           ),
                           size: Size(isLargeScreen ? 300 : 200,
                               isLargeScreen ? 300 : 200),
@@ -856,38 +800,30 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                 children: [
                   PlatformButton(
                     text: 'TAKE PHOTO',
-                    onPressed: _takePhoto,
+                    onPressed: () async {
+                      // Check camera permission before taking photo
+                      final status = await permission.Permission.camera.status;
+                      if (status.isGranted) {
+                        _takePhoto();
+                      } else {
+                        // Request permission
+                        final result =
+                            await permission.Permission.camera.request();
+                        if (result.isGranted) {
+                          _takePhoto();
+                        } else {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Camera permission is required'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      }
+                    },
                     icon: Icons.camera_alt,
-                    isFullWidth: false,
-                  ),
-                  PlatformButton(
-                    text: 'USE EXTERNAL CAMERA',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const WebcamCaptureScreen(),
-                        ),
-                      );
-                    },
-                    icon: Icons.videocam,
-                    buttonType: PlatformButtonType.secondary,
-                    isFullWidth: false,
-                  ),
-                  PlatformButton(
-                    text: 'LIVE FACE DETECTION',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const WebcamCaptureScreen(
-                            useFaceDetection: true,
-                          ),
-                        ),
-                      );
-                    },
-                    icon: Icons.face_retouching_natural,
-                    buttonType: PlatformButtonType.secondary,
                     isFullWidth: false,
                   ),
                 ],
@@ -912,6 +848,16 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                   textAlign: TextAlign.center,
                 ),
               ),
+              SizedBox(height: DesignSystem.adjustedSpacingMedium),
+              if (_selectedImage == null)
+                PlatformText(
+                  'Tap the button to take a photo for verification',
+                  style: TextStyle(
+                    color: DesignSystem.textSecondaryColor,
+                    fontSize: DesignSystem.adjustedFontSizeSmall,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
             ],
           ),
         );
@@ -1054,7 +1000,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                           painter: SecurityPatternPainter(
                             gridSpacing: 15,
                             gridColor:
-                                DesignSystem.skyBlue.withValues(alpha: 51),
+                                DesignSystem.lightBlue.withValues(alpha: 51),
                           ),
                           size: Size(isLargeScreen ? 300 : 200,
                               isLargeScreen ? 300 : 200),
@@ -1183,59 +1129,234 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
     );
   }
 
-  // Build live recognition tab
+  // Build live recognition tab with enhanced functionality
   Widget _buildLiveRecognitionTab() {
-    return GestureDetector(
-      onTap: () {
-        // Navigate to the live facial recognition screen
+    final personnelProvider = Provider.of<PersonnelProvider>(context);
+
+    return Column(
+      children: [
+        // Camera preview with face detection
+        Expanded(
+          flex: 3,
+          child: Padding(
+            padding: EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
+            child: ClipRRect(
+              borderRadius:
+                  BorderRadius.circular(DesignSystem.borderRadiusMedium),
+              child: AdvancedCameraWidget(
+                enableFaceTracking: true,
+                showFaceTrackingOverlay: true,
+                onFacesDetected: (faces) {
+                  // Process detected faces
+                  if (faces.isNotEmpty) {
+                    // Auto-capture when a good face is detected
+                    // This will trigger onPictureTaken
+                  }
+                },
+                onPictureTaken: (imageFile) {
+                  // Process the captured image for facial recognition
+                  _processLiveRecognition(
+                      File(imageFile.path), personnelProvider);
+                },
+              ),
+            ),
+          ),
+        ),
+
+        // Controls and status
+        Padding(
+          padding: EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
+          child: Column(
+            children: [
+              // Instructions
+              Container(
+                padding: EdgeInsets.all(DesignSystem.adjustedSpacingMedium),
+                decoration: BoxDecoration(
+                  color: DesignSystem.primaryColor.withValues(alpha: 26),
+                  borderRadius:
+                      BorderRadius.circular(DesignSystem.borderRadiusMedium),
+                  border: Border.all(
+                    color: DesignSystem.primaryColor.withValues(alpha: 51),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          color: DesignSystem.primaryColor,
+                          size: 20,
+                        ),
+                        SizedBox(width: DesignSystem.adjustedSpacingSmall),
+                        const Expanded(
+                          child: Text(
+                            'Live Recognition Instructions',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: DesignSystem.primaryColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: DesignSystem.adjustedSpacingSmall),
+                    const Text(
+                      '1. Position your face in the camera frame\n'
+                      '2. Ensure good lighting and clear view\n'
+                      '3. Hold still for best results\n'
+                      '4. The system will automatically detect and verify your identity',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: DesignSystem.adjustedSpacingMedium),
+
+              // Action buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: PlatformButton(
+                      text: 'MANUAL CAPTURE',
+                      onPressed: () {
+                        // Manually trigger a photo capture
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Capturing image...'),
+                            backgroundColor: Colors.blue,
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                      icon: Icons.camera,
+                      buttonType: PlatformButtonType.secondary,
+                    ),
+                  ),
+                  SizedBox(width: DesignSystem.adjustedSpacingMedium),
+                  Expanded(
+                    child: PlatformButton(
+                      text: 'ENHANCED MODE',
+                      onPressed: () {
+                        // Navigate to the dedicated live recognition screen
+                        Navigator.pushNamed(context, '/live_recognition');
+                      },
+                      icon: Icons.face_retouching_natural,
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: DesignSystem.adjustedSpacingMedium),
+
+              // Sensitivity slider
+              Row(
+                children: [
+                  const Text(
+                    'Recognition Sensitivity:',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  Expanded(
+                    child: Slider(
+                      value: 0.7, // Reduced sensitivity
+                      min: 0.5,
+                      max: 0.9,
+                      divisions: 5,
+                      label: 'Medium',
+                      onChanged: (value) {
+                        // Update sensitivity
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Process live recognition
+  Future<void> _processLiveRecognition(
+      File imageFile, PersonnelProvider personnelProvider) async {
+    try {
+      // Show processing indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Processing facial recognition...'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Get personnel list
+      List<Personnel> personnelList = List.from(personnelProvider.allPersonnel);
+
+      // Use enhanced facial recognition service
+      final enhancedFacialRecognitionService =
+          EnhancedFacialRecognitionService();
+      await enhancedFacialRecognitionService.initialize();
+
+      // Identify personnel
+      final result = await enhancedFacialRecognitionService.identifyPersonnel(
+        imageFile,
+        personnelList,
+      );
+
+      // Extract personnel and confidence
+      final Personnel? identifiedPersonnel =
+          result != null ? result['personnel'] as Personnel : null;
+      final double confidence =
+          result != null ? result['confidence'] as double : 0.0;
+
+      // Save image with metadata
+      final savedImagePath =
+          await enhancedFacialRecognitionService.saveImageWithMetadata(
+        imageFile,
+        identifiedPersonnel,
+        {
+          'captureMethod': 'live_recognition',
+          'captureTime': DateTime.now().toIso8601String(),
+          'deviceInfo': 'NAFacial App',
+          'confidence': confidence.toString(),
+          'recognitionMethod': 'enhanced_live',
+          'adminInfo': await _getAdminInfo() ?? 'Unknown Admin',
+        },
+      );
+
+      if (mounted) {
+        // Navigate to result screen
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const LiveFacialRecognitionScreen(),
+            builder: (context) => PersonnelIdentificationResultScreen(
+              capturedImage: imageFile,
+              identifiedPersonnel: identifiedPersonnel,
+              savedImagePath: savedImagePath,
+              confidence: confidence,
+              isLiveCapture: true,
+            ),
           ),
         );
-      },
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                borderRadius:
-                    BorderRadius.circular(DesignSystem.borderRadiusMedium),
-                color: DesignSystem.primaryColor.withValues(alpha: 26),
-              ),
-              child: const Icon(
-                Icons.face_retouching_natural,
-                size: 80,
-                color: DesignSystem.primaryColor,
-              ),
-            ),
-            SizedBox(height: DesignSystem.adjustedSpacingLarge),
-            PlatformButton(
-              text: 'START LIVE RECOGNITION',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LiveFacialRecognitionScreen(),
-                  ),
-                );
-              },
-              icon: Icons.face_retouching_natural,
-              isFullWidth: false,
-            ),
-            SizedBox(height: DesignSystem.adjustedSpacingMedium),
-            const PlatformText(
-              'Real-time facial recognition with advanced sensitivity controls',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
+      }
+    } catch (e) {
+      debugPrint('Error in live facial recognition: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   // Build personnel database tab

@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:provider/provider.dart';
 import '../config/design_system.dart';
 import '../models/personnel_model.dart';
+import '../models/face_model.dart';
 import '../providers/personnel_provider.dart';
-import '../services/facial_recognition_service.dart';
-import '../widgets/advanced_camera_widget.dart';
+import '../services/enhanced_facial_recognition_service.dart';
 import '../widgets/platform_aware_widgets.dart';
+import '../widgets/advanced_camera_widget.dart';
 
 class LiveFacialRecognitionScreen extends StatefulWidget {
   const LiveFacialRecognitionScreen({Key? key}) : super(key: key);
@@ -20,11 +20,15 @@ class LiveFacialRecognitionScreen extends StatefulWidget {
 
 class _LiveFacialRecognitionScreenState
     extends State<LiveFacialRecognitionScreen> {
-  // Removed unused fields
+  // State variables
   bool _isProcessing = false;
-  double _sensitivity = 0.8; // Increased sensitivity (0.0 to 1.0)
+  double _sensitivity =
+      0.6; // Reduced sensitivity for easier matching (0.0 to 1.0)
   bool _showFaceOverlay = true;
   Personnel? _matchedPersonnel;
+  double _confidence = 0.0; // Store the confidence level
+  Map<String, double>? _featureScores; // Store detailed feature scores
+  bool _showDetailedMetrics = false; // Toggle for showing detailed metrics
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +63,7 @@ class _LiveFacialRecognitionScreenState
                   child: AdvancedCameraWidget(
                     enableFaceTracking: true,
                     showFaceTrackingOverlay: _showFaceOverlay,
-                    onFacesDetected: (faces) {
+                    onFacesDetected: (List<Face> faces) {
                       if (!_isProcessing && faces.isNotEmpty) {
                         _onFacesDetected(faces, personnelProvider);
                       }
@@ -123,6 +127,37 @@ class _LiveFacialRecognitionScreenState
   }
 
   Widget _buildMatchResultView() {
+    // Get confidence from the result
+    double confidence = 0.0;
+    if (_matchedPersonnel != null) {
+      // Get the confidence from the _confidence field
+      confidence = _confidence;
+    }
+
+    // Determine verification status based on confidence
+    bool isConfidentMatch = confidence >= 0.95;
+    bool isPossibleMatch = confidence >= 0.85 && confidence < 0.95;
+    bool isNoMatch = confidence < 0.85;
+
+    // Determine status color and icon
+    Color statusColor;
+    IconData statusIcon;
+    String statusText;
+
+    if (isConfidentMatch) {
+      statusColor = Colors.green;
+      statusIcon = Icons.check_circle;
+      statusText = 'Verified';
+    } else if (isPossibleMatch) {
+      statusColor = Colors.orange;
+      statusIcon = Icons.help;
+      statusText = 'Possible Match - Verify Identity';
+    } else {
+      statusColor = Colors.red;
+      statusIcon = Icons.error;
+      statusText = 'No Match - Different Person';
+    }
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -186,6 +221,140 @@ class _LiveFacialRecognitionScreenState
         ),
         SizedBox(height: DesignSystem.adjustedSpacingMedium),
 
+        // Confidence indicator
+        Row(
+          children: [
+            const Text(
+              'Confidence:',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            SizedBox(width: DesignSystem.adjustedSpacingSmall),
+            Expanded(
+              child: LinearProgressIndicator(
+                value: confidence,
+                backgroundColor: Colors.grey.withAlpha(50),
+                valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+                borderRadius:
+                    BorderRadius.circular(DesignSystem.borderRadiusSmall),
+              ),
+            ),
+            SizedBox(width: DesignSystem.adjustedSpacingSmall),
+            Text(
+              '${(confidence * 100).toStringAsFixed(1)}%',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: statusColor,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: DesignSystem.adjustedSpacingSmall),
+
+        // Toggle for detailed metrics
+        if (_featureScores != null)
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _showDetailedMetrics = !_showDetailedMetrics;
+              });
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  _showDetailedMetrics
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  size: 16,
+                  color: DesignSystem.textSecondaryColor,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _showDetailedMetrics ? 'Hide Details' : 'Show Details',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: DesignSystem.textSecondaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Detailed feature scores
+        if (_showDetailedMetrics && _featureScores != null)
+          Padding(
+            padding: EdgeInsets.symmetric(
+                vertical: DesignSystem.adjustedSpacingSmall),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Feature Comparison:',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                ..._featureScores!.entries.map((entry) {
+                  // Skip the overall score as it's already shown
+                  if (entry.key == 'overall') return const SizedBox.shrink();
+
+                  // Determine color based on score
+                  Color scoreColor;
+                  if (entry.value >= 0.95) {
+                    scoreColor = Colors.green;
+                  } else if (entry.value >= 0.85) {
+                    scoreColor = Colors.orange;
+                  } else {
+                    scoreColor = Colors.red;
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 80,
+                          child: Text(
+                            '${entry.key.split('_').map((word) => word[0].toUpperCase() + word.substring(1)).join(' ')}:',
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ),
+                        Expanded(
+                          child: LinearProgressIndicator(
+                            value: entry.value,
+                            backgroundColor: Colors.grey.withAlpha(30),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(scoreColor),
+                            borderRadius: BorderRadius.circular(
+                                DesignSystem.borderRadiusSmall),
+                            minHeight: 6,
+                          ),
+                        ),
+                        SizedBox(width: DesignSystem.adjustedSpacingSmall),
+                        Text(
+                          '${(entry.value * 100).toStringAsFixed(1)}%',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: scoreColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        SizedBox(height: DesignSystem.adjustedSpacingSmall),
+
         // Verification status
         Container(
           padding: EdgeInsets.symmetric(
@@ -193,28 +362,45 @@ class _LiveFacialRecognitionScreenState
             vertical: DesignSystem.adjustedSpacingSmall,
           ),
           decoration: BoxDecoration(
-            color: Colors.green.withAlpha(25),
+            color: statusColor.withAlpha(25),
             borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall),
+            border: Border.all(color: statusColor.withAlpha(50)),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.check_circle,
-                color: Colors.green,
+                statusIcon,
+                color: statusColor,
                 size: 20,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
-                'Verified',
+                statusText,
                 style: TextStyle(
-                  color: Colors.green,
+                  color: statusColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
         ),
+
+        if (isPossibleMatch || isNoMatch)
+          Padding(
+            padding: EdgeInsets.only(top: DesignSystem.adjustedSpacingSmall),
+            child: Text(
+              isNoMatch
+                  ? 'Confidence too low. This is likely a different person.'
+                  : 'Confidence below 95%. Please verify identity manually.',
+              style: TextStyle(
+                fontSize: 12,
+                color: statusColor,
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
 
         SizedBox(height: DesignSystem.adjustedSpacingMedium),
 
@@ -314,6 +500,9 @@ class _LiveFacialRecognitionScreenState
   void _resetRecognition() {
     setState(() {
       _matchedPersonnel = null;
+      _confidence = 0.0;
+      _featureScores = null;
+      _showDetailedMetrics = false;
     });
   }
 
@@ -325,7 +514,8 @@ class _LiveFacialRecognitionScreenState
     final face = faces.first;
 
     // Skip small faces or faces with low confidence
-    if (face.boundingBox.width < 100 || face.boundingBox.height < 100) {
+    final boundingBox = face.boundingBox;
+    if (boundingBox.width < 100 || boundingBox.height < 100) {
       return;
     }
 
@@ -378,12 +568,16 @@ class _LiveFacialRecognitionScreenState
         debugPrint('Warning: No personnel records available for comparison');
       }
 
-      // Perform facial recognition with timeout protection
-      final facialRecognitionService = FacialRecognitionService();
+      // Perform facial recognition with timeout protection using enhanced service
+      final enhancedFacialRecognitionService =
+          EnhancedFacialRecognitionService();
+      // Initialize the service
+      await enhancedFacialRecognitionService.initialize();
+
       Map<String, dynamic>? result;
 
       try {
-        result = await facialRecognitionService
+        result = await enhancedFacialRecognitionService
             .identifyPersonnel(
           image,
           personnelList,
@@ -403,7 +597,7 @@ class _LiveFacialRecognitionScreenState
           result != null ? result['personnel'] as Personnel : null;
 
       try {
-        await facialRecognitionService.saveImageWithMetadata(
+        await enhancedFacialRecognitionService.saveImageWithMetadata(
           image,
           identifiedPersonnel,
           {
@@ -411,6 +605,7 @@ class _LiveFacialRecognitionScreenState
             'captureTime': DateTime.now().toIso8601String(),
             'deviceInfo': 'NAFacial App',
             'sensitivity': _sensitivity.toString(),
+            'recognitionMethod': 'enhanced_python',
           },
         );
       } catch (saveError) {
@@ -423,9 +618,30 @@ class _LiveFacialRecognitionScreenState
           _isProcessing = false;
           if (result != null) {
             _matchedPersonnel = result['personnel'] as Personnel;
+            // Store the confidence value
+            _confidence = result['confidence'] as double? ?? 0.88;
+
+            // Store feature scores if available
+            if (result.containsKey('feature_scores')) {
+              _featureScores =
+                  (result['feature_scores'] as Map<String, dynamic>)
+                      .map((key, value) => MapEntry(key, value as double));
+
+              // Log detailed feature scores
+              debugPrint('Feature scores for ${_matchedPersonnel!.fullName}:');
+              _featureScores!.forEach((feature, score) {
+                debugPrint('  $feature: ${score.toStringAsFixed(2)}');
+              });
+            } else {
+              _featureScores = null;
+            }
+
             debugPrint(
-                'Successfully identified: ${_matchedPersonnel!.fullName}');
+                'Successfully identified: ${_matchedPersonnel!.fullName} with confidence: ${_confidence.toStringAsFixed(2)}');
           } else {
+            _matchedPersonnel = null;
+            _confidence = 0.0;
+            _featureScores = null;
             debugPrint('No personnel match found');
           }
         });

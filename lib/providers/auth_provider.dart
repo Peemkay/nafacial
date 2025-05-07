@@ -2,9 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../services/biometric_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
+  final BiometricService _biometricService = BiometricService();
 
   User? _currentUser;
   bool _isLoading = false;
@@ -12,15 +14,18 @@ class AuthProvider with ChangeNotifier {
   bool _isBiometricAvailable = false;
   List<BiometricType> _availableBiometrics = [];
   bool _isBiometricEnabled = false;
+  bool _isHighSecurityMode = false;
 
   // Getters
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _currentUser != null;
+  bool get isAdmin => _currentUser?.isAdmin ?? false;
   bool get isBiometricAvailable => _isBiometricAvailable;
   List<BiometricType> get availableBiometrics => _availableBiometrics;
   bool get isBiometricEnabled => _isBiometricEnabled;
+  bool get isHighSecurityMode => _isHighSecurityMode;
 
   // Get current user
   Future<User?> getCurrentUser() async {
@@ -128,6 +133,77 @@ class AuthProvider with ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  // Login with biometrics using a specific user
+  Future<bool> loginWithBiometrics(User user) async {
+    if (!_isBiometricAvailable) {
+      _setError('Biometric authentication is not available on this device');
+      return false;
+    }
+
+    _setLoading(true);
+
+    try {
+      // Verify with high-security biometric authentication
+      final result = await _biometricService.authenticate(
+        reason: 'Authenticate as ${user.fullName}',
+        requireHighAccuracy: true,
+        userId: user.id,
+      );
+
+      if (result.success) {
+        // Authentication successful
+        _currentUser = user;
+        _setError(null);
+        notifyListeners();
+        return true;
+      } else {
+        _setError('Biometric authentication failed: ${result.message}');
+        return false;
+      }
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Get admin user
+  Future<User?> getAdminUser() async {
+    try {
+      return await _authService.getAdminUser();
+    } catch (e) {
+      _setError(e.toString());
+      return null;
+    }
+  }
+
+  // Get user by username
+  Future<User?> getUserByUsername(String username) async {
+    try {
+      return await _authService.getUserByUsername(username);
+    } catch (e) {
+      _setError(e.toString());
+      return null;
+    }
+  }
+
+  // Enable high security mode
+  void enableHighSecurityMode() {
+    _isHighSecurityMode = true;
+    _biometricService
+        .setMatchThreshold(0.75); // Reduced high threshold for matching
+    notifyListeners();
+  }
+
+  // Disable high security mode
+  void disableHighSecurityMode() {
+    _isHighSecurityMode = false;
+    _biometricService
+        .setMatchThreshold(0.65); // Reduced normal threshold for matching
+    notifyListeners();
   }
 
   // Register a new user
