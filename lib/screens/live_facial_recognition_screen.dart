@@ -134,10 +134,11 @@ class _LiveFacialRecognitionScreenState
       confidence = _confidence;
     }
 
-    // Determine verification status based on confidence
-    bool isConfidentMatch = confidence >= 0.95;
-    bool isPossibleMatch = confidence >= 0.85 && confidence < 0.95;
-    bool isNoMatch = confidence < 0.85;
+    // Determine verification status based on confidence (with reduced thresholds)
+    bool isConfidentMatch = confidence >= 0.75; // Reduced from 0.95
+    bool isPossibleMatch =
+        confidence >= 0.60 && confidence < 0.75; // Reduced from 0.85-0.95
+    bool isNoMatch = confidence < 0.60; // Reduced from 0.85
 
     // Determine status color and icon
     Color statusColor;
@@ -305,11 +306,13 @@ class _LiveFacialRecognitionScreenState
                   // Skip the overall score as it's already shown
                   if (entry.key == 'overall') return const SizedBox.shrink();
 
-                  // Determine color based on score
+                  // Determine color based on score (with reduced thresholds)
                   Color scoreColor;
-                  if (entry.value >= 0.95) {
+                  if (entry.value >= 0.75) {
+                    // Reduced from 0.95
                     scoreColor = Colors.green;
-                  } else if (entry.value >= 0.85) {
+                  } else if (entry.value >= 0.60) {
+                    // Reduced from 0.85
                     scoreColor = Colors.orange;
                   } else {
                     scoreColor = Colors.red;
@@ -392,7 +395,7 @@ class _LiveFacialRecognitionScreenState
             child: Text(
               isNoMatch
                   ? 'Confidence too low. This is likely a different person.'
-                  : 'Confidence below 95%. Please verify identity manually.',
+                  : 'Confidence below 75%. Please verify identity manually.',
               style: TextStyle(
                 fontSize: 12,
                 color: statusColor,

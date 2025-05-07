@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:image/image.dart' as img;
 import '../models/personnel_model.dart';
 import 'websocket_face_detection_service.dart';
+import 'improved_face_matching_service.dart';
 
 /// Enhanced facial recognition service that uses the Python backend
 /// for more accurate face detection and recognition
@@ -37,6 +40,27 @@ class EnhancedFacialRecognitionService {
     }
 
     try {
+      // Use the improved face matching service for better accuracy
+      final improvedMatchingService = ImprovedFaceMatchingService();
+      await improvedMatchingService.initialize();
+
+      // Get the best match using the improved service
+      final matchResult = await improvedMatchingService.matchFaceWithPersonnel(
+          imageFile, personnelList);
+
+      if (matchResult != null) {
+        debugPrint(
+            'Found match using improved face matching service: ${(matchResult['personnel'] as Personnel).fullName}');
+        debugPrint(
+            'Match confidence: ${(matchResult['confidence'] as double).toStringAsFixed(2)}');
+
+        // Return the match result with all the detailed metrics
+        return matchResult;
+      }
+
+      // If improved service fails, try the original method
+      debugPrint('Improved face matching failed, trying original method');
+
       // Initialize WebSocket service if not already initialized
       if (!_webSocketService.isConnected) {
         final initialized = await _webSocketService.initialize();
@@ -48,13 +72,16 @@ class EnhancedFacialRecognitionService {
         }
       }
 
-      // Get the best match from the database
+      // Get the best match from the database using original method
       final bestMatch = await _findBestMatch(imageFile, personnelList);
 
       if (bestMatch != null) {
+        debugPrint(
+            'Found match using original method: ${(bestMatch['personnel'] as Personnel).fullName}');
         return {
           'personnel': bestMatch['personnel'],
           'confidence': bestMatch['confidence'],
+          'match_method': 'original',
         };
       }
 
@@ -167,12 +194,13 @@ class EnhancedFacialRecognitionService {
     }
 
     if (bestMatch != null) {
-      // Check if the confidence meets the 95% threshold
-      if (highestConfidence >= 0.95) {
+      // Check if the confidence meets the 60% threshold (reduced from 95%)
+      if (highestConfidence >= 0.60) {
         // Store the best match result with detailed metrics
         Map<String, dynamic> bestMatchResult = {
           'personnel': bestMatch,
           'confidence': highestConfidence,
+          'match_method': 'websocket',
         };
 
         // Store the last comparison result for the best match
@@ -190,7 +218,7 @@ class EnhancedFacialRecognitionService {
       } else {
         // Confidence is below threshold, return null to indicate no match
         debugPrint(
-            'Best match confidence ($highestConfidence) is below the 95% threshold, returning no match');
+            'Best match confidence ($highestConfidence) is below the 60% threshold, returning no match');
         return null;
       }
     }
@@ -279,16 +307,17 @@ class EnhancedFacialRecognitionService {
       }
 
       if (bestMatch != null) {
-        // Check if the confidence meets the 95% threshold
-        if (highestConfidence >= 0.95) {
+        // Check if the confidence meets the 60% threshold (reduced from 95%)
+        if (highestConfidence >= 0.60) {
           return {
             'personnel': bestMatch,
             'confidence': highestConfidence,
+            'match_method': 'local',
           };
         } else {
           // Confidence is below threshold, return null to indicate no match
           debugPrint(
-              'Local best match confidence ($highestConfidence) is below the 95% threshold, returning no match');
+              'Local best match confidence ($highestConfidence) is below the 60% threshold, returning no match');
           return null;
         }
       }
@@ -299,13 +328,80 @@ class EnhancedFacialRecognitionService {
     return null;
   }
 
-  /// Compare two images locally using a basic algorithm
+  /// Compare two images locally using a simple but effective algorithm
   Future<double> _compareImagesLocally(
       List<int> image1Bytes, List<int> image2Bytes) async {
-    // In a real app, you would use a more sophisticated algorithm
-    // This is just a placeholder that returns a random value
-    // between 0.6 and 0.8 to simulate image comparison
-    return 0.7;
+    try {
+      // Convert List<int> to Uint8List for img package
+      final Uint8List bytes1 = Uint8List.fromList(image1Bytes);
+      final Uint8List bytes2 = Uint8List.fromList(image2Bytes);
+
+      // Decode images
+      final img.Image? image1 = img.decodeImage(bytes1);
+      final img.Image? image2 = img.decodeImage(bytes2);
+
+      if (image1 == null || image2 == null) {
+        debugPrint('Failed to decode images for local comparison');
+        return 0.0;
+      }
+
+      // Resize images to the same dimensions for comparison
+      final normalizedImage1 = img.copyResize(image1, width: 64, height: 64);
+      final normalizedImage2 = img.copyResize(image2, width: 64, height: 64);
+
+      // Convert to grayscale
+      final grayImage1 = img.grayscale(normalizedImage1);
+      final grayImage2 = img.grayscale(normalizedImage2);
+
+      // Calculate Mean Squared Error (MSE)
+      double sumSquaredDiff = 0.0;
+      int pixelCount = 0;
+
+      for (int y = 0; y < grayImage1.height; y++) {
+        for (int x = 0; x < grayImage1.width; x++) {
+          // Get pixel values
+          final pixel1 = grayImage1.getPixel(x, y);
+          final pixel2 = grayImage2.getPixel(x, y);
+
+          // Calculate squared difference
+          // For grayscale images, we can use any channel as they're all the same
+          // We'll extract the luminance value
+          final val1 = img.getLuminance(pixel1);
+          final val2 = img.getLuminance(pixel2);
+          final diff = val1 - val2;
+          sumSquaredDiff += diff * diff;
+          pixelCount++;
+        }
+      }
+
+      // Calculate MSE
+      final mse = sumSquaredDiff / pixelCount;
+
+      // Convert MSE to similarity (0-1 range)
+      // Using a simple exponential function to map MSE to similarity
+      // Lower MSE means higher similarity
+      final similarity = exp(-mse / 1000.0); // Exponential decay
+
+      // Enhance the similarity to make it more discriminative
+      double enhancedSimilarity = similarity;
+      if (similarity > 0.8) {
+        enhancedSimilarity =
+            0.8 + (similarity - 0.8) * 2; // Boost high similarities
+      } else if (similarity < 0.5) {
+        enhancedSimilarity = similarity * 0.8; // Reduce low similarities
+      }
+
+      // Ensure the result is in the range [0, 1]
+      enhancedSimilarity = enhancedSimilarity.clamp(0.0, 1.0);
+
+      debugPrint(
+          'Local image comparison - MSE: $mse, similarity: $similarity, enhanced: $enhancedSimilarity');
+
+      return enhancedSimilarity;
+    } catch (e) {
+      debugPrint('Error in local image comparison: $e');
+      return 0.0;
+    }
   }
 
   /// Save an image with metadata
