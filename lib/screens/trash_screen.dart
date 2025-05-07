@@ -4,7 +4,7 @@ import '../models/trash_model.dart';
 import '../models/personnel_model.dart';
 import '../providers/trash_provider.dart';
 import '../providers/personnel_provider.dart';
-import '../widgets/app_drawer.dart';
+import '../widgets/custom_drawer.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/error_message.dart';
 import '../widgets/empty_state.dart';
@@ -19,7 +19,8 @@ class TrashScreen extends StatefulWidget {
   State<TrashScreen> createState() => _TrashScreenState();
 }
 
-class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStateMixin {
+class _TrashScreenState extends State<TrashScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isLoading = false;
 
@@ -27,7 +28,7 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    
+
     // Initialize trash provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final trashProvider = Provider.of<TrashProvider>(context, listen: false);
@@ -42,13 +43,15 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
   }
 
   // Restore a personnel from trash
-  Future<void> _restorePersonnel(BuildContext context, TrashItem trashItem) async {
+  Future<void> _restorePersonnel(
+      BuildContext context, TrashItem trashItem) async {
     setState(() => _isLoading = true);
-    
+
     try {
       final trashProvider = Provider.of<TrashProvider>(context, listen: false);
-      final personnel = await trashProvider.restorePersonnelFromTrash(trashItem.id);
-      
+      final personnel =
+          await trashProvider.restorePersonnelFromTrash(trashItem.id);
+
       if (personnel != null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -85,25 +88,28 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
   }
 
   // Permanently delete a trash item
-  Future<void> _permanentlyDeleteTrashItem(BuildContext context, TrashItem trashItem) async {
+  Future<void> _permanentlyDeleteTrashItem(
+      BuildContext context, TrashItem trashItem) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => ConfirmationDialog(
         title: 'Permanently Delete',
-        content: 'This action cannot be undone. Are you sure you want to permanently delete this item?',
+        content:
+            'This action cannot be undone. Are you sure you want to permanently delete this item?',
         confirmText: 'Delete Permanently',
         confirmColor: Colors.red,
       ),
     );
-    
+
     if (confirmed != true) return;
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
       final trashProvider = Provider.of<TrashProvider>(context, listen: false);
-      final success = await trashProvider.permanentlyDeleteTrashItem(trashItem.id);
-      
+      final success =
+          await trashProvider.permanentlyDeleteTrashItem(trashItem.id);
+
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -145,20 +151,21 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
       context: context,
       builder: (context) => ConfirmationDialog(
         title: 'Empty Trash',
-        content: 'This will permanently delete all items in the trash. This action cannot be undone. Are you sure?',
+        content:
+            'This will permanently delete all items in the trash. This action cannot be undone. Are you sure?',
         confirmText: 'Empty Trash',
         confirmColor: Colors.red,
       ),
     );
-    
+
     if (confirmed != true) return;
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
       final trashProvider = Provider.of<TrashProvider>(context, listen: false);
       final success = await trashProvider.emptyTrash();
-      
+
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -214,7 +221,7 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
           ),
         ],
       ),
-      drawer: const AppDrawer(),
+      drawer: const CustomDrawer(),
       body: _isLoading
           ? const LoadingIndicator()
           : Consumer<TrashProvider>(
@@ -222,14 +229,14 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
                 if (trashProvider.isLoading) {
                   return const LoadingIndicator();
                 }
-                
+
                 if (trashProvider.error != null) {
                   return ErrorMessage(
                     message: trashProvider.error!,
                     onRetry: () => trashProvider.initialize(),
                   );
                 }
-                
+
                 return TabBarView(
                   controller: _tabController,
                   children: [
@@ -239,7 +246,7 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
                       trashProvider.allTrashItems,
                       'No items in trash',
                     ),
-                    
+
                     // Personnel tab
                     _buildTrashItemsList(
                       context,
@@ -264,7 +271,7 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
         message: emptyMessage,
       );
     }
-    
+
     return ListView.builder(
       itemCount: trashItems.length,
       itemBuilder: (context, index) {
@@ -279,13 +286,14 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
     String title = 'Unknown Item';
     String subtitle = 'Deleted ${trashItem.deletedTimeAgo}';
     Widget? leading;
-    
+
     if (trashItem.entityType == 'personnel') {
       final personnel = trashItem.toPersonnel();
       if (personnel != null) {
         title = '${personnel.fullName} (${personnel.armyNumber})';
-        subtitle = 'Deleted ${trashItem.deletedTimeAgo} by ${trashItem.deletedByName}';
-        
+        subtitle =
+            'Deleted ${trashItem.deletedTimeAgo} by ${trashItem.deletedByName}';
+
         // Show personnel photo if available
         if (personnel.photoUrl != null && personnel.photoUrl!.isNotEmpty) {
           leading = CircleAvatar(
@@ -297,7 +305,7 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
         }
       }
     }
-    
+
     return Dismissible(
       key: Key(trashItem.id),
       background: Container(
