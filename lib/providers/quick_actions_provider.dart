@@ -54,10 +54,17 @@ class QuickActionsProvider with ChangeNotifier {
       route: '/settings',
     ),
     QuickAction(
+      id: 'enhanced_recognition',
+      title: 'Enhanced Recognition',
+      icon: Icons.camera_enhance,
+      color: const Color(0xFF8E24AA), // Purple
+      route: '/enhanced_recognition',
+    ),
+    QuickAction(
       id: 'live_recognition',
       title: 'Live Recognition',
       icon: Icons.camera_alt,
-      color: const Color(0xFF8E24AA), // Purple
+      color: const Color(0xFF6A1B9A), // Darker Purple
       route: '/live_recognition',
     ),
     QuickAction(

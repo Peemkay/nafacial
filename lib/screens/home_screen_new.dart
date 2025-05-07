@@ -406,26 +406,42 @@ class _HomeScreenState extends State<HomeScreen> {
           const Divider(),
           const SizedBox(height: 16),
           // Biometric actions
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+          Column(
             children: [
-              _buildAdminAction(
-                context,
-                'Verify',
-                Icons.face,
-                () => Navigator.pushNamed(context, '/facial_verification'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildAdminAction(
+                    context,
+                    'Verify',
+                    Icons.face,
+                    () => Navigator.pushNamed(context, '/facial_verification'),
+                  ),
+                  _buildAdminAction(
+                    context,
+                    'Enhanced',
+                    Icons.camera_enhance,
+                    () => Navigator.pushNamed(context, '/enhanced_recognition'),
+                  ),
+                ],
               ),
-              _buildAdminAction(
-                context,
-                'Enhanced Recognition',
-                Icons.camera_enhance,
-                () => Navigator.pushNamed(context, '/enhanced_recognition'),
-              ),
-              _buildAdminAction(
-                context,
-                'Gallery',
-                Icons.photo_library,
-                () => _openGallery(context),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildAdminAction(
+                    context,
+                    'Live',
+                    Icons.camera_alt,
+                    () => Navigator.pushNamed(context, '/live_recognition'),
+                  ),
+                  _buildAdminAction(
+                    context,
+                    'Gallery',
+                    Icons.photo_library,
+                    () => _openGallery(context),
+                  ),
+                ],
               ),
             ],
           ),
@@ -500,8 +516,11 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'facial_verification':
         Navigator.pushNamed(context, '/facial_verification');
         break;
-      case 'live_recognition':
+      case 'enhanced_recognition':
         Navigator.pushNamed(context, '/enhanced_recognition');
+        break;
+      case 'live_recognition':
+        Navigator.pushNamed(context, '/live_recognition');
         break;
       case 'personnel_database':
         Navigator.pushNamed(context, '/personnel_database');

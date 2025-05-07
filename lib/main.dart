@@ -270,6 +270,8 @@ class _NAFacialAppState extends State<NAFacialApp> {
                     const AndroidServerManagerScreen(),
                 '/enhanced_recognition': (context) =>
                     const EnhancedRecognitionDemoScreen(),
+                '/live_recognition': (context) =>
+                    const LiveFacialRecognitionScreen(),
 
                 // Info pages
                 '/about': (context) => const AboutScreen(),

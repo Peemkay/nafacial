@@ -193,6 +193,14 @@ class _CustomDrawerState extends State<CustomDrawer>
                                   context, '/enhanced_recognition');
                             },
                           ),
+                          _buildDrawerItem(
+                            icon: Icons.camera_alt,
+                            title: 'Live Recognition',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.pushNamed(context, '/live_recognition');
+                            },
+                          ),
 
                           // Personnel Section
                           _buildDrawerHeader('Personnel Management'),
