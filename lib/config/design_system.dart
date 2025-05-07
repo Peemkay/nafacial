@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart';
 
 /// A unified design system for consistent styling across platforms
 class DesignSystem {
@@ -9,95 +10,103 @@ class DesignSystem {
   static bool get isWindows => !kIsWeb && Platform.isWindows;
   static bool get isWeb => kIsWeb;
 
-  // Base color palette - consistent across all platforms
-  static const Color navyBlue = Color(0xFF001F3F);
-  static const Color skyBlue = Color(0xFF4A90E2);
-  static const Color yellow = Color(0xFFFFD700);
-  static const Color green = Color(0xFF00C853);
-  static const Color amber = Color(0xFFFFB300);
-  static const Color red = Color(0xFFD50000);
-  static const Color militaryGreen = Color(0xFF1E5631);
+  // ======== CORE COLOR PALETTE ========
+  // These are the base colors used throughout the app
+  static const Color navy = Color(0xFF001F3F);
+  static const Color blue = Color(0xFF0A3D62);
+  static const Color lightBlue = Color(0xFF3498DB);
+  static const Color yellow = Color(0xFFF1C40F);
+  static const Color green = Color(0xFF27AE60);
+  static const Color red = Color(0xFFE74C3C);
+  static const Color orange = Color(0xFFE67E22);
+  static const Color white = Colors.white;
+  static const Color black = Colors.black;
 
-  // Enhanced dark mode palette
-  static const Color darkBlue = Color(0xFF0A1929);
-  static const Color darkNavyBlue = Color(0xFF172B4D);
-  static const Color darkSteelBlue = Color(0xFF2C3E50);
-  static const Color darkSlateBlue = Color(0xFF1A365D);
-  static const Color darkCyan = Color(0xFF0E7490);
-  static const Color darkTeal = Color(0xFF0F766E);
-  static const Color darkForestGreen = Color(0xFF166534);
-  static const Color darkOliveGreen = Color(0xFF3F6212);
-  static const Color darkGold = Color(0xFFB45309);
-  static const Color darkAmber = Color(0xFFD97706);
+  // Grays
+  static const Color gray100 = Color(0xFFF8F9FA); // Lightest
+  static const Color gray200 = Color(0xFFE5E8E8);
+  static const Color gray300 = Color(0xFFD1D5D8);
+  static const Color gray400 = Color(0xFFAEB6BF);
+  static const Color gray500 = Color(0xFF7F8C8D);
+  static const Color gray600 = Color(0xFF5D6D7E);
+  static const Color gray700 = Color(0xFF2C3E50);
+  static const Color gray800 = Color(0xFF1E2A38);
+  static const Color gray900 = Color(0xFF0F1A2A); // Darkest
 
-  // Enhanced grey palette for dark mode
-  static const Color darkGrey1 = Color(0xFF121212); // Darkest
-  static const Color darkGrey2 = Color(0xFF1E1E1E);
-  static const Color darkGrey3 = Color(0xFF222222);
-  static const Color darkGrey4 = Color(0xFF272727);
-  static const Color darkGrey5 = Color(0xFF2C2C2C);
-  static const Color darkGrey6 = Color(0xFF323232);
-  static const Color darkGrey7 = Color(0xFF383838);
-  static const Color darkGrey8 = Color(0xFF424242);
-  static const Color darkGrey9 = Color(0xFF616161); // Lightest
-
-  // Light theme colors
-  static const Color lightPrimaryColor = navyBlue;
-  static const Color lightSecondaryColor = skyBlue;
+  // ======== LIGHT THEME COLORS ========
+  // Primary colors
+  static const Color lightPrimaryColor = blue;
+  static const Color lightSecondaryColor = lightBlue;
   static const Color lightAccentColor = yellow;
-  static const Color lightBackgroundColor = Colors.white;
-  static const Color lightSurfaceColor = Colors.white;
-  static const Color lightCardColor = Colors.white;
-  static const Color lightIconColor = navyBlue;
-  static const Color lightTextPrimaryColor = navyBlue;
-  static const Color lightTextSecondaryColor = Color(0xFF4A4A4A);
-  static const Color lightDividerColor = Color(0xFFE0E0E0);
-  static const Color lightAppBarColor = navyBlue;
-  static const Color lightStatusBarColor = navyBlue;
-  static const Color lightNavBarColor = Colors.white;
 
-  // Dark theme colors
-  static const Color darkPrimaryColor = darkSlateBlue;
-  static const Color darkSecondaryColor = darkCyan;
-  static const Color darkAccentColor = Color(0xFFFFD54F); // Softer yellow
-  static const Color darkBackgroundColor =
-      Color(0xFF0D2A4A); // Dark blue background
-  static const Color darkSurfaceColor = Color(0xFF0F3058); // Dark blue surface
-  static const Color darkCardColor = Color(0xFF103464); // Dark blue card
-  static const Color darkIconColor = skyBlue; // Sky blue icons
-  static const Color darkTextPrimaryColor = Colors.white; // Pure white text
-  static const Color darkTextSecondaryColor =
-      Color(0xFFBDBDBD); // Light grey text
-  static const Color darkDividerColor = Color(0xFF2C4A6A); // Dark blue divider
-  static const Color darkAppBarColor = Color(0xFF0A2240); // Dark blue app bar
-  static const Color darkStatusBarColor =
-      Color(0xFF071A30); // Dark blue status bar
-  static const Color darkNavBarColor = Color(0xFF0A2240); // Dark blue nav bar
+  // Background and surface colors
+  static const Color lightBackgroundColor = gray100;
+  static const Color lightSurfaceColor = white;
+  static const Color lightCardColor = white;
 
-  // Additional dark theme colors for UI elements
-  static const Color darkButtonColor = darkCyan;
-  static const Color darkButtonHoverColor = Color(0xFF0891B2); // Lighter cyan
-  static const Color darkSelectionColor = darkTeal;
-  static const Color darkHighlightColor = darkGold;
-  static const Color darkFocusColor = darkAmber;
-  static const Color darkSplashColor = Color(0xFF155E75); // Darker cyan
+  // Text colors
+  static const Color lightTextPrimaryColor = gray700;
+  static const Color lightTextSecondaryColor = gray600;
 
-  // Semantic colors - consistent across themes but with appropriate contrast
+  // UI element colors
+  static const Color lightIconColor = blue;
+  static const Color lightDividerColor = gray200;
+  static const Color lightAppBarColor = blue;
+  static const Color lightStatusBarColor = blue;
+  static const Color lightNavBarColor = white;
+
+  // Semantic colors
   static const Color lightSuccessColor = green;
-  static const Color lightWarningColor = amber;
+  static const Color lightWarningColor = orange;
   static const Color lightErrorColor = red;
-  static const Color darkSuccessColor =
-      Color(0xFF4CAF50); // Professional green for dark mode
-  static const Color darkWarningColor =
-      Color(0xFFFFC107); // Professional amber for dark mode
-  static const Color darkErrorColor =
-      Color(0xFFF44336); // Professional red for dark mode
 
-  // Additional semantic colors for dark mode
-  static const Color darkInfoColor = Color(0xFF2196F3); // Blue for information
-  static const Color darkDisabledColor = darkGrey8; // For disabled elements
+  // ======== DARK THEME COLORS ========
+  // Primary colors
+  static const Color darkPrimaryColor = Color(0xFF001F3F); // Deep navy blue
+  static const Color darkSecondaryColor = Color(0xFF0A3D62); // Dark blue
+  static const Color darkAccentColor = yellow;
 
-  // Aliases for backward compatibility
+  // Background and surface colors
+  static const Color darkBackgroundColor =
+      Color(0xFF001428); // Very dark blue background
+  static const Color darkSurfaceColor = Color(0xFF0A1929); // Dark blue surface
+  static const Color darkCardColor = Color(0xFF0F2A45); // Dark blue card color
+  static const Color darkMenuColor =
+      Color(0xFF0F2A45); // Dark blue menu background
+  static const Color darkSectionColor =
+      Color(0xFF0A1929); // Dark blue section background
+
+  // Text colors
+  static const Color darkTextPrimaryColor = white;
+  static const Color darkTextSecondaryColor = gray300;
+
+  // UI element colors
+  static const Color darkIconColor = white;
+  static const Color darkDividerColor =
+      Color(0xFF1E3A5F); // Blue-tinted divider
+  static const Color darkAppBarColor =
+      Color(0xFF001F3F); // Deep navy blue app bar
+  static const Color darkStatusBarColor = black;
+  static const Color darkNavBarColor =
+      Color(0xFF001F3F); // Deep navy blue nav bar
+
+  // Interactive element colors
+  static const Color darkButtonColor = blue;
+  static const Color darkButtonHoverColor = lightBlue;
+  static const Color darkSelectionColor = lightBlue;
+  static const Color darkHighlightColor = yellow;
+  static const Color darkFocusColor = lightBlue;
+  static const Color darkSplashColor = lightBlue;
+  static const Color darkDisabledColor = gray500;
+
+  // Semantic colors
+  static const Color darkSuccessColor = green;
+  static const Color darkWarningColor = orange;
+  static const Color darkErrorColor = red;
+  static const Color darkInfoColor = lightBlue;
+
+  // ======== BACKWARD COMPATIBILITY ALIASES ========
+  // These aliases maintain compatibility with existing code
   static const Color primaryColor = lightPrimaryColor;
   static const Color secondaryColor = lightSecondaryColor;
   static const Color accentColor = lightAccentColor;

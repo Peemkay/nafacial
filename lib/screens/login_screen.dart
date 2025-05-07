@@ -46,10 +46,11 @@ class _LoginScreenState extends State<LoginScreen>
 
     _animationController.forward();
 
-    // Initialize auth provider
+    // Initialize auth provider but don't automatically prompt for biometric
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       authProvider.initialize();
+      // Removed automatic biometric prompt for better security
     });
   }
 
@@ -76,6 +77,8 @@ class _LoginScreenState extends State<LoginScreen>
       }
     }
   }
+
+  // Method removed for security reasons
 
   // Handle biometric login
   Future<void> _loginWithBiometric() async {

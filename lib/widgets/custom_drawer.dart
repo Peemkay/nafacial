@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/design_system.dart';
 import '../providers/auth_provider.dart';
+import '../services/secure_route_navigator.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({Key? key}) : super(key: key);
@@ -58,6 +59,9 @@ class _CustomDrawerState extends State<CustomDrawer>
     _animationController.dispose();
     super.dispose();
   }
+
+  // Create an instance of the secure route navigator
+  final SecureRouteNavigator _secureNavigator = SecureRouteNavigator();
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +200,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Personnel Database',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.pushNamed(
+                              _secureNavigator.navigateTo(
                                   context, '/personnel_database');
                             },
                           ),
@@ -205,7 +209,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Register',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.pushNamed(
+                              _secureNavigator.navigateTo(
                                   context, '/register_personnel');
                             },
                           ),
@@ -214,7 +218,8 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'ID Management',
                             onTap: () {
                               Navigator.pop(context);
-                              _showFeatureComingSoon(context);
+                              _secureNavigator.navigateTo(
+                                  context, '/id_management');
                             },
                           ),
                           _buildDrawerItem(
@@ -222,7 +227,8 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Rank Management',
                             onTap: () {
                               Navigator.pop(context);
-                              _showFeatureComingSoon(context);
+                              _secureNavigator.navigateTo(
+                                  context, '/rank_management');
                             },
                           ),
 
@@ -241,7 +247,8 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Access Logs',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.pushNamed(context, '/access_logs');
+                              _secureNavigator.navigateTo(
+                                  context, '/access_logs');
                             },
                           ),
                           _buildDrawerItem(
@@ -249,7 +256,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Biometric Management',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.pushNamed(
+                              _secureNavigator.navigateTo(
                                   context, '/biometric_management');
                             },
                           ),
@@ -258,7 +265,7 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Device Management',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.pushNamed(
+                              _secureNavigator.navigateTo(
                                   context, '/device_management');
                             },
                           ),
@@ -297,7 +304,8 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Analytics Dashboard',
                             onTap: () {
                               Navigator.pop(context);
-                              _showFeatureComingSoon(context);
+                              _secureNavigator.navigateTo(
+                                  context, '/analytics');
                             },
                           ),
                           _buildDrawerItem(

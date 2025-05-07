@@ -1,8 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'design_system.dart';
+import 'dynamic_color_theme.dart';
 
 class AppThemes {
+  // Get dynamic theme based on user preferences
+  static Future<ThemeData> getDynamicLightTheme({
+    required bool useDynamicColors,
+    required int colorSchemeIndex,
+  }) async {
+    return DynamicColorTheme.getLightTheme(
+      useDynamicColors: useDynamicColors,
+      colorSchemeIndex: colorSchemeIndex,
+    ).then((dynamicTheme) {
+      // Apply our custom theme properties to the dynamic theme
+      return dynamicTheme.copyWith(
+        appBarTheme: lightTheme.appBarTheme,
+        cardTheme: lightTheme.cardTheme,
+        elevatedButtonTheme: lightTheme.elevatedButtonTheme,
+        textButtonTheme: lightTheme.textButtonTheme,
+        outlinedButtonTheme: lightTheme.outlinedButtonTheme,
+        switchTheme: lightTheme.switchTheme,
+        checkboxTheme: lightTheme.checkboxTheme,
+        radioTheme: lightTheme.radioTheme,
+        dialogTheme: lightTheme.dialogTheme,
+        snackBarTheme: lightTheme.snackBarTheme,
+        navigationBarTheme: lightTheme.navigationBarTheme,
+      );
+    });
+  }
+
+  static Future<ThemeData> getDynamicDarkTheme({
+    required bool useDynamicColors,
+    required int colorSchemeIndex,
+  }) async {
+    return DynamicColorTheme.getDarkTheme(
+      useDynamicColors: useDynamicColors,
+      colorSchemeIndex: colorSchemeIndex,
+    ).then((dynamicTheme) {
+      // Apply our custom theme properties to the dynamic theme
+      return dynamicTheme.copyWith(
+        appBarTheme: darkTheme.appBarTheme,
+        cardTheme: darkTheme.cardTheme,
+        elevatedButtonTheme: darkTheme.elevatedButtonTheme,
+        textButtonTheme: darkTheme.textButtonTheme,
+        outlinedButtonTheme: darkTheme.outlinedButtonTheme,
+        switchTheme: darkTheme.switchTheme,
+        checkboxTheme: darkTheme.checkboxTheme,
+        radioTheme: darkTheme.radioTheme,
+        dialogTheme: darkTheme.dialogTheme,
+        snackBarTheme: darkTheme.snackBarTheme,
+        navigationBarTheme: darkTheme.navigationBarTheme,
+        splashColor: darkTheme.splashColor,
+        highlightColor: darkTheme.highlightColor,
+        focusColor: darkTheme.focusColor,
+        hoverColor: darkTheme.hoverColor,
+        disabledColor: darkTheme.disabledColor,
+      );
+    });
+  }
+
   // Light theme definition
   static final ThemeData lightTheme = ThemeData(
     useMaterial3: true,
@@ -203,14 +260,14 @@ class AppThemes {
     brightness: Brightness.dark,
     primaryColor: DesignSystem.darkPrimaryColor,
     colorScheme: const ColorScheme.dark(
-      primary: DesignSystem.darkCyan,
-      secondary: DesignSystem.darkTeal,
+      primary: DesignSystem.darkPrimaryColor,
+      secondary: DesignSystem.darkSecondaryColor,
       tertiary: DesignSystem.darkAccentColor,
       error: DesignSystem.darkErrorColor,
       surface: DesignSystem.darkSurfaceColor,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
-      onSurface: DesignSystem.darkTextPrimaryColor,
+      onSurface: Colors.white,
       onError: Colors.white,
     ),
     scaffoldBackgroundColor: DesignSystem.darkBackgroundColor,
@@ -218,8 +275,8 @@ class AppThemes {
       backgroundColor: DesignSystem.darkAppBarColor,
       foregroundColor: Colors.white,
       elevation: 0,
-      iconTheme: IconThemeData(color: DesignSystem.darkIconColor),
-      actionsIconTheme: IconThemeData(color: DesignSystem.darkIconColor),
+      iconTheme: IconThemeData(color: Colors.white),
+      actionsIconTheme: IconThemeData(color: Colors.white),
       systemOverlayStyle: SystemUiOverlayStyle(
         statusBarColor: DesignSystem.darkStatusBarColor,
         statusBarIconBrightness: Brightness.light,
@@ -247,13 +304,13 @@ class AppThemes {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: DesignSystem.darkCyan,
+        foregroundColor: Colors.white,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: DesignSystem.darkCyan,
-        side: const BorderSide(color: DesignSystem.darkCyan),
+        foregroundColor: Colors.white,
+        side: const BorderSide(color: Colors.white),
       ),
     ),
     textTheme: const TextTheme(
@@ -318,44 +375,45 @@ class AppThemes {
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: DesignSystem.darkNavBarColor,
-      selectedItemColor: DesignSystem.darkCyan,
+      selectedItemColor: Colors.white,
       unselectedItemColor: DesignSystem.darkTextSecondaryColor,
       elevation: 8,
       type: BottomNavigationBarType.fixed,
     ),
     iconTheme: const IconThemeData(
-      color: DesignSystem.darkIconColor,
+      color:
+          Colors.white, // White icons for better visibility on dark backgrounds
     ),
     switchTheme: SwitchThemeData(
-      thumbColor: WidgetStateProperty.all(DesignSystem.darkCyan),
-      trackColor: WidgetStateProperty.all(DesignSystem.darkGrey5),
+      thumbColor: WidgetStateProperty.all(Colors.white),
+      trackColor: WidgetStateProperty.all(DesignSystem.darkPrimaryColor),
     ),
     checkboxTheme: CheckboxThemeData(
-      fillColor: WidgetStateProperty.all(DesignSystem.darkCyan),
+      fillColor: WidgetStateProperty.all(DesignSystem.darkPrimaryColor),
       checkColor: WidgetStateProperty.all(Colors.white),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall / 2),
       ),
     ),
     radioTheme: RadioThemeData(
-      fillColor: WidgetStateProperty.all(DesignSystem.darkCyan),
+      fillColor: WidgetStateProperty.all(DesignSystem.darkPrimaryColor),
     ),
     dialogTheme: DialogTheme(
-      backgroundColor: DesignSystem.darkSurfaceColor,
+      backgroundColor: DesignSystem.darkCardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(DesignSystem.borderRadiusMedium),
       ),
+      surfaceTintColor: Colors.transparent,
     ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: DesignSystem.darkCyan,
+      backgroundColor: DesignSystem.darkPrimaryColor,
       foregroundColor: Colors.white,
       elevation: 4,
       highlightElevation: 8,
     ),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: DesignSystem.darkSurfaceColor,
-      contentTextStyle:
-          const TextStyle(color: DesignSystem.darkTextPrimaryColor),
+      backgroundColor: DesignSystem.darkCardColor,
+      contentTextStyle: const TextStyle(color: Colors.white),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall),
       ),
@@ -363,7 +421,7 @@ class AppThemes {
     ),
     navigationBarTheme: const NavigationBarThemeData(
       backgroundColor: DesignSystem.darkNavBarColor,
-      indicatorColor: DesignSystem.darkCyan,
+      indicatorColor: DesignSystem.darkPrimaryColor,
       surfaceTintColor: Colors.transparent,
       elevation: 4,
     ),
@@ -371,19 +429,27 @@ class AppThemes {
     splashColor: DesignSystem.darkSplashColor,
     highlightColor: DesignSystem.darkHighlightColor,
     focusColor: DesignSystem.darkFocusColor,
-    hoverColor: DesignSystem.darkCyan,
+    hoverColor: DesignSystem.darkPrimaryColor,
     disabledColor: DesignSystem.darkDisabledColor,
     progressIndicatorTheme: const ProgressIndicatorThemeData(
-      color: DesignSystem.darkCyan,
-      circularTrackColor: DesignSystem.darkGrey5,
-      linearTrackColor: DesignSystem.darkGrey5,
+      color: Colors.white,
+      circularTrackColor: DesignSystem.darkPrimaryColor,
+      linearTrackColor: DesignSystem.darkPrimaryColor,
     ),
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
-        color: DesignSystem.darkGrey6,
+        color: DesignSystem.darkCardColor,
         borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall),
       ),
-      textStyle: const TextStyle(color: DesignSystem.darkTextPrimaryColor),
+      textStyle: const TextStyle(color: Colors.white),
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: DesignSystem.darkMenuColor,
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignSystem.borderRadiusSmall),
+      ),
+      surfaceTintColor: Colors.transparent,
     ),
   );
 }
