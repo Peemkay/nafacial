@@ -437,6 +437,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _buildAdminAction(
                     context,
+                    'ID Card',
+                    Icons.credit_card,
+                    () => Navigator.pushNamed(context, '/id_verification'),
+                  ),
+                  _buildAdminAction(
+                    context,
                     'Gallery',
                     Icons.photo_library,
                     () => _openGallery(context),
@@ -521,6 +527,9 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       case 'live_recognition':
         Navigator.pushNamed(context, '/live_recognition');
+        break;
+      case 'id_verification':
+        Navigator.pushNamed(context, '/id_verification');
         break;
       case 'personnel_database':
         Navigator.pushNamed(context, '/personnel_database');

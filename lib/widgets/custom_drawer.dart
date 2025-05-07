@@ -201,6 +201,14 @@ class _CustomDrawerState extends State<CustomDrawer>
                               Navigator.pushNamed(context, '/live_recognition');
                             },
                           ),
+                          _buildDrawerItem(
+                            icon: Icons.credit_card,
+                            title: 'ID Verification',
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.pushNamed(context, '/id_verification');
+                            },
+                          ),
 
                           // Personnel Section
                           _buildDrawerHeader('Personnel Management'),

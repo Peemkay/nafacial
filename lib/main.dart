@@ -50,6 +50,7 @@ import 'screens/android_server_manager_screen.dart';
 import 'screens/enhanced_android_server_manager_screen.dart';
 import 'screens/theme_preview_screen.dart';
 import 'screens/trash_screen.dart';
+import 'screens/id_verification_screen.dart';
 
 // Global navigator key for accessing navigator from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -292,6 +293,9 @@ class _NAFacialAppState extends State<NAFacialApp> {
 
                 // Trash management
                 '/trash': (context) => const TrashScreen(),
+
+                // ID Verification
+                '/id_verification': (context) => const IDVerificationScreen(),
 
                 // Info pages
                 '/about': (context) => const AboutScreen(),

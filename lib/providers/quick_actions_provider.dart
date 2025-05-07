@@ -95,6 +95,13 @@ class QuickActionsProvider with ChangeNotifier {
       color: const Color(0xFF00796B), // Teal
       route: '/biometric_management',
     ),
+    QuickAction(
+      id: 'id_verification',
+      title: 'ID Verification',
+      icon: Icons.credit_card,
+      color: const Color(0xFFFF6F00), // Orange
+      route: '/id_verification',
+    ),
   ];
 
   List<QuickAction> get quickActions => _quickActions;
