@@ -49,10 +49,19 @@ class EnhancedFacialRecognitionService {
           imageFile, personnelList);
 
       if (matchResult != null) {
+        final personnel = matchResult['personnel'] as Personnel;
+        final confidence = matchResult['confidence'] as double;
+
         debugPrint(
-            'Found match using improved face matching service: ${(matchResult['personnel'] as Personnel).fullName}');
-        debugPrint(
-            'Match confidence: ${(matchResult['confidence'] as double).toStringAsFixed(2)}');
+            'Found match using improved face matching service: ${personnel.fullName} (${personnel.armyNumber})');
+        debugPrint('Match confidence: ${confidence.toStringAsFixed(2)}');
+
+        // Double-check the confidence threshold
+        // This is a final safety check to prevent incorrect matches
+        if (confidence < 0.7) {
+          debugPrint('Match confidence too low (< 0.7), rejecting match');
+          return null;
+        }
 
         // Return the match result with all the detailed metrics
         return matchResult;

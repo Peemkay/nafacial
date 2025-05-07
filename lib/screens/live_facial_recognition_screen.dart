@@ -134,11 +134,11 @@ class _LiveFacialRecognitionScreenState
       confidence = _confidence;
     }
 
-    // Determine verification status based on confidence (with reduced thresholds)
-    bool isConfidentMatch = confidence >= 0.75; // Reduced from 0.95
+    // Determine verification status based on confidence (with increased thresholds)
+    bool isConfidentMatch = confidence >= 0.85; // Increased from 0.75
     bool isPossibleMatch =
-        confidence >= 0.60 && confidence < 0.75; // Reduced from 0.85-0.95
-    bool isNoMatch = confidence < 0.60; // Reduced from 0.85
+        confidence >= 0.70 && confidence < 0.85; // Increased from 0.60-0.75
+    bool isNoMatch = confidence < 0.70; // Increased from 0.60
 
     // Determine status color and icon
     Color statusColor;
@@ -306,13 +306,13 @@ class _LiveFacialRecognitionScreenState
                   // Skip the overall score as it's already shown
                   if (entry.key == 'overall') return const SizedBox.shrink();
 
-                  // Determine color based on score (with reduced thresholds)
+                  // Determine color based on score (with increased thresholds)
                   Color scoreColor;
-                  if (entry.value >= 0.75) {
-                    // Reduced from 0.95
+                  if (entry.value >= 0.85) {
+                    // Increased from 0.75
                     scoreColor = Colors.green;
-                  } else if (entry.value >= 0.60) {
-                    // Reduced from 0.85
+                  } else if (entry.value >= 0.70) {
+                    // Increased from 0.60
                     scoreColor = Colors.orange;
                   } else {
                     scoreColor = Colors.red;
@@ -395,7 +395,7 @@ class _LiveFacialRecognitionScreenState
             child: Text(
               isNoMatch
                   ? 'Confidence too low. This is likely a different person.'
-                  : 'Confidence below 75%. Please verify identity manually.',
+                  : 'Confidence below 85%. Please verify identity manually.',
               style: TextStyle(
                 fontSize: 12,
                 color: statusColor,
@@ -639,13 +639,34 @@ class _LiveFacialRecognitionScreenState
               _featureScores = null;
             }
 
+            debugPrint('===== FACE RECOGNITION RESULT =====');
             debugPrint(
-                'Successfully identified: ${_matchedPersonnel!.fullName} with confidence: ${_confidence.toStringAsFixed(2)}');
+                'Successfully identified: ${_matchedPersonnel!.fullName} (${_matchedPersonnel!.armyNumber})');
+            debugPrint('Confidence: ${_confidence.toStringAsFixed(2)}');
+            debugPrint('Match method: ${result['match_method'] ?? 'unknown'}');
+
+            // Log all matches if available
+            if (result.containsKey('all_matches')) {
+              final allMatches = result['all_matches'] as List<dynamic>;
+              if (allMatches.isNotEmpty) {
+                debugPrint('Top matches:');
+                for (int i = 0; i < allMatches.length && i < 3; i++) {
+                  final match = allMatches[i] as Map<String, dynamic>;
+                  final personnel = match['personnel'] as Personnel;
+                  final matchConfidence = match['confidence'] as double;
+                  debugPrint(
+                      '  ${i + 1}. ${personnel.fullName} (${personnel.armyNumber}): ${matchConfidence.toStringAsFixed(2)}');
+                }
+              }
+            }
+            debugPrint('===================================');
           } else {
             _matchedPersonnel = null;
             _confidence = 0.0;
             _featureScores = null;
+            debugPrint('===== FACE RECOGNITION RESULT =====');
             debugPrint('No personnel match found');
+            debugPrint('===================================');
           }
         });
       }
