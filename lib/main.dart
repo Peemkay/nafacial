@@ -46,6 +46,7 @@ import 'screens/statistics_screen.dart';
 import 'screens/activity_summary_screen.dart';
 import 'screens/enhanced_recognition_demo_screen.dart';
 import 'screens/android_server_manager_screen.dart';
+import 'screens/enhanced_android_server_manager_screen.dart';
 import 'screens/theme_preview_screen.dart';
 
 // Global navigator key for accessing navigator from anywhere
@@ -267,11 +268,11 @@ class _NAFacialAppState extends State<NAFacialApp> {
 
                 // Android-specific screens
                 '/android_server_manager': (context) =>
+                    const EnhancedAndroidServerManagerScreen(),
+                '/legacy_android_server_manager': (context) =>
                     const AndroidServerManagerScreen(),
                 '/enhanced_recognition': (context) =>
                     const EnhancedRecognitionDemoScreen(),
-                '/live_recognition': (context) =>
-                    const LiveFacialRecognitionScreen(),
 
                 // Info pages
                 '/about': (context) => const AboutScreen(),
