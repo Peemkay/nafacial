@@ -189,7 +189,8 @@ class _CustomDrawerState extends State<CustomDrawer>
                             title: 'Live Recognition',
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.pushNamed(context, '/live_recognition');
+                              Navigator.pushNamed(
+                                  context, '/facial_verification');
                             },
                           ),
 

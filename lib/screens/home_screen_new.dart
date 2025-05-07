@@ -417,9 +417,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               _buildAdminAction(
                 context,
-                'Live Scan',
-                Icons.camera_alt,
-                () => Navigator.pushNamed(context, '/live_recognition'),
+                'Live Recognition',
+                Icons.camera_enhance,
+                () => Navigator.pushNamed(context, '/facial_verification'),
               ),
               _buildAdminAction(
                 context,
@@ -501,7 +501,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.pushNamed(context, '/facial_verification');
         break;
       case 'live_recognition':
-        Navigator.pushNamed(context, '/live_recognition');
+        Navigator.pushNamed(context, '/facial_verification');
         break;
       case 'personnel_database':
         Navigator.pushNamed(context, '/personnel_database');
