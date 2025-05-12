@@ -13,6 +13,7 @@ import '../widgets/fancy_bottom_nav_bar.dart';
 import '../widgets/security_pattern_painter.dart';
 import '../widgets/advanced_camera_widget.dart';
 import '../services/enhanced_facial_recognition_service.dart';
+import '../services/optimized_face_recognition_service.dart';
 import '../providers/auth_provider.dart';
 
 import 'personnel_registration_screen.dart';
@@ -203,6 +204,241 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
     }
   }
 
+  // Pick a printed or displayed photo for recognition
+  Future<void> _pickPrintedPhoto() async {
+    try {
+      // Show information dialog first
+      if (mounted) {
+        await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Printed Photo Recognition'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'This feature is optimized for:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text('• ID cards and printed photos'),
+                  Text('• Photos displayed on other screens'),
+                  Text('• Documents with personnel photos'),
+                  SizedBox(height: 12),
+                  Text(
+                    'For best results:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text('• Ensure good lighting'),
+                  Text('• Avoid glare and reflections'),
+                  Text('• Keep the photo flat and centered'),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('CANCEL'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(true);
+                  },
+                  child: const Text('CONTINUE'),
+                ),
+              ],
+            );
+          },
+        ).then((value) async {
+          if (value == true) {
+            final XFile? image = await _imagePicker.pickImage(
+              source: ImageSource.camera,
+              preferredCameraDevice: CameraDevice.rear,
+              imageQuality: 90,
+            );
+
+            if (image != null && mounted) {
+              setState(() {
+                _selectedImage = File(image.path);
+              });
+
+              // Process the printed photo for recognition
+              _identifyPersonnelFromPrintedPhoto(File(image.path));
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking printed photo: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Identify personnel from a printed or displayed photo
+  Future<void> _identifyPersonnelFromPrintedPhoto(File imageFile) async {
+    // Cache the personnel list before processing to avoid disposal issues
+    List<Personnel> personnelList = [];
+
+    try {
+      // Get the personnel list safely
+      if (mounted) {
+        final personnelProvider =
+            Provider.of<PersonnelProvider>(context, listen: false);
+        // Make sure the personnel list is loaded
+        if (personnelProvider.allPersonnel.isEmpty) {
+          await personnelProvider.loadAllPersonnel();
+        }
+        personnelList = List.from(personnelProvider.allPersonnel);
+      }
+
+      // Show loading dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Processing Printed Photo'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  StreamBuilder<String>(
+                    stream:
+                        Stream.periodic(const Duration(milliseconds: 800), (i) {
+                      final messages = [
+                        'Enhancing image quality...',
+                        'Detecting printed face...',
+                        'Extracting features...',
+                        'Compensating for print artifacts...',
+                        'Matching with database...',
+                        'Verifying identity...',
+                      ];
+                      return messages[i % messages.length];
+                    }),
+                    builder: (context, snapshot) {
+                      return Text(
+                        snapshot.data ?? 'Processing Printed Photo...',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Text('This may take a few moments',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.search, size: 16, color: Colors.blue[700]),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Searching database of ${personnelList.length} personnel',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue[700],
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      }
+
+      // Use the optimized face recognition service for printed photos
+      final optimizedService = OptimizedFaceRecognitionService();
+      await optimizedService.initialize();
+
+      // Process the printed photo
+      final result = await optimizedService.identifyFromPrintedPhoto(
+        imageFile,
+        personnelList,
+      );
+
+      // Close the dialog
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+
+      // Extract personnel and confidence from result
+      final Personnel? identifiedPersonnel =
+          result != null ? result['personnel'] as Personnel? : null;
+      final double confidence =
+          result != null ? result['confidence'] as double : 0.0;
+      final String matchQuality = result != null
+          ? result['match_quality'] as String? ?? 'unknown'
+          : 'none';
+
+      // Show appropriate message based on match quality
+      if (mounted) {
+        if (identifiedPersonnel == null) {
+          // No match found
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No matching personnel found in database.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        } else {
+          // Match found - navigate to result screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PersonnelIdentificationResultScreen(
+                capturedImage: imageFile,
+                identifiedPersonnel: identifiedPersonnel,
+                savedImagePath: imageFile.path,
+                confidence: confidence,
+                matchQuality: matchQuality,
+                sourceType: 'printed_photo',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in printed photo recognition: $e');
+
+      // Close the dialog if it's open
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error processing printed photo: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   // Pick a video from gallery
   Future<void> _pickVideo() async {
     final XFile? video = await _imagePicker.pickVideo(
@@ -248,8 +484,70 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
       // Initialize the service if needed
       await enhancedFacialRecognitionService.initialize();
 
-      // Show loading indicator
+      // Show loading dialog
       if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Face Recognition in Progress'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  StreamBuilder<String>(
+                    stream:
+                        Stream.periodic(const Duration(milliseconds: 800), (i) {
+                      final messages = [
+                        'Analyzing facial features...',
+                        'Extracting biometric data...',
+                        'Comparing with database...',
+                        'Calculating match confidence...',
+                        'Verifying identity...',
+                      ];
+                      return messages[i % messages.length];
+                    }),
+                    builder: (context, snapshot) {
+                      return Text(
+                        snapshot.data ?? 'Processing Face Recognition...',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Text('This may take a few moments',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.search, size: 16, color: Colors.blue[700]),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Searching database of ${personnelList.length} personnel',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue[700],
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+
+        // Also show a snackbar for additional feedback
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Processing advanced facial recognition...'),
@@ -281,9 +579,177 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
 
       // Extract personnel and confidence from result
       final Personnel? identifiedPersonnel =
-          result != null ? result['personnel'] as Personnel : null;
+          result != null ? result['personnel'] as Personnel? : null;
       final double confidence =
           result != null ? result['confidence'] as double : 0.0;
+      final String matchQuality = result != null
+          ? result['match_quality'] as String? ?? 'unknown'
+          : 'none';
+      final String matchMethod = result != null
+          ? result['match_method'] as String? ?? 'unknown'
+          : 'none';
+      final String? warning =
+          result != null ? result['warning'] as String? : null;
+      final String? bestMatchName =
+          result != null ? result['best_match_name'] as String? : null;
+      final String? bestMatchArmyNumber =
+          result != null ? result['best_match_army_number'] as String? : null;
+
+      // Extract similarity metrics if available
+      final Map<String, dynamic>? featureScores = result != null
+          ? result['featureScores'] as Map<String, dynamic>?
+          : null;
+      final double? cosineSimilarity = featureScores != null
+          ? featureScores['cosine_similarity'] as double?
+          : null;
+      final double? euclideanSimilarity = featureScores != null
+          ? featureScores['euclidean_similarity'] as double?
+          : null;
+      final double? manhattanSimilarity = featureScores != null
+          ? featureScores['manhattan_similarity'] as double?
+          : null;
+
+      // Log the result with detailed metrics
+      if (identifiedPersonnel != null) {
+        debugPrint('MATCH FOUND:');
+        debugPrint(
+            '  Personnel: ${identifiedPersonnel.fullName} (${identifiedPersonnel.armyNumber})');
+        debugPrint('  Confidence: ${confidence.toStringAsFixed(4)}');
+        debugPrint(
+            '  Match method: $matchMethod, Match quality: $matchQuality');
+
+        if (cosineSimilarity != null) {
+          debugPrint(
+              '  Cosine similarity: ${cosineSimilarity.toStringAsFixed(4)}');
+        }
+        if (euclideanSimilarity != null) {
+          debugPrint(
+              '  Euclidean similarity: ${euclideanSimilarity.toStringAsFixed(4)}');
+        }
+        if (manhattanSimilarity != null) {
+          debugPrint(
+              '  Manhattan similarity: ${manhattanSimilarity.toStringAsFixed(4)}');
+        }
+
+        if (warning != null) {
+          debugPrint('  Warning: $warning');
+        }
+
+        // Log feature scores if available
+        if (featureScores != null) {
+          debugPrint('  Feature scores:');
+          for (final entry in featureScores.entries) {
+            if (entry.key != 'cosine_similarity' &&
+                entry.key != 'euclidean_similarity' &&
+                entry.key != 'manhattan_similarity') {
+              debugPrint('    ${entry.key}: ${entry.value.toStringAsFixed(4)}');
+            }
+          }
+        }
+      } else {
+        debugPrint('NO MATCH FOUND:');
+        debugPrint('  Best confidence: ${confidence.toStringAsFixed(4)}');
+
+        if (cosineSimilarity != null) {
+          debugPrint(
+              '  Cosine similarity: ${cosineSimilarity.toStringAsFixed(4)}');
+        }
+        if (euclideanSimilarity != null) {
+          debugPrint(
+              '  Euclidean similarity: ${euclideanSimilarity.toStringAsFixed(4)}');
+        }
+        if (manhattanSimilarity != null) {
+          debugPrint(
+              '  Manhattan similarity: ${manhattanSimilarity.toStringAsFixed(4)}');
+        }
+
+        if (bestMatchName != null) {
+          debugPrint(
+              '  Best match (below threshold): $bestMatchName ($bestMatchArmyNumber)');
+        }
+      }
+
+      // Show appropriate message based on match quality
+      if (mounted) {
+        if (identifiedPersonnel == null) {
+          // No match found
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No matching personnel found in database.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        } else if (matchQuality == 'medium') {
+          // Medium confidence match
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'Possible match found (${(confidence * 100).toStringAsFixed(1)}%). Verify manually.'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } else if (matchQuality == 'low') {
+          // Low confidence match
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'Low confidence match (${(confidence * 100).toStringAsFixed(1)}%). Verify carefully.'),
+              backgroundColor: Colors.deepOrange,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } else if (matchQuality == 'high') {
+          // High confidence match
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'Match found: ${identifiedPersonnel.fullName} (${(confidence * 100).toStringAsFixed(1)}%)'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+
+      // Log all personnel in the database for debugging
+      debugPrint('PERSONNEL IN DATABASE:');
+      debugPrint('Total personnel: ${personnelList.length}');
+      int personnelWithPhotos = 0;
+      for (var person in personnelList) {
+        final hasPhoto = person.photoUrl != null && person.photoUrl!.isNotEmpty;
+        if (hasPhoto) {
+          final photoFile = File(person.photoUrl!);
+          final photoExists = photoFile.existsSync();
+          final photoSize = photoExists ? photoFile.lengthSync() : 0;
+          debugPrint(
+              '  ${person.fullName} (${person.armyNumber}) - Photo: ${hasPhoto ? 'Yes' : 'No'}, Exists: $photoExists, Size: $photoSize bytes');
+          if (photoExists && photoSize > 0) {
+            personnelWithPhotos++;
+          }
+        } else {
+          debugPrint('  ${person.fullName} (${person.armyNumber}) - Photo: No');
+        }
+      }
+      debugPrint(
+          'Personnel with valid photos: $personnelWithPhotos / ${personnelList.length}');
+
+      // Add a warning if no personnel have photos
+      if (personnelWithPhotos == 0) {
+        debugPrint(
+            'WARNING: No personnel have valid photos in the database. Face recognition will not work!');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'No personnel photos found in database. Please add photos to enable face recognition.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      }
 
       // Save image with metadata
       final savedImagePath =
@@ -293,7 +759,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
         {
           'captureMethod': 'camera',
           'captureTime': DateTime.now().toIso8601String(),
-          'deviceInfo': 'NAFacial App',
+          'deviceInfo': 'DBWFR App',
           'confidence': confidence.toString(),
           'recognitionMethod': 'enhanced_python',
           'adminInfo': await _getAdminInfo() ?? 'Unknown Admin',
@@ -301,6 +767,9 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
       );
 
       if (mounted) {
+        // Close the loading dialog if it's still open
+        Navigator.of(context, rootNavigator: true).pop();
+
         // Navigate to identification result screen
         Navigator.push(
           context,
@@ -310,6 +779,9 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
               identifiedPersonnel: identifiedPersonnel,
               savedImagePath: savedImagePath,
               confidence: confidence,
+              matchQuality: matchQuality,
+              bestMatchName: bestMatchName,
+              bestMatchArmyNumber: bestMatchArmyNumber,
             ),
           ),
         );
@@ -318,6 +790,13 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
       debugPrint('Error in facial verification: $e');
 
       if (mounted) {
+        // Close the loading dialog if it's still open
+        try {
+          Navigator.of(context, rootNavigator: true).pop();
+        } catch (dialogError) {
+          debugPrint('Error closing dialog: $dialogError');
+        }
+
         // Show user-friendly error message
         String errorMessage = 'An error occurred during facial verification.';
 
@@ -811,15 +1290,13 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
                             await permission.Permission.camera.request();
                         if (result.isGranted) {
                           _takePhoto();
-                        } else {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Camera permission is required'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
+                        } else if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Camera permission is required'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
                         }
                       }
                     },
@@ -900,11 +1377,25 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
               ),
             ),
           SizedBox(height: DesignSystem.adjustedSpacingLarge),
-          PlatformButton(
-            text: 'SELECT PHOTO',
-            onPressed: _pickImage,
-            icon: Icons.photo_library,
-            isFullWidth: false,
+          Wrap(
+            spacing: DesignSystem.adjustedSpacingMedium,
+            runSpacing: DesignSystem.adjustedSpacingMedium,
+            alignment: WrapAlignment.center,
+            children: [
+              PlatformButton(
+                text: 'SELECT PHOTO',
+                onPressed: _pickImage,
+                icon: Icons.photo_library,
+                isFullWidth: false,
+              ),
+              PlatformButton(
+                text: 'SCAN ID/PHOTO',
+                onPressed: _pickPrintedPhoto,
+                icon: Icons.document_scanner,
+                buttonType: PlatformButtonType.secondary,
+                isFullWidth: false,
+              ),
+            ],
           ),
           SizedBox(height: DesignSystem.adjustedSpacingMedium),
           PlatformText(
@@ -1322,7 +1813,7 @@ class _FacialVerificationScreenState extends State<FacialVerificationScreen> {
         {
           'captureMethod': 'live_recognition',
           'captureTime': DateTime.now().toIso8601String(),
-          'deviceInfo': 'NAFacial App',
+          'deviceInfo': 'DBWFR App',
           'confidence': confidence.toString(),
           'recognitionMethod': 'enhanced_live',
           'adminInfo': await _getAdminInfo() ?? 'Unknown Admin',

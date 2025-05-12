@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../config/design_system.dart';
 import '../models/personnel_model.dart';
 import '../providers/personnel_provider.dart';
-import '../services/facial_recognition_service.dart';
 import '../widgets/platform_aware_widgets.dart';
 import 'personnel_edit_screen.dart';
 
@@ -16,6 +15,10 @@ class PersonnelIdentificationResultScreen extends StatefulWidget {
   final bool isLiveCapture;
   final double confidence;
   final bool isVideo;
+  final String matchQuality;
+  final String? bestMatchName;
+  final String? bestMatchArmyNumber;
+  final String? sourceType;
 
   const PersonnelIdentificationResultScreen({
     Key? key,
@@ -25,6 +28,10 @@ class PersonnelIdentificationResultScreen extends StatefulWidget {
     this.isLiveCapture = false,
     this.confidence = 0.0,
     this.isVideo = false,
+    this.matchQuality = 'unknown',
+    this.bestMatchName,
+    this.bestMatchArmyNumber,
+    this.sourceType,
   }) : super(key: key);
 
   @override
@@ -69,7 +76,137 @@ class _PersonnelIdentificationResultScreenState
       setState(() {
         _showDetails = true;
       });
+
+      // Show feedback dialog after animations complete if we have a match
+      if (widget.identifiedPersonnel != null) {
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            _showFeedbackDialog();
+          }
+        });
+      }
     });
+  }
+
+  // Show feedback dialog to ask if the match was accurate
+  void _showFeedbackDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Was this match accurate?',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Matched with: ${widget.identifiedPersonnel?.fullName ?? "Unknown"}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Your feedback helps improve our facial recognition system.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _handleNegativeFeedback();
+              },
+              child: const Text('No, Incorrect Match'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Positive feedback - no need to do anything
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Thank you for your feedback!'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Text('Yes, Correct'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Handle negative feedback
+  void _handleNegativeFeedback() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Incorrect Match'),
+        content: const Text(
+          'Would you like to try again with a new capture or report this incorrect match?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop(); // Return to capture screen
+            },
+            child: const Text('Try Again'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _reportIncorrectMatch();
+            },
+            child: const Text('Report Issue'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Report incorrect match
+  void _reportIncorrectMatch() {
+    // In a real implementation, this would send the incorrect match data to a server
+    // for analysis and improvement of the facial recognition system
+
+    // Show confirmation dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Report Submitted'),
+        content: const Text(
+          'Thank you for your feedback. This incorrect match has been reported and will help improve our facial recognition system.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -269,6 +406,60 @@ class _PersonnelIdentificationResultScreenState
 
   Widget _buildResultStatusCard() {
     final isIdentified = widget.identifiedPersonnel != null;
+    final isHighQualityMatch = isIdentified && widget.matchQuality == 'high';
+    final isMediumQualityMatch =
+        isIdentified && widget.matchQuality == 'medium';
+    final isLowQualityMatch = isIdentified && widget.matchQuality == 'low';
+    final isNoMatch = !isIdentified || widget.matchQuality == 'none';
+
+    // Determine card color based on match quality
+    Color cardColor;
+    if (isHighQualityMatch) {
+      cardColor = DesignSystem.successColor;
+    } else if (isMediumQualityMatch) {
+      cardColor = Colors.orange;
+    } else if (isLowQualityMatch) {
+      cardColor = Colors.deepOrange;
+    } else {
+      cardColor = Colors.red;
+    }
+
+    // Determine icon based on match quality
+    IconData iconData;
+    if (isHighQualityMatch) {
+      iconData = Icons.check_circle;
+    } else if (isMediumQualityMatch) {
+      iconData = Icons.help;
+    } else if (isLowQualityMatch) {
+      iconData = Icons.warning;
+    } else {
+      iconData = Icons.error;
+    }
+
+    // Determine status text based on match quality
+    String statusText;
+    String descriptionText;
+    if (isHighQualityMatch) {
+      statusText = 'PERSONNEL IDENTIFIED';
+      descriptionText =
+          'Match found with high confidence (${(widget.confidence * 100).toStringAsFixed(1)}%)';
+    } else if (isMediumQualityMatch) {
+      statusText = 'POSSIBLE MATCH - VERIFY';
+      descriptionText =
+          'Verify identity manually - confidence: ${(widget.confidence * 100).toStringAsFixed(1)}%';
+    } else if (isLowQualityMatch) {
+      statusText = 'LOW CONFIDENCE MATCH - VERIFY CAREFULLY';
+      descriptionText =
+          'Confidence is low (${(widget.confidence * 100).toStringAsFixed(1)}%). Verify carefully.';
+    } else if (isNoMatch && widget.confidence > 0.0) {
+      statusText = 'NO MATCH FOUND';
+      descriptionText = widget.bestMatchName != null
+          ? 'Best match below threshold: ${widget.bestMatchName} (${(widget.confidence * 100).toStringAsFixed(1)}%)'
+          : 'Best match below threshold (${(widget.confidence * 100).toStringAsFixed(1)}%)';
+    } else {
+      statusText = 'NOT ON RECORD';
+      descriptionText = 'No matching personnel found in database';
+    }
 
     return AnimatedBuilder(
       animation: _animationController,
@@ -280,7 +471,7 @@ class _PersonnelIdentificationResultScreenState
       },
       child: Card(
         elevation: 3,
-        color: isIdentified ? DesignSystem.successColor : Colors.red,
+        color: cardColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(DesignSystem.borderRadiusMedium),
         ),
@@ -289,7 +480,7 @@ class _PersonnelIdentificationResultScreenState
           child: Row(
             children: [
               Icon(
-                isIdentified ? Icons.check_circle : Icons.error,
+                iconData,
                 color: Colors.white,
                 size: 36,
               ),
@@ -299,7 +490,7 @@ class _PersonnelIdentificationResultScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isIdentified ? 'PERSONNEL IDENTIFIED' : 'NOT ON RECORD',
+                      statusText,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -308,9 +499,7 @@ class _PersonnelIdentificationResultScreenState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      isIdentified
-                          ? 'Match found in personnel database'
-                          : 'No matching personnel found in database',
+                      descriptionText,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -516,9 +705,9 @@ class _PersonnelIdentificationResultScreenState
 
   // Get color based on confidence level
   Color _getConfidenceColor(double confidence) {
-    if (confidence >= 0.85) {
+    if (confidence >= 0.75) {
       return DesignSystem.successColor; // High confidence
-    } else if (confidence >= 0.70) {
+    } else if (confidence >= 0.65) {
       return Colors.orange; // Medium confidence
     } else {
       return Colors.red; // Low confidence
@@ -527,12 +716,12 @@ class _PersonnelIdentificationResultScreenState
 
   // Get label based on confidence level
   String _getConfidenceLabel(double confidence) {
-    if (confidence >= 0.85) {
+    if (confidence >= 0.75) {
       return 'High Confidence';
-    } else if (confidence >= 0.70) {
-      return 'Medium Confidence';
+    } else if (confidence >= 0.65) {
+      return 'Medium Confidence - Verify Identity';
     } else {
-      return 'Low Confidence';
+      return 'Low Confidence - Likely Different Person';
     }
   }
 
